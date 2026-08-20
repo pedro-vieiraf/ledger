@@ -1,1 +1,2 @@
-com/pedro/ledger/LedgerApplicationTests.class
+com\pedro\ledger\domain\money\MoneyTest.class
+com\pedro\ledger\LedgerApplicationTests.class
