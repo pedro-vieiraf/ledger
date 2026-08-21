@@ -51,7 +51,6 @@ public class Transaction {
       ) {
     validateAmount(amount);
     validateType(type);
-    normalizeDescription(description);
     validateTimestamp(timestamp);
     validateSource(source);
     validateAccountId(accountId);
