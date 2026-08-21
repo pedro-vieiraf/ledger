@@ -36,6 +36,10 @@ public record Money(BigDecimal amount) {
     return new Money(amount.multiply(BigDecimal.valueOf(multiplier)));
   }
 
+  public static Money zero() {
+    return new Money(BigDecimal.ZERO);
+  }
+
   public boolean isGreaterThan(Money other) {
     return amount.compareTo(other.amount) > 0;
   }
@@ -46,5 +50,9 @@ public record Money(BigDecimal amount) {
 
   public boolean isZero() {
     return amount.compareTo(BigDecimal.ZERO) == 0;
+  }
+
+  public boolean isNegative() {
+    return amount.compareTo(BigDecimal.ZERO) < 0;
   }
 }
