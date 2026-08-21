@@ -129,4 +129,155 @@ class TransactionProcessorTest {
         .isInstanceOf(IllegalStateException.class)
         .hasMessage("Account is inactive");
   }
+
+  @Test
+  void shouldNotTransferWhenDestinationAccountIsNull() {
+    Account source = Account.open(
+        "Checking Account",
+        AccountType.CHECKING,
+        Money.of("1000.00")
+    );
+
+    Transaction transaction = Transaction.create(
+        Money.of("300.00"),
+        TransactionType.TRANSFER,
+        null,
+        TIMESTAMP,
+        TransactionSource.MANUAL,
+        source.getId(),
+        java.util.UUID.randomUUID(),
+        null
+    );
+
+    assertThatThrownBy(() ->
+        TransactionProcessor.process(transaction, source, null)
+    )
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessage("Destination account cannot be null");
+
+    assertThat(source.getBalance())
+        .isEqualTo(Money.of("1000.00"));
+  }
+
+  @Test
+  void shouldNotTransferWhenDestinationAccountDoesNotMatchTransaction() {
+    Account source = Account.open(
+        "Checking Account",
+        AccountType.CHECKING,
+        Money.of("1000.00")
+    );
+
+    Account destination = Account.open(
+        "Savings Account",
+        AccountType.SAVINGS,
+        Money.of("500.00")
+    );
+
+    Account wrongDestination = Account.open(
+        "Other Account",
+        AccountType.SAVINGS,
+        Money.of("200.00")
+    );
+
+    Transaction transaction = Transaction.create(
+        Money.of("300.00"),
+        TransactionType.TRANSFER,
+        null,
+        TIMESTAMP,
+        TransactionSource.MANUAL,
+        source.getId(),
+        destination.getId(),
+        null
+    );
+
+    assertThatThrownBy(() ->
+        TransactionProcessor.process(transaction, source, wrongDestination)
+    )
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessage("Destination account does not match transaction");
+
+    assertThat(source.getBalance())
+        .isEqualTo(Money.of("1000.00"));
+  }
+
+  @Test
+  void shouldNotTransferWhenDestinationAccountIsInactive() {
+    Account source = Account.open(
+        "Checking Account",
+        AccountType.CHECKING,
+        Money.of("1000.00")
+    );
+
+    Account destination = Account.open(
+        "Savings Account",
+        AccountType.SAVINGS,
+        Money.of("500.00")
+    );
+
+    destination.deactivate();
+
+    Transaction transaction = Transaction.create(
+        Money.of("300.00"),
+        TransactionType.TRANSFER,
+        null,
+        TIMESTAMP,
+        TransactionSource.MANUAL,
+        source.getId(),
+        destination.getId(),
+        null
+    );
+
+    assertThatThrownBy(() ->
+        TransactionProcessor.process(transaction, source, destination)
+    )
+        .isInstanceOf(IllegalStateException.class)
+        .hasMessage("Destination account is inactive");
+
+    assertThat(source.getBalance())
+        .isEqualTo(Money.of("1000.00"));
+
+    assertThat(destination.getBalance())
+        .isEqualTo(Money.of("500.00"));
+  }
+
+  @Test
+  void shouldNotTransferWhenSourceAccountDoesNotMatchTransaction() {
+    Account source = Account.open(
+        "Checking Account",
+        AccountType.CHECKING,
+        Money.of("1000.00")
+    );
+
+    Account wrongSource = Account.open(
+        "Other Account",
+        AccountType.CHECKING,
+        Money.of("200.00")
+    );
+
+    Account destination = Account.open(
+        "Savings Account",
+        AccountType.SAVINGS,
+        Money.of("500.00")
+    );
+
+    Transaction transaction = Transaction.create(
+        Money.of("300.00"),
+        TransactionType.TRANSFER,
+        null,
+        TIMESTAMP,
+        TransactionSource.MANUAL,
+        source.getId(),
+        destination.getId(),
+        null
+    );
+
+    assertThatThrownBy(() ->
+        TransactionProcessor.process(transaction, wrongSource, destination)
+    )
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessage("Account does not match transaction");
+
+    assertThat(destination.getBalance())
+        .isEqualTo(Money.of("500.00"));
+  }
 }

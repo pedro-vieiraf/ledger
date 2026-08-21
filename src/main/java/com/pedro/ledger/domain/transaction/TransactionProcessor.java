@@ -1,6 +1,7 @@
 package com.pedro.ledger.domain.transaction;
 
 import com.pedro.ledger.domain.account.Account;
+import com.pedro.ledger.domain.account.AccountStatus;
 
 public final class TransactionProcessor {
 
@@ -42,6 +43,21 @@ public final class TransactionProcessor {
     }
 
     validateAccount(transaction, source);
+    validateDestination(transaction, destination);
+
+    source.debit(transaction.getAmount());
+    destination.credit(transaction.getAmount());
+  }
+
+  private static void validateDestination(
+      Transaction transaction,
+      Account destination
+  ) {
+    if (destination == null) {
+      throw new IllegalArgumentException(
+          "Destination account cannot be null"
+      );
+    }
 
     if (!transaction.getDestinationAccountId()
         .equals(destination.getId())) {
@@ -51,14 +67,23 @@ public final class TransactionProcessor {
       );
     }
 
-    source.debit(transaction.getAmount());
-    destination.credit(transaction.getAmount());
+    if (destination.getStatus() == AccountStatus.INACTIVE) {
+      throw new IllegalStateException(
+          "Destination account is inactive"
+      );
+    }
   }
 
   private static void validateAccount(
       Transaction transaction,
       Account account
   ) {
+    if (account == null) {
+      throw new IllegalArgumentException(
+          "Account cannot be null"
+      );
+    }
+
     if (!transaction.getAccountId().equals(account.getId())) {
       throw new IllegalArgumentException(
           "Account does not match transaction"
