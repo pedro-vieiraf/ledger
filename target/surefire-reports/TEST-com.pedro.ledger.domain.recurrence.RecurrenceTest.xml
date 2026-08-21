@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<testsuite xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://maven.apache.org/surefire/maven-surefire-plugin/xsd/surefire-test-report.xsd" version="3.0.2" name="com.pedro.ledger.domain.money.MoneyTest" time="0.035" tests="10" errors="0" skipped="0" failures="0" flakes="0">
+<testsuite xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://maven.apache.org/surefire/maven-surefire-plugin/xsd/surefire-test-report.xsd" version="3.0.2" name="com.pedro.ledger.domain.recurrence.RecurrenceTest" time="0.067" tests="25" errors="0" skipped="0" failures="0" flakes="0">
   <properties>
     <property name="java.specification.version" value="21"/>
     <property name="sun.cpu.isalist" value="amd64"/>
@@ -58,14 +58,29 @@
     <property name="sun.io.unicode.encoding" value="UnicodeLittle"/>
     <property name="java.class.version" value="65.0"/>
   </properties>
-  <testcase name="shouldSubtractTwoMoneyValues" classname="com.pedro.ledger.domain.money.MoneyTest" time="0.003"/>
-  <testcase name="shouldNormalizeAmountToTwoDecimalPlaces" classname="com.pedro.ledger.domain.money.MoneyTest" time="0.0"/>
-  <testcase name="shouldAllowZero" classname="com.pedro.ledger.domain.money.MoneyTest" time="0.001"/>
-  <testcase name="shouldAddTwoMoneyValues" classname="com.pedro.ledger.domain.money.MoneyTest" time="0.001"/>
-  <testcase name="shouldRejectMoreThanTwoDecimalPlaces" classname="com.pedro.ledger.domain.money.MoneyTest" time="0.001"/>
-  <testcase name="shouldMultiplyMoneyByAnInteger" classname="com.pedro.ledger.domain.money.MoneyTest" time="0.001"/>
-  <testcase name="shouldCreateMoney" classname="com.pedro.ledger.domain.money.MoneyTest" time="0.001"/>
-  <testcase name="shouldRejectNullAmount" classname="com.pedro.ledger.domain.money.MoneyTest" time="0.007"/>
-  <testcase name="shouldCompareMoneyValues" classname="com.pedro.ledger.domain.money.MoneyTest" time="0.001"/>
-  <testcase name="shouldAllowNegativeValues" classname="com.pedro.ledger.domain.money.MoneyTest" time="0.001"/>
+  <testcase name="shouldRejectNullType" classname="com.pedro.ledger.domain.recurrence.RecurrenceTest" time="0.004"/>
+  <testcase name="shouldAdvanceYearlyRecurrence" classname="com.pedro.ledger.domain.recurrence.RecurrenceTest" time="0.001"/>
+  <testcase name="shouldRejectNullFrequency" classname="com.pedro.ledger.domain.recurrence.RecurrenceTest" time="0.001"/>
+  <testcase name="shouldCreateIncome" classname="com.pedro.ledger.domain.recurrence.RecurrenceTest" time="0.001"/>
+  <testcase name="shouldHandleThirtyDayMonth" classname="com.pedro.ledger.domain.recurrence.RecurrenceTest" time="0.0"/>
+  <testcase name="shouldAdvanceWeeklyRecurrence" classname="com.pedro.ledger.domain.recurrence.RecurrenceTest" time="0.001"/>
+  <testcase name="shouldAdvanceMonthlyRecurrence" classname="com.pedro.ledger.domain.recurrence.RecurrenceTest" time="0.001"/>
+  <testcase name="shouldRejectNullAmount" classname="com.pedro.ledger.domain.recurrence.RecurrenceTest" time="0.005"/>
+  <testcase name="shouldPreserveOriginalDayWhenMonthIsShorter" classname="com.pedro.ledger.domain.recurrence.RecurrenceTest" time="0.006"/>
+  <testcase name="shouldRejectNegativeAmount" classname="com.pedro.ledger.domain.recurrence.RecurrenceTest" time="0.001"/>
+  <testcase name="shouldTrimDescription" classname="com.pedro.ledger.domain.recurrence.RecurrenceTest" time="0.001"/>
+  <testcase name="shouldRejectTransferType" classname="com.pedro.ledger.domain.recurrence.RecurrenceTest" time="0.002"/>
+  <testcase name="shouldRejectNullStartDate" classname="com.pedro.ledger.domain.recurrence.RecurrenceTest" time="0.002"/>
+  <testcase name="shouldAllowNullDescription" classname="com.pedro.ledger.domain.recurrence.RecurrenceTest" time="0.002"/>
+  <testcase name="shouldAdvanceDailyRecurrence" classname="com.pedro.ledger.domain.recurrence.RecurrenceTest" time="0.001"/>
+  <testcase name="shouldRejectDeactivatingAlreadyInactiveRecurrence" classname="com.pedro.ledger.domain.recurrence.RecurrenceTest" time="0.001"/>
+  <testcase name="shouldActivateInactiveRecurrence" classname="com.pedro.ledger.domain.recurrence.RecurrenceTest" time="0.001"/>
+  <testcase name="shouldRejectZeroAmount" classname="com.pedro.ledger.domain.recurrence.RecurrenceTest" time="0.005"/>
+  <testcase name="shouldRejectNullAccountId" classname="com.pedro.ledger.domain.recurrence.RecurrenceTest" time="0.001"/>
+  <testcase name="shouldNotAdvanceInactiveRecurrence" classname="com.pedro.ledger.domain.recurrence.RecurrenceTest" time="0.001"/>
+  <testcase name="shouldNormalizeBlankDescriptionToNull" classname="com.pedro.ledger.domain.recurrence.RecurrenceTest" time="0.001"/>
+  <testcase name="shouldHandleLeapYearRecurrence" classname="com.pedro.ledger.domain.recurrence.RecurrenceTest" time="0.001"/>
+  <testcase name="shouldDeactivateRecurrence" classname="com.pedro.ledger.domain.recurrence.RecurrenceTest" time="0.001"/>
+  <testcase name="shouldRejectActivatingAlreadyActiveRecurrence" classname="com.pedro.ledger.domain.recurrence.RecurrenceTest" time="0.0"/>
+  <testcase name="shouldCreateMonthlyExpense" classname="com.pedro.ledger.domain.recurrence.RecurrenceTest" time="0.002"/>
 </testsuite>
