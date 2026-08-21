@@ -3,6 +3,12 @@ package com.pedro.ledger.domain.account;
 import com.pedro.ledger.domain.money.Money;
 import java.util.UUID;
 
+/**
+ * Represents a bank account within the Ledger.
+ *
+ * <p>An Account owns a monetary balance and allows controlled
+ * credit and debit operations while active.</p>
+ */
 public class Account {
 
   private final UUID id;
