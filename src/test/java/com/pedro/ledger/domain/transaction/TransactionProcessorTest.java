@@ -7,7 +7,6 @@ import com.pedro.ledger.domain.account.Account;
 import com.pedro.ledger.domain.account.AccountType;
 import com.pedro.ledger.domain.money.Money;
 import java.time.Instant;
-import java.util.UUID;
 import org.junit.jupiter.api.Test;
 
 class TransactionProcessorTest {
@@ -30,6 +29,7 @@ class TransactionProcessorTest {
         TIMESTAMP,
         TransactionSource.MANUAL,
         account.getId(),
+        null,
         null
     );
 
@@ -54,6 +54,7 @@ class TransactionProcessorTest {
         TIMESTAMP,
         TransactionSource.MANUAL,
         account.getId(),
+        null,
         null
     );
 
@@ -84,7 +85,8 @@ class TransactionProcessorTest {
         TIMESTAMP,
         TransactionSource.MANUAL,
         source.getId(),
-        destination.getId()
+        destination.getId(),
+        null
     );
 
     TransactionProcessor.process(
@@ -117,6 +119,7 @@ class TransactionProcessorTest {
         TIMESTAMP,
         TransactionSource.MANUAL,
         account.getId(),
+        null,
         null
     );
 

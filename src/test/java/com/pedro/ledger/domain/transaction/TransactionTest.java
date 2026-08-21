@@ -25,6 +25,7 @@ class TransactionTest {
         TIMESTAMP,
         TransactionSource.MANUAL,
         ACCOUNT_ID,
+        null,
         null
     );
 
@@ -36,6 +37,7 @@ class TransactionTest {
     assertThat(transaction.getSource()).isEqualTo(TransactionSource.MANUAL);
     assertThat(transaction.getAccountId()).isEqualTo(ACCOUNT_ID);
     assertThat(transaction.getDestinationAccountId()).isNull();
+    assertThat(transaction.getCategoryId()).isNull();
   }
 
   @Test
@@ -47,6 +49,7 @@ class TransactionTest {
         TIMESTAMP,
         TransactionSource.MANUAL,
         ACCOUNT_ID,
+        null,
         null
     );
 
@@ -62,13 +65,15 @@ class TransactionTest {
         TIMESTAMP,
         TransactionSource.MANUAL,
         ACCOUNT_ID,
-        DESTINATION_ACCOUNT_ID
+        DESTINATION_ACCOUNT_ID,
+        null
     );
 
     assertThat(transaction.getType()).isEqualTo(TransactionType.TRANSFER);
     assertThat(transaction.getAccountId()).isEqualTo(ACCOUNT_ID);
     assertThat(transaction.getDestinationAccountId())
         .isEqualTo(DESTINATION_ACCOUNT_ID);
+    assertThat(transaction.getCategoryId()).isNull();
   }
 
   @Test
@@ -81,6 +86,7 @@ class TransactionTest {
             TIMESTAMP,
             TransactionSource.MANUAL,
             ACCOUNT_ID,
+            null,
             null
         )
     )
@@ -98,6 +104,7 @@ class TransactionTest {
             TIMESTAMP,
             TransactionSource.MANUAL,
             ACCOUNT_ID,
+            null,
             null
         )
     )
@@ -115,6 +122,7 @@ class TransactionTest {
             TIMESTAMP,
             TransactionSource.MANUAL,
             ACCOUNT_ID,
+            null,
             null
         )
     )
@@ -131,6 +139,7 @@ class TransactionTest {
             "Supermarket",
             TIMESTAMP,
             TransactionSource.MANUAL,
+            null,
             null,
             null
         )
@@ -149,6 +158,7 @@ class TransactionTest {
             TIMESTAMP,
             TransactionSource.MANUAL,
             ACCOUNT_ID,
+            null,
             null
         )
     )
@@ -166,7 +176,8 @@ class TransactionTest {
             TIMESTAMP,
             TransactionSource.MANUAL,
             ACCOUNT_ID,
-            DESTINATION_ACCOUNT_ID
+            DESTINATION_ACCOUNT_ID,
+            null
         )
     )
         .isInstanceOf(IllegalArgumentException.class)
@@ -182,6 +193,7 @@ class TransactionTest {
         TIMESTAMP,
         TransactionSource.MANUAL,
         ACCOUNT_ID,
+        null,
         null
     );
 
@@ -199,6 +211,7 @@ class TransactionTest {
         TIMESTAMP,
         TransactionSource.OPEN_FINANCE,
         ACCOUNT_ID,
+        null,
         null
     );
 
@@ -220,6 +233,7 @@ class TransactionTest {
         TIMESTAMP,
         TransactionSource.OPEN_FINANCE,
         ACCOUNT_ID,
+        null,
         null
     );
 
@@ -238,6 +252,7 @@ class TransactionTest {
         TIMESTAMP,
         TransactionSource.MANUAL,
         ACCOUNT_ID,
+        null,
         null
     );
 
@@ -253,6 +268,7 @@ class TransactionTest {
         TIMESTAMP,
         TransactionSource.MANUAL,
         ACCOUNT_ID,
+        null,
         null
     );
 
@@ -268,6 +284,7 @@ class TransactionTest {
         TIMESTAMP,
         TransactionSource.MANUAL,
         ACCOUNT_ID,
+        null,
         null
     );
 
@@ -286,12 +303,155 @@ class TransactionTest {
             TIMESTAMP,
             TransactionSource.MANUAL,
             accountId,
-            accountId
+            accountId,
+            null
         )
     )
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessage(
             "Transfer source and destination accounts must be different"
+        );
+  }
+
+  @Test
+  void shouldCreateExpenseWithCategory() {
+    UUID categoryId = UUID.randomUUID();
+
+    Transaction transaction = Transaction.create(
+        Money.of("100.00"),
+        TransactionType.EXPENSE,
+        "Supermarket",
+        TIMESTAMP,
+        TransactionSource.MANUAL,
+        ACCOUNT_ID,
+        null,
+        categoryId
+    );
+
+    assertThat(transaction.getCategoryId())
+        .isEqualTo(categoryId);
+  }
+
+  @Test
+  void shouldCreateIncomeWithCategory() {
+    UUID categoryId = UUID.randomUUID();
+
+    Transaction transaction = Transaction.create(
+        Money.of("5000.00"),
+        TransactionType.INCOME,
+        "Salary",
+        TIMESTAMP,
+        TransactionSource.MANUAL,
+        ACCOUNT_ID,
+        null,
+        categoryId
+    );
+
+    assertThat(transaction.getCategoryId())
+        .isEqualTo(categoryId);
+  }
+
+  @Test
+  void shouldCreateTransactionWithoutCategory() {
+    Transaction transaction = Transaction.create(
+        Money.of("100.00"),
+        TransactionType.EXPENSE,
+        "Supermarket",
+        TIMESTAMP,
+        TransactionSource.MANUAL,
+        ACCOUNT_ID,
+        null,
+        null
+    );
+
+    assertThat(transaction.getCategoryId()).isNull();
+  }
+
+  @Test
+  void shouldRejectCategoryOnTransfer() {
+    UUID categoryId = UUID.randomUUID();
+
+    assertThatThrownBy(() ->
+        Transaction.create(
+            Money.of("100.00"),
+            TransactionType.TRANSFER,
+            null,
+            TIMESTAMP,
+            TransactionSource.MANUAL,
+            ACCOUNT_ID,
+            DESTINATION_ACCOUNT_ID,
+            categoryId
+        )
+    )
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessage(
+            "Transfer transactions cannot have a category"
+        );
+  }
+
+  @Test
+  void shouldChangeCategory() {
+    Transaction transaction = Transaction.create(
+        Money.of("100.00"),
+        TransactionType.EXPENSE,
+        "Supermarket",
+        TIMESTAMP,
+        TransactionSource.MANUAL,
+        ACCOUNT_ID,
+        null,
+        null
+    );
+
+    UUID categoryId = UUID.randomUUID();
+
+    transaction.changeCategory(categoryId);
+
+    assertThat(transaction.getCategoryId())
+        .isEqualTo(categoryId);
+  }
+
+  @Test
+  void shouldRemoveCategory() {
+    UUID categoryId = UUID.randomUUID();
+
+    Transaction transaction = Transaction.create(
+        Money.of("100.00"),
+        TransactionType.EXPENSE,
+        "Supermarket",
+        TIMESTAMP,
+        TransactionSource.MANUAL,
+        ACCOUNT_ID,
+        null,
+        categoryId
+    );
+
+    transaction.changeCategory(null);
+
+    assertThat(transaction.getCategoryId())
+        .isNull();
+  }
+
+  @Test
+  void shouldRejectCategoryChangeOnTransfer() {
+    Transaction transaction = Transaction.create(
+        Money.of("100.00"),
+        TransactionType.TRANSFER,
+        null,
+        TIMESTAMP,
+        TransactionSource.MANUAL,
+        ACCOUNT_ID,
+        DESTINATION_ACCOUNT_ID,
+        null
+    );
+
+    UUID categoryId = UUID.randomUUID();
+
+    assertThatThrownBy(() ->
+        transaction.changeCategory(categoryId)
+    )
+        .isInstanceOf(IllegalStateException.class)
+        .hasMessage(
+            "Transfer transactions cannot have a category"
         );
   }
 }

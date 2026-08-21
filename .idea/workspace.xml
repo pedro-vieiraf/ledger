@@ -5,6 +5,7 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="875829be-af0b-46db-895f-b35d8c501064" name="Changes" comment="">
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/main/java/com/pedro/ledger/domain/transaction/Transaction.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/pedro/ledger/domain/transaction/Transaction.java" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/test/java/com/pedro/ledger/domain/transaction/TransactionTest.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/test/java/com/pedro/ledger/domain/transaction/TransactionTest.java" afterDir="false" />
     </list>
@@ -75,7 +76,10 @@
     "ASKED_SHARE_PROJECT_CONFIGURATION_FILES": "true",
     "JUnit.AccountTest and 2 more.executor": "Run",
     "JUnit.AccountTest.executor": "Run",
+    "JUnit.CategoryTest.executor": "Run",
     "JUnit.MoneyTest.executor": "Run",
+    "JUnit.TransactionProcessorTest.executor": "Run",
+    "JUnit.TransactionProcessorTest.shouldNotProcessExpenseOnInactiveAccount.executor": "Run",
     "JUnit.TransactionTest.executor": "Run",
     "JUnit.TransactionTest.shouldRejectTransferBetweenSameAccount.executor": "Run",
     "ModuleVcsDetector.initialDetectionPerformed": "true",
@@ -94,29 +98,29 @@
     "settings.editor.selected.configurable": "reference.settings.project.maven.runner"
   }
 }]]></component>
-  <component name="RunManager" selected="JUnit.TransactionProcessorTest.shouldNotProcessExpenseOnInactiveAccount">
-    <configuration name="AccountTest and 2 more" type="JUnit" factoryName="JUnit" temporary="true" nameIsGenerated="true">
+  <component name="RunManager" selected="JUnit.CategoryTest and 2 more">
+    <configuration name="CategoryTest and 2 more" type="JUnit" factoryName="JUnit" temporary="true" nameIsGenerated="true">
       <module name="ledger" />
       <option name="TEST_OBJECT" value="pattern" />
       <patterns>
-        <pattern testClass="com.pedro.ledger.domain.account.AccountTest" />
-        <pattern testClass="com.pedro.ledger.domain.money.*" />
-        <pattern testClass="com.pedro.ledger.domain.money.MoneyTest" />
+        <pattern testClass="com.pedro.ledger.domain.category.CategoryTest" />
+        <pattern testClass="com.pedro.ledger.domain.transaction.TransactionProcessorTest" />
+        <pattern testClass="com.pedro.ledger.domain.transaction.TransactionTest" />
       </patterns>
       <method v="2">
         <option name="Make" enabled="true" />
       </method>
     </configuration>
-    <configuration name="TransactionProcessorTest" type="JUnit" factoryName="JUnit" temporary="true" nameIsGenerated="true">
+    <configuration name="CategoryTest" type="JUnit" factoryName="JUnit" temporary="true" nameIsGenerated="true">
       <module name="ledger" />
       <extension name="coverage">
         <pattern>
-          <option name="PATTERN" value="com.pedro.ledger.domain.transaction.*" />
+          <option name="PATTERN" value="com.pedro.ledger.domain.category.*" />
           <option name="ENABLED" value="true" />
         </pattern>
       </extension>
-      <option name="PACKAGE_NAME" value="com.pedro.ledger.domain.transaction" />
-      <option name="MAIN_CLASS_NAME" value="com.pedro.ledger.domain.transaction.TransactionProcessorTest" />
+      <option name="PACKAGE_NAME" value="com.pedro.ledger.domain.category" />
+      <option name="MAIN_CLASS_NAME" value="com.pedro.ledger.domain.category.CategoryTest" />
       <option name="TEST_OBJECT" value="class" />
       <method v="2">
         <option name="Make" enabled="true" />
@@ -153,29 +157,21 @@
         <option name="Make" enabled="true" />
       </method>
     </configuration>
-    <configuration name="TransactionTest.shouldRejectTransferBetweenSameAccount" type="JUnit" factoryName="JUnit" temporary="true" nameIsGenerated="true">
+    <configuration name="transaction in ledger" type="JUnit" factoryName="JUnit" temporary="true" nameIsGenerated="true">
       <module name="ledger" />
-      <extension name="coverage">
-        <pattern>
-          <option name="PATTERN" value="com.pedro.ledger.domain.transaction.*" />
-          <option name="ENABLED" value="true" />
-        </pattern>
-      </extension>
-      <option name="PACKAGE_NAME" value="com.pedro.ledger.domain.transaction" />
-      <option name="MAIN_CLASS_NAME" value="com.pedro.ledger.domain.transaction.TransactionTest" />
-      <option name="METHOD_NAME" value="shouldRejectTransferBetweenSameAccount" />
-      <option name="TEST_OBJECT" value="method" />
+      <option name="TEST_OBJECT" value="directory" />
+      <dir value="$PROJECT_DIR$/src/test/java/com/pedro/ledger/domain/transaction" />
       <method v="2">
         <option name="Make" enabled="true" />
       </method>
     </configuration>
     <recent_temporary>
       <list>
-        <item itemvalue="JUnit.TransactionProcessorTest.shouldNotProcessExpenseOnInactiveAccount" />
-        <item itemvalue="JUnit.TransactionProcessorTest" />
-        <item itemvalue="JUnit.TransactionTest.shouldRejectTransferBetweenSameAccount" />
+        <item itemvalue="JUnit.CategoryTest and 2 more" />
+        <item itemvalue="JUnit.transaction in ledger" />
         <item itemvalue="JUnit.TransactionTest" />
-        <item itemvalue="JUnit.AccountTest and 2 more" />
+        <item itemvalue="JUnit.CategoryTest" />
+        <item itemvalue="JUnit.TransactionProcessorTest.shouldNotProcessExpenseOnInactiveAccount" />
       </list>
     </recent_temporary>
   </component>

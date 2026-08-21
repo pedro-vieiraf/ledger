@@ -13,9 +13,9 @@ public class Transaction {
   private String description;
   private final Instant timestamp;
   private final TransactionSource source;
-
   private final UUID accountId;
   private final UUID destinationAccountId;
+  private UUID categoryId;
 
   private Transaction(
       UUID id,
@@ -25,7 +25,8 @@ public class Transaction {
       Instant timestamp,
       TransactionSource source,
       UUID accountId,
-      UUID destinationAccountId
+      UUID destinationAccountId,
+      UUID categoryId
   ) {
     this.id = id;
     this.amount = amount;
@@ -35,6 +36,7 @@ public class Transaction {
     this.source = source;
     this.accountId = accountId;
     this.destinationAccountId = destinationAccountId;
+    this.categoryId = categoryId;
   }
 
   public static Transaction create(
@@ -44,8 +46,9 @@ public class Transaction {
       Instant timestamp,
       TransactionSource source,
       UUID accountId,
-      UUID destinationAccountId
-  ) {
+      UUID destinationAccountId,
+      UUID categoryId
+      ) {
     validateAmount(amount);
     validateType(type);
     normalizeDescription(description);
@@ -54,6 +57,7 @@ public class Transaction {
     validateAccountId(accountId);
     validateDestinationAccount(type, destinationAccountId);
     validateDifferentAccounts(type, accountId, destinationAccountId);
+    validateCategory(type, categoryId);
 
     return new Transaction(
         UUID.randomUUID(),
@@ -63,8 +67,9 @@ public class Transaction {
         timestamp,
         source,
         accountId,
-        destinationAccountId
-    );
+        destinationAccountId,
+        categoryId
+        );
   }
 
   public void changeAmount(Money newAmount) {
@@ -97,6 +102,10 @@ public class Transaction {
 
   public String getDescription() {
     return description;
+  }
+
+  public UUID getCategoryId() {
+    return categoryId;
   }
 
   public Instant getTimestamp() {
@@ -143,6 +152,27 @@ public class Transaction {
     }
 
     return description.trim();
+  }
+
+  private static void validateCategory(
+      TransactionType type,
+      UUID categoryId
+  ) {
+    if (type == TransactionType.TRANSFER && categoryId != null) {
+      throw new IllegalArgumentException(
+          "Transfer transactions cannot have a category"
+      );
+    }
+  }
+
+  public void changeCategory(UUID newCategoryId) {
+    if (type == TransactionType.TRANSFER && newCategoryId != null) {
+      throw new IllegalStateException(
+          "Transfer transactions cannot have a category"
+      );
+    }
+
+    this.categoryId = newCategoryId;
   }
 
   private static void validateTimestamp(Instant timestamp) {
