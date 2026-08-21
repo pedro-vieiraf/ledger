@@ -94,6 +94,10 @@ public class Account {
     return balance;
   }
 
+  public boolean isActive() {
+    return status == AccountStatus.ACTIVE;
+  }
+
   private void ensureActive() {
     if (status == AccountStatus.INACTIVE) {
       throw new IllegalStateException(

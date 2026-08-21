@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<testsuite xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://maven.apache.org/surefire/maven-surefire-plugin/xsd/surefire-test-report.xsd" version="3.0.2" name="com.pedro.ledger.domain.money.MoneyTest" time="0.035" tests="10" errors="0" skipped="0" failures="0" flakes="0">
+<testsuite xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://maven.apache.org/surefire/maven-surefire-plugin/xsd/surefire-test-report.xsd" version="3.0.2" name="com.pedro.ledger.domain.transaction.TransactionProcessorTest" time="0.032" tests="17" errors="0" skipped="0" failures="0" flakes="0">
   <properties>
     <property name="java.specification.version" value="21"/>
     <property name="sun.cpu.isalist" value="amd64"/>
@@ -58,14 +58,21 @@
     <property name="sun.io.unicode.encoding" value="UnicodeLittle"/>
     <property name="java.class.version" value="65.0"/>
   </properties>
-  <testcase name="shouldSubtractTwoMoneyValues" classname="com.pedro.ledger.domain.money.MoneyTest" time="0.003"/>
-  <testcase name="shouldNormalizeAmountToTwoDecimalPlaces" classname="com.pedro.ledger.domain.money.MoneyTest" time="0.0"/>
-  <testcase name="shouldAllowZero" classname="com.pedro.ledger.domain.money.MoneyTest" time="0.001"/>
-  <testcase name="shouldAddTwoMoneyValues" classname="com.pedro.ledger.domain.money.MoneyTest" time="0.001"/>
-  <testcase name="shouldRejectMoreThanTwoDecimalPlaces" classname="com.pedro.ledger.domain.money.MoneyTest" time="0.001"/>
-  <testcase name="shouldMultiplyMoneyByAnInteger" classname="com.pedro.ledger.domain.money.MoneyTest" time="0.001"/>
-  <testcase name="shouldCreateMoney" classname="com.pedro.ledger.domain.money.MoneyTest" time="0.001"/>
-  <testcase name="shouldRejectNullAmount" classname="com.pedro.ledger.domain.money.MoneyTest" time="0.007"/>
-  <testcase name="shouldCompareMoneyValues" classname="com.pedro.ledger.domain.money.MoneyTest" time="0.001"/>
-  <testcase name="shouldAllowNegativeValues" classname="com.pedro.ledger.domain.money.MoneyTest" time="0.001"/>
+  <testcase name="shouldNotTransferWhenSourceAccountDoesNotMatchTransaction" classname="com.pedro.ledger.domain.transaction.TransactionProcessorTest" time="0.003"/>
+  <testcase name="shouldNotTransferWhenDestinationAccountDoesNotMatchTransaction" classname="com.pedro.ledger.domain.transaction.TransactionProcessorTest" time="0.001"/>
+  <testcase name="shouldNotChangeAmountWhenAccountDoesNotMatchTransaction" classname="com.pedro.ledger.domain.transaction.TransactionProcessorTest" time="0.0"/>
+  <testcase name="shouldNotChangeAmountWhenNewAmountIsNull" classname="com.pedro.ledger.domain.transaction.TransactionProcessorTest" time="0.001"/>
+  <testcase name="shouldIncreaseExpenseAndAdjustAccount" classname="com.pedro.ledger.domain.transaction.TransactionProcessorTest" time="0.0"/>
+  <testcase name="shouldNotProcessExpenseOnInactiveAccount" classname="com.pedro.ledger.domain.transaction.TransactionProcessorTest" time="0.001"/>
+  <testcase name="shouldNotChangeAmountToZero" classname="com.pedro.ledger.domain.transaction.TransactionProcessorTest" time="0.001"/>
+  <testcase name="shouldNotChangeAmountOfOpenFinanceTransaction" classname="com.pedro.ledger.domain.transaction.TransactionProcessorTest" time="0.001"/>
+  <testcase name="shouldDecreaseIncomeAndAdjustAccount" classname="com.pedro.ledger.domain.transaction.TransactionProcessorTest" time="0.001"/>
+  <testcase name="shouldNotTransferWhenDestinationAccountIsInactive" classname="com.pedro.ledger.domain.transaction.TransactionProcessorTest" time="0.002"/>
+  <testcase name="shouldTransferMoneyBetweenAccounts" classname="com.pedro.ledger.domain.transaction.TransactionProcessorTest" time="0.003"/>
+  <testcase name="shouldDecreaseExpenseAndAdjustAccount" classname="com.pedro.ledger.domain.transaction.TransactionProcessorTest" time="0.001"/>
+  <testcase name="shouldCreditAccountForIncome" classname="com.pedro.ledger.domain.transaction.TransactionProcessorTest" time="0.001"/>
+  <testcase name="shouldIncreaseIncomeAndAdjustAccount" classname="com.pedro.ledger.domain.transaction.TransactionProcessorTest" time="0.002"/>
+  <testcase name="shouldNotTransferWhenDestinationAccountIsNull" classname="com.pedro.ledger.domain.transaction.TransactionProcessorTest" time="0.001"/>
+  <testcase name="shouldDebitAccountForExpense" classname="com.pedro.ledger.domain.transaction.TransactionProcessorTest" time="0.001"/>
+  <testcase name="shouldNotChangeTransferAmount" classname="com.pedro.ledger.domain.transaction.TransactionProcessorTest" time="0.001"/>
 </testsuite>
