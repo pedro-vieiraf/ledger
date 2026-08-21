@@ -53,6 +53,7 @@ public class Transaction {
     validateSource(source);
     validateAccountId(accountId);
     validateDestinationAccount(type, destinationAccountId);
+    validateDifferentAccounts(type, accountId, destinationAccountId);
 
     return new Transaction(
         UUID.randomUUID(),
@@ -181,6 +182,20 @@ public class Transaction {
     if (type != TransactionType.TRANSFER && destinationAccountId != null) {
       throw new IllegalArgumentException(
           "Only transfers can have a destination account"
+      );
+    }
+  }
+
+  private static void validateDifferentAccounts(
+      TransactionType type,
+      UUID accountId,
+      UUID destinationAccountId
+  ) {
+    if (type == TransactionType.TRANSFER
+        && accountId.equals(destinationAccountId)) {
+
+      throw new IllegalArgumentException(
+          "Transfer source and destination accounts must be different"
       );
     }
   }

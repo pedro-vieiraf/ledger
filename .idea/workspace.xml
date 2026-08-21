@@ -5,10 +5,8 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="875829be-af0b-46db-895f-b35d8c501064" name="Changes" comment="">
-      <change beforePath="$PROJECT_DIR$/.gitignore" beforeDir="false" afterPath="$PROJECT_DIR$/.gitignore" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/com/pedro/ledger/domain/account/Account.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/pedro/ledger/domain/account/Account.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/com/pedro/ledger/domain/account/AccountType.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/pedro/ledger/domain/account/AccountType.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/pedro/ledger/domain/transaction/Transaction.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/pedro/ledger/domain/transaction/Transaction.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/test/java/com/pedro/ledger/domain/transaction/TransactionTest.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/test/java/com/pedro/ledger/domain/transaction/TransactionTest.java" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -79,6 +77,7 @@
     "JUnit.AccountTest.executor": "Run",
     "JUnit.MoneyTest.executor": "Run",
     "JUnit.TransactionTest.executor": "Run",
+    "JUnit.TransactionTest.shouldRejectTransferBetweenSameAccount.executor": "Run",
     "ModuleVcsDetector.initialDetectionPerformed": "true",
     "RunOnceActivity.ShowReadmeOnStart": "true",
     "RunOnceActivity.git.unshallow": "true",
@@ -95,7 +94,7 @@
     "settings.editor.selected.configurable": "reference.settings.project.maven.runner"
   }
 }]]></component>
-  <component name="RunManager" selected="JUnit.TransactionTest">
+  <component name="RunManager" selected="JUnit.TransactionProcessorTest.shouldNotProcessExpenseOnInactiveAccount">
     <configuration name="AccountTest and 2 more" type="JUnit" factoryName="JUnit" temporary="true" nameIsGenerated="true">
       <module name="ledger" />
       <option name="TEST_OBJECT" value="pattern" />
@@ -108,32 +107,33 @@
         <option name="Make" enabled="true" />
       </method>
     </configuration>
-    <configuration name="AccountTest" type="JUnit" factoryName="JUnit" temporary="true" nameIsGenerated="true">
+    <configuration name="TransactionProcessorTest" type="JUnit" factoryName="JUnit" temporary="true" nameIsGenerated="true">
       <module name="ledger" />
       <extension name="coverage">
         <pattern>
-          <option name="PATTERN" value="com.pedro.ledger.domain.account.*" />
+          <option name="PATTERN" value="com.pedro.ledger.domain.transaction.*" />
           <option name="ENABLED" value="true" />
         </pattern>
       </extension>
-      <option name="PACKAGE_NAME" value="com.pedro.ledger.domain.account" />
-      <option name="MAIN_CLASS_NAME" value="com.pedro.ledger.domain.account.AccountTest" />
+      <option name="PACKAGE_NAME" value="com.pedro.ledger.domain.transaction" />
+      <option name="MAIN_CLASS_NAME" value="com.pedro.ledger.domain.transaction.TransactionProcessorTest" />
       <option name="TEST_OBJECT" value="class" />
       <method v="2">
         <option name="Make" enabled="true" />
       </method>
     </configuration>
-    <configuration name="MoneyTest" type="JUnit" factoryName="JUnit" temporary="true" nameIsGenerated="true">
+    <configuration name="TransactionProcessorTest.shouldNotProcessExpenseOnInactiveAccount" type="JUnit" factoryName="JUnit" temporary="true" nameIsGenerated="true">
       <module name="ledger" />
       <extension name="coverage">
         <pattern>
-          <option name="PATTERN" value="com.pedro.ledger.domain.money.*" />
+          <option name="PATTERN" value="com.pedro.ledger.domain.transaction.*" />
           <option name="ENABLED" value="true" />
         </pattern>
       </extension>
-      <option name="PACKAGE_NAME" value="com.pedro.ledger.domain.money" />
-      <option name="MAIN_CLASS_NAME" value="com.pedro.ledger.domain.money.MoneyTest" />
-      <option name="TEST_OBJECT" value="class" />
+      <option name="PACKAGE_NAME" value="com.pedro.ledger.domain.transaction" />
+      <option name="MAIN_CLASS_NAME" value="com.pedro.ledger.domain.transaction.TransactionProcessorTest" />
+      <option name="METHOD_NAME" value="shouldNotProcessExpenseOnInactiveAccount" />
+      <option name="TEST_OBJECT" value="method" />
       <method v="2">
         <option name="Make" enabled="true" />
       </method>
@@ -153,12 +153,29 @@
         <option name="Make" enabled="true" />
       </method>
     </configuration>
+    <configuration name="TransactionTest.shouldRejectTransferBetweenSameAccount" type="JUnit" factoryName="JUnit" temporary="true" nameIsGenerated="true">
+      <module name="ledger" />
+      <extension name="coverage">
+        <pattern>
+          <option name="PATTERN" value="com.pedro.ledger.domain.transaction.*" />
+          <option name="ENABLED" value="true" />
+        </pattern>
+      </extension>
+      <option name="PACKAGE_NAME" value="com.pedro.ledger.domain.transaction" />
+      <option name="MAIN_CLASS_NAME" value="com.pedro.ledger.domain.transaction.TransactionTest" />
+      <option name="METHOD_NAME" value="shouldRejectTransferBetweenSameAccount" />
+      <option name="TEST_OBJECT" value="method" />
+      <method v="2">
+        <option name="Make" enabled="true" />
+      </method>
+    </configuration>
     <recent_temporary>
       <list>
+        <item itemvalue="JUnit.TransactionProcessorTest.shouldNotProcessExpenseOnInactiveAccount" />
+        <item itemvalue="JUnit.TransactionProcessorTest" />
+        <item itemvalue="JUnit.TransactionTest.shouldRejectTransferBetweenSameAccount" />
         <item itemvalue="JUnit.TransactionTest" />
         <item itemvalue="JUnit.AccountTest and 2 more" />
-        <item itemvalue="JUnit.AccountTest" />
-        <item itemvalue="JUnit.MoneyTest" />
       </list>
     </recent_temporary>
   </component>

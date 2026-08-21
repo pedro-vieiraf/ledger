@@ -273,4 +273,25 @@ class TransactionTest {
 
     assertThat(transaction.getDescription()).isEqualTo("Supermarket");
   }
+
+  @Test
+  void shouldRejectTransferBetweenSameAccount() {
+    UUID accountId = UUID.randomUUID();
+
+    assertThatThrownBy(() ->
+        Transaction.create(
+            Money.of("100.00"),
+            TransactionType.TRANSFER,
+            null,
+            TIMESTAMP,
+            TransactionSource.MANUAL,
+            accountId,
+            accountId
+        )
+    )
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessage(
+            "Transfer source and destination accounts must be different"
+        );
+  }
 }
