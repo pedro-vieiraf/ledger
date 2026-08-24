@@ -39,7 +39,7 @@ public class Account {
   ) {
     validateName(name);
     validateType(type);
-    validateOpeningBalance(openingBalance);
+    validateBalance(openingBalance);
 
     return new Account(
         UUID.randomUUID(),
@@ -47,6 +47,28 @@ public class Account {
         type,
         AccountStatus.ACTIVE,
         openingBalance
+    );
+  }
+
+  public static Account restore(
+      UUID id,
+      String name,
+      AccountType type,
+      AccountStatus status,
+      Money balance
+  ) {
+    validateId(id);
+    validateName(name);
+    validateType(type);
+    validateStatus(status);
+    validateBalance(balance);
+
+    return new Account(
+        id,
+        name.trim(),
+        type,
+        status,
+        balance
     );
   }
 
@@ -106,6 +128,22 @@ public class Account {
     }
   }
 
+  private static void validateId(UUID id) {
+    if (id == null) {
+      throw new IllegalArgumentException(
+          "Account ID cannot be null"
+      );
+    }
+  }
+
+  private static void validateStatus(AccountStatus status) {
+    if (status == null) {
+      throw new IllegalArgumentException(
+          "Account status cannot be null"
+      );
+    }
+  }
+
   private static void validateName(String name) {
     if (name == null || name.isBlank()) {
       throw new IllegalArgumentException(
@@ -122,10 +160,10 @@ public class Account {
     }
   }
 
-  private static void validateOpeningBalance(Money openingBalance) {
-    if (openingBalance == null) {
+  private static void validateBalance(Money balance) {
+    if (balance == null) {
       throw new IllegalArgumentException(
-          "Opening balance cannot be null"
+          "Account balance cannot be null"
       );
     }
   }

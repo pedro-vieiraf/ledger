@@ -5,10 +5,11 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="875829be-af0b-46db-895f-b35d8c501064" name="Changes" comment="">
+      <change beforePath="$PROJECT_DIR$/.idea/encodings.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/encodings.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/pom.xml" beforeDir="false" afterPath="$PROJECT_DIR$/pom.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/main/java/com/pedro/ledger/domain/account/Account.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/pedro/ledger/domain/account/Account.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/com/pedro/ledger/domain/transaction/TransactionProcessor.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/pedro/ledger/domain/transaction/TransactionProcessor.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/test/java/com/pedro/ledger/domain/transaction/TransactionProcessorTest.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/test/java/com/pedro/ledger/domain/transaction/TransactionProcessorTest.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/pedro/ledger/domain/account/AccountType.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/pedro/ledger/domain/account/AccountType.java" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -75,6 +76,8 @@
   <component name="PropertiesComponent"><![CDATA[{
   "keyToString": {
     "ASKED_SHARE_PROJECT_CONFIGURATION_FILES": "true",
+    "JUnit.AccountMapperTest.executor": "Run",
+    "JUnit.AccountPersistenceRepositoryTest.executor": "Run",
     "JUnit.AccountTest and 2 more.executor": "Run",
     "JUnit.AccountTest.executor": "Run",
     "JUnit.CategoryTest and 2 more.executor": "Run",
@@ -92,7 +95,7 @@
     "RunOnceActivity.git.unshallow": "true",
     "RunOnceActivity.typescript.service.memoryLimit.init": "true",
     "codeWithMe.voiceChat.enabledByDefault": "false",
-    "git-widget-placeholder": "feature/transaction-editing",
+    "git-widget-placeholder": "feature/persistence",
     "kotlin-language-version-configured": "true",
     "node.js.detected.package.jshint": "true",
     "node.js.selected.package.jshint": "",
@@ -103,15 +106,38 @@
     "settings.editor.selected.configurable": "reference.settings.project.maven.runner"
   }
 }]]></component>
-  <component name="RunManager" selected="JUnit.TransactionProcessorTest">
-    <configuration name="CategoryTest and 2 more" type="JUnit" factoryName="JUnit" temporary="true" nameIsGenerated="true">
+  <component name="RecentsManager">
+    <key name="MoveClassesOrPackagesDialog.RECENTS_KEY">
+      <recent name="com.pedro.ledger.infrastructure.persistence.account" />
+    </key>
+  </component>
+  <component name="RunManager" selected="JUnit.AccountPersistenceRepositoryTest">
+    <configuration name="AccountMapperTest" type="JUnit" factoryName="JUnit" temporary="true" nameIsGenerated="true">
       <module name="ledger" />
-      <option name="TEST_OBJECT" value="pattern" />
-      <patterns>
-        <pattern testClass="com.pedro.ledger.domain.category.CategoryTest" />
-        <pattern testClass="com.pedro.ledger.domain.transaction.TransactionProcessorTest" />
-        <pattern testClass="com.pedro.ledger.domain.transaction.TransactionTest" />
-      </patterns>
+      <extension name="coverage">
+        <pattern>
+          <option name="PATTERN" value="com.pedro.ledger.infrastructure.persistence.account.*" />
+          <option name="ENABLED" value="true" />
+        </pattern>
+      </extension>
+      <option name="PACKAGE_NAME" value="com.pedro.ledger.infrastructure.persistence.account" />
+      <option name="MAIN_CLASS_NAME" value="com.pedro.ledger.infrastructure.persistence.account.AccountMapperTest" />
+      <option name="TEST_OBJECT" value="class" />
+      <method v="2">
+        <option name="Make" enabled="true" />
+      </method>
+    </configuration>
+    <configuration name="AccountPersistenceRepositoryTest" type="JUnit" factoryName="JUnit" temporary="true" nameIsGenerated="true">
+      <module name="ledger" />
+      <extension name="coverage">
+        <pattern>
+          <option name="PATTERN" value="com.pedro.ledger.infrastructure.persistence.account.*" />
+          <option name="ENABLED" value="true" />
+        </pattern>
+      </extension>
+      <option name="PACKAGE_NAME" value="com.pedro.ledger.infrastructure.persistence.account" />
+      <option name="MAIN_CLASS_NAME" value="com.pedro.ledger.infrastructure.persistence.account.AccountPersistenceRepositoryTest" />
+      <option name="TEST_OBJECT" value="class" />
       <method v="2">
         <option name="Make" enabled="true" />
       </method>
@@ -126,21 +152,6 @@
       </extension>
       <option name="PACKAGE_NAME" value="com.pedro.ledger.domain.recurrence" />
       <option name="MAIN_CLASS_NAME" value="com.pedro.ledger.domain.recurrence.RecurrenceProcessorTest" />
-      <option name="TEST_OBJECT" value="class" />
-      <method v="2">
-        <option name="Make" enabled="true" />
-      </method>
-    </configuration>
-    <configuration name="RecurrenceTest" type="JUnit" factoryName="JUnit" temporary="true" nameIsGenerated="true">
-      <module name="ledger" />
-      <extension name="coverage">
-        <pattern>
-          <option name="PATTERN" value="com.pedro.ledger.domain.recurrence.*" />
-          <option name="ENABLED" value="true" />
-        </pattern>
-      </extension>
-      <option name="PACKAGE_NAME" value="com.pedro.ledger.domain.recurrence" />
-      <option name="MAIN_CLASS_NAME" value="com.pedro.ledger.domain.recurrence.RecurrenceTest" />
       <option name="TEST_OBJECT" value="class" />
       <method v="2">
         <option name="Make" enabled="true" />
@@ -178,11 +189,11 @@
     </configuration>
     <recent_temporary>
       <list>
+        <item itemvalue="JUnit.AccountPersistenceRepositoryTest" />
+        <item itemvalue="JUnit.AccountMapperTest" />
         <item itemvalue="JUnit.TransactionProcessorTest" />
         <item itemvalue="JUnit.TransactionTest" />
         <item itemvalue="JUnit.RecurrenceProcessorTest" />
-        <item itemvalue="JUnit.RecurrenceTest" />
-        <item itemvalue="JUnit.CategoryTest and 2 more" />
       </list>
     </recent_temporary>
   </component>
