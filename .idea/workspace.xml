@@ -5,10 +5,7 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="875829be-af0b-46db-895f-b35d8c501064" name="Changes" comment="">
-      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/com/pedro/ledger/domain/account/Account.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/pedro/ledger/domain/account/Account.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/com/pedro/ledger/domain/transaction/TransactionProcessor.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/pedro/ledger/domain/transaction/TransactionProcessor.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/test/java/com/pedro/ledger/domain/transaction/TransactionProcessorTest.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/test/java/com/pedro/ledger/domain/transaction/TransactionProcessorTest.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/pedro/ledger/domain/money/Money.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/pedro/ledger/domain/money/Money.java" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -92,7 +89,7 @@
     "RunOnceActivity.git.unshallow": "true",
     "RunOnceActivity.typescript.service.memoryLimit.init": "true",
     "codeWithMe.voiceChat.enabledByDefault": "false",
-    "git-widget-placeholder": "feature/transaction-editing",
+    "git-widget-placeholder": "refactor/add-currency-to-money",
     "kotlin-language-version-configured": "true",
     "node.js.detected.package.jshint": "true",
     "node.js.selected.package.jshint": "",
