@@ -1,6 +1,7 @@
 package com.pedro.ledger.domain.money;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.util.Currency;
 
 public record Money(BigDecimal amount, Currency currency) {
