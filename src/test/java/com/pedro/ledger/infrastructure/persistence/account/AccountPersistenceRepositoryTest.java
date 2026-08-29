@@ -102,4 +102,40 @@ class AccountPersistenceRepositoryTest {
     assertThat(foundAccount.get().getBalance())
         .isEqualTo(Money.of("2500.00"));
   }
+
+  @Test
+  void shouldUpdateExistingAccount() {
+    Account account = Account.open(
+        "Checking Account",
+        AccountType.CHECKING,
+        Money.of("1000.00")
+    );
+
+    Account savedAccount =
+        accountRepository.save(account);
+
+    savedAccount.credit(Money.of("500.00"));
+    savedAccount.deactivate();
+
+    Account updatedAccount =
+        accountRepository.save(savedAccount);
+
+    Optional<Account> foundAccount =
+        accountRepository.findById(savedAccount.getId());
+
+    assertThat(updatedAccount.getId())
+        .isEqualTo(savedAccount.getId());
+
+    assertThat(foundAccount)
+        .isPresent();
+
+    assertThat(foundAccount.get().getId())
+        .isEqualTo(savedAccount.getId());
+
+    assertThat(foundAccount.get().getBalance())
+        .isEqualTo(Money.of("1500.00"));
+
+    assertThat(foundAccount.get().getStatus())
+        .isEqualTo(AccountStatus.INACTIVE);
+  }
 }
