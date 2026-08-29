@@ -1,17 +1,21 @@
 package com.pedro.ledger.application.account;
 
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.pedro.ledger.domain.account.Account;
 import com.pedro.ledger.domain.account.AccountRepository;
+import com.pedro.ledger.domain.account.AccountStatus;
 import com.pedro.ledger.domain.account.AccountType;
 import com.pedro.ledger.domain.money.Money;
 import java.math.BigDecimal;
+import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -27,70 +31,173 @@ class AccountApplicationServiceTest {
   @InjectMocks
   private AccountApplicationService accountApplicationService;
 
-  @Test
-  void shouldCreateAndSaveAccount() {
-    Account account = Account.open(
-        "Checking Account",
-        AccountType.CHECKING,
-        Money.of("1000.00")
-    );
+  @Nested
+  class CreateAccount {
 
-    when(accountRepository.save(any(Account.class)))
-        .thenReturn(account);
+    @Test
+    void shouldCreateAndSaveAccount() {
+      Account account = Account.open(
+          "Checking Account",
+          AccountType.CHECKING,
+          Money.of("1000.00")
+      );
 
-    Account result = accountApplicationService.create(
-        "Checking Account",
-        AccountType.CHECKING,
-        new BigDecimal("1000.00")
-    );
+      when(accountRepository.save(any(Account.class)))
+          .thenReturn(account);
 
-    assertThat(result)
-        .isEqualTo(account);
+      Account result = accountApplicationService.create(
+          "Checking Account",
+          AccountType.CHECKING,
+          new BigDecimal("1000.00")
+      );
 
-    verify(accountRepository)
-        .save(any(Account.class));
+      assertThat(result)
+          .isEqualTo(account);
+
+      verify(accountRepository)
+          .save(any(Account.class));
+    }
+
+    @Test
+    void shouldCreateAccountWithCorrectData() {
+      when(accountRepository.save(any(Account.class)))
+          .thenAnswer(invocation -> invocation.getArgument(0));
+
+      Account result = accountApplicationService.create(
+          "Savings Account",
+          AccountType.SAVINGS,
+          new BigDecimal("2500.00")
+      );
+
+      assertThat(result.getId())
+          .isNotNull();
+
+      assertThat(result.getName())
+          .isEqualTo("Savings Account");
+
+      assertThat(result.getType())
+          .isEqualTo(AccountType.SAVINGS);
+
+      assertThat(result.getBalance())
+          .isEqualTo(Money.of("2500.00"));
+
+      assertThat(result.isActive())
+          .isTrue();
+
+      verify(accountRepository)
+          .save(any(Account.class));
+    }
+
+    @Test
+    void shouldPropagateDomainValidationError() {
+      assertThatThrownBy(() ->
+          accountApplicationService.create(
+              "   ",
+              AccountType.CHECKING,
+              new BigDecimal("1000.00")
+          )
+      )
+          .isInstanceOf(IllegalArgumentException.class)
+          .hasMessage("Account name cannot be null or blank");
+    }
   }
 
-  @Test
-  void shouldCreateAccountWithCorrectData() {
-    when(accountRepository.save(any(Account.class)))
-        .thenAnswer(invocation -> invocation.getArgument(0));
+  @Nested
+  class FindAccountById {
 
-    Account result = accountApplicationService.create(
-        "Savings Account",
-        AccountType.SAVINGS,
-        new BigDecimal("2500.00")
-    );
+    @Test
+    void shouldFindAccountById() {
+      UUID id = UUID.randomUUID();
 
-    assertThat(result.getId())
-        .isNotNull();
+      Account account = Account.restore(
+          id,
+          "Checking Account",
+          AccountType.CHECKING,
+          AccountStatus.ACTIVE,
+          Money.of("1000.00")
+      );
 
-    assertThat(result.getName())
-        .isEqualTo("Savings Account");
+      when(accountRepository.findById(id))
+          .thenReturn(Optional.of(account));
 
-    assertThat(result.getType())
-        .isEqualTo(AccountType.SAVINGS);
+      Optional<Account> result =
+          accountApplicationService.findById(id);
 
-    assertThat(result.getBalance())
-        .isEqualTo(Money.of("2500.00"));
+      assertThat(result)
+          .isPresent()
+          .contains(account);
 
-    assertThat(result.isActive())
-        .isTrue();
+      verify(accountRepository)
+          .findById(id);
+    }
 
-    verify(accountRepository)
-        .save(any(Account.class));
+    @Test
+    void shouldReturnEmptyWhenAccountDoesNotExist() {
+      UUID id = UUID.randomUUID();
+
+      when(accountRepository.findById(id))
+          .thenReturn(Optional.empty());
+
+      Optional<Account> result =
+          accountApplicationService.findById(id);
+
+      assertThat(result)
+          .isEmpty();
+
+      verify(accountRepository)
+          .findById(id);
+    }
   }
 
-  @Test
-  void shouldPropagateDomainValidationError() {
-    assertThatThrownBy(() ->
-        accountApplicationService.create(
-            "   ",
-            AccountType.CHECKING,
-            new BigDecimal("1000.00")
-        )
-    )
-        .isInstanceOf(IllegalArgumentException.class)
-        .hasMessage("Account name cannot be null or blank");
+  @Nested
+  class FindAllAccounts {
+
+    @Test
+    void shouldFindAllAccounts() {
+      Account checkingAccount = Account.open(
+          "Checking Account",
+          AccountType.CHECKING,
+          Money.of("1000.00")
+      );
+
+      Account savingsAccount = Account.open(
+          "Savings Account",
+          AccountType.SAVINGS,
+          Money.of("2500.00")
+      );
+
+      when(accountRepository.findAll())
+          .thenReturn(List.of(
+              checkingAccount,
+              savingsAccount
+          ));
+
+      List<Account> result =
+          accountApplicationService.findAll();
+
+      assertThat(result)
+          .containsExactly(
+              checkingAccount,
+              savingsAccount
+          );
+
+      verify(accountRepository)
+          .findAll();
+    }
+
+    @Test
+    void shouldReturnEmptyWhenThereAreNoAccounts() {
+      when(accountRepository.findAll())
+          .thenReturn(List.of());
+
+      List<Account> result =
+          accountApplicationService.findAll();
+
+      assertThat(result)
+          .isEmpty();
+
+      verify(accountRepository)
+          .findAll();
+    }
   }
 }

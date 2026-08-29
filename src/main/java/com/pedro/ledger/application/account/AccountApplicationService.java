@@ -5,6 +5,9 @@ import com.pedro.ledger.domain.account.AccountRepository;
 import com.pedro.ledger.domain.account.AccountType;
 import com.pedro.ledger.domain.money.Money;
 import java.math.BigDecimal;
+import java.util.List;
+import java.util.Optional;
+import java.util.UUID;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -32,5 +35,13 @@ public class AccountApplicationService {
     );
 
     return accountRepository.save(account);
+  }
+
+  public Optional<Account> findById(UUID id) {
+    return accountRepository.findById(id);
+  }
+
+  public List<Account> findAll() {
+    return accountRepository.findAll();
   }
 }

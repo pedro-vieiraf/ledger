@@ -2,6 +2,7 @@ package com.pedro.ledger.infrastructure.persistence.account;
 
 import com.pedro.ledger.domain.account.Account;
 import com.pedro.ledger.domain.account.AccountRepository;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 import org.springframework.stereotype.Repository;
@@ -33,5 +34,12 @@ public class AccountPersistenceRepository implements AccountRepository {
   public Optional<Account> findById(UUID id) {
     return jpaRepository.findById(id)
         .map(mapper::toDomain);
+  }
+
+  @Override
+  public List<Account> findAll() {
+    return jpaRepository.findAll()
+        .stream().map(mapper::toDomain)
+        .toList();
   }
 }
