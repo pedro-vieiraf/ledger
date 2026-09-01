@@ -8,6 +8,7 @@ import java.util.UUID;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -59,5 +60,15 @@ public class AccountController {
         .map(AccountResponse::from)
         .map(ResponseEntity::ok)
         .orElseGet(()-> ResponseEntity.notFound().build());
+  }
+
+  @PatchMapping("/{id}")
+  public ResponseEntity<AccountResponse> update(
+      @PathVariable UUID id,
+      @RequestBody UpdateAccountRequest request
+  ) {
+    Account updatedAccount = accountApplicationService.update(id, request.name(), request.type());
+
+    return ResponseEntity.ok(AccountResponse.from(updatedAccount));
   }
 }

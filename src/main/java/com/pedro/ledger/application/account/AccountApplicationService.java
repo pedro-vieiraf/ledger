@@ -44,4 +44,21 @@ public class AccountApplicationService {
   public List<Account> findAll() {
     return accountRepository.findAll();
   }
+
+  public Account update(UUID id, String name, AccountType type) {
+    Account account = accountRepository.findById(id)
+        .orElseThrow(() ->
+            new IllegalArgumentException("Account not found")
+        );
+
+    if (name != null) {
+      account.rename(name);
+    }
+
+    if (type != null) {
+      account.changeType(type);
+    }
+
+    return accountRepository.save(account);
+  }
 }

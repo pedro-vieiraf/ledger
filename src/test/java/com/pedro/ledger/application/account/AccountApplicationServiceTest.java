@@ -3,6 +3,7 @@ package com.pedro.ledger.application.account;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -198,6 +199,192 @@ class AccountApplicationServiceTest {
 
       verify(accountRepository)
           .findAll();
+    }
+  }
+
+  @Nested
+  class UpdateAccount {
+
+    @Test
+    void shouldUpdateNameAndType() {
+      UUID id = UUID.randomUUID();
+
+      Account account = Account.restore(
+          id,
+          "Old Name",
+          AccountType.SAVINGS,
+          AccountStatus.ACTIVE,
+          Money.of("1000.00")
+      );
+
+      when(accountRepository.findById(id))
+          .thenReturn(Optional.of(account));
+
+      when(accountRepository.save(account))
+          .thenReturn(account);
+
+      Account result = accountApplicationService.update(
+          id,
+          "New Name",
+          AccountType.CHECKING
+      );
+
+      assertThat(result.getId())
+          .isEqualTo(id);
+
+      assertThat(result.getName())
+          .isEqualTo("New Name");
+
+      assertThat(result.getType())
+          .isEqualTo(AccountType.CHECKING);
+
+      assertThat(result.getBalance())
+          .isEqualTo(Money.of("1000.00"));
+
+      assertThat(result.getStatus())
+          .isEqualTo(AccountStatus.ACTIVE);
+
+      verify(accountRepository)
+          .findById(id);
+
+      verify(accountRepository)
+          .save(account);
+    }
+
+    @Test
+    void shouldUpdateOnlyName() {
+      UUID id = UUID.randomUUID();
+
+      Account account = Account.restore(
+          id,
+          "Old Name",
+          AccountType.CHECKING,
+          AccountStatus.ACTIVE,
+          Money.of("1000.00")
+      );
+
+      when(accountRepository.findById(id))
+          .thenReturn(Optional.of(account));
+
+      when(accountRepository.save(account))
+          .thenReturn(account);
+
+      Account result = accountApplicationService.update(
+          id,
+          "New Name",
+          null
+      );
+
+      assertThat(result.getName())
+          .isEqualTo("New Name");
+
+      assertThat(result.getType())
+          .isEqualTo(AccountType.CHECKING);
+
+      assertThat(result.getBalance())
+          .isEqualTo(Money.of("1000.00"));
+
+      verify(accountRepository)
+          .findById(id);
+
+      verify(accountRepository)
+          .save(account);
+    }
+
+    @Test
+    void shouldUpdateOnlyType() {
+      UUID id = UUID.randomUUID();
+
+      Account account = Account.restore(
+          id,
+          "Checking Account",
+          AccountType.SAVINGS,
+          AccountStatus.ACTIVE,
+          Money.of("1000.00")
+      );
+
+      when(accountRepository.findById(id))
+          .thenReturn(Optional.of(account));
+
+      when(accountRepository.save(account))
+          .thenReturn(account);
+
+      Account result = accountApplicationService.update(
+          id,
+          null,
+          AccountType.CHECKING
+      );
+
+      assertThat(result.getName())
+          .isEqualTo("Checking Account");
+
+      assertThat(result.getType())
+          .isEqualTo(AccountType.CHECKING);
+
+      assertThat(result.getBalance())
+          .isEqualTo(Money.of("1000.00"));
+
+      verify(accountRepository)
+          .findById(id);
+
+      verify(accountRepository)
+          .save(account);
+    }
+
+    @Test
+    void shouldThrowWhenAccountDoesNotExist() {
+      UUID id = UUID.randomUUID();
+
+      when(accountRepository.findById(id))
+          .thenReturn(Optional.empty());
+
+      assertThatThrownBy(() ->
+          accountApplicationService.update(
+              id,
+              "New Name",
+              AccountType.CHECKING
+          )
+      )
+          .isInstanceOf(IllegalArgumentException.class)
+          .hasMessage("Account not found");
+
+      verify(accountRepository)
+          .findById(id);
+
+      verify(accountRepository, never())
+          .save(any(Account.class));
+    }
+
+    @Test
+    void shouldPropagateDomainValidationErrorWhenNameIsInvalid() {
+      UUID id = UUID.randomUUID();
+
+      Account account = Account.restore(
+          id,
+          "Checking Account",
+          AccountType.CHECKING,
+          AccountStatus.ACTIVE,
+          Money.of("1000.00")
+      );
+
+      when(accountRepository.findById(id))
+          .thenReturn(Optional.of(account));
+
+      assertThatThrownBy(() ->
+          accountApplicationService.update(
+              id,
+              "   ",
+              null
+          )
+      )
+          .isInstanceOf(IllegalArgumentException.class)
+          .hasMessage("Account name cannot be null or blank");
+
+      verify(accountRepository)
+          .findById(id);
+
+      verify(accountRepository, never())
+          .save(any(Account.class));
     }
   }
 }

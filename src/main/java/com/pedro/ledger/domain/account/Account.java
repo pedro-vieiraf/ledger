@@ -12,8 +12,8 @@ import java.util.UUID;
 public class Account {
 
   private final UUID id;
-  private final String name;
-  private final AccountType type;
+  private String name;
+  private AccountType type;
 
   private AccountStatus status;
   private Money balance;
@@ -94,6 +94,20 @@ public class Account {
     }
 
     status = AccountStatus.INACTIVE;
+  }
+
+  public void rename(String newName) {
+    ensureActive();
+    validateName(newName);
+
+    name = newName.trim();
+  }
+
+  public void changeType(AccountType newType) {
+    ensureActive();
+    validateType(newType);
+
+    type = newType;
   }
 
   public UUID getId() {

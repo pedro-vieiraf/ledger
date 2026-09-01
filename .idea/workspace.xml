@@ -7,11 +7,9 @@
     <list default="true" id="875829be-af0b-46db-895f-b35d8c501064" name="Changes" comment="">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/main/java/com/pedro/ledger/application/account/AccountApplicationService.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/pedro/ledger/application/account/AccountApplicationService.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/com/pedro/ledger/domain/account/AccountRepository.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/pedro/ledger/domain/account/AccountRepository.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/com/pedro/ledger/infrastructure/persistence/account/AccountPersistenceRepository.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/pedro/ledger/infrastructure/persistence/account/AccountPersistenceRepository.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/pedro/ledger/domain/account/Account.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/pedro/ledger/domain/account/Account.java" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/main/java/com/pedro/ledger/infrastructure/web/account/AccountController.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/pedro/ledger/infrastructure/web/account/AccountController.java" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/test/java/com/pedro/ledger/application/account/AccountApplicationServiceTest.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/test/java/com/pedro/ledger/application/account/AccountApplicationServiceTest.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/test/java/com/pedro/ledger/infrastructure/web/account/AccountControllerTest.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/test/java/com/pedro/ledger/infrastructure/web/account/AccountControllerTest.java" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -38,6 +36,7 @@
       <list>
         <option value="Enum" />
         <option value="Class" />
+        <option value="Record" />
       </list>
     </option>
   </component>
@@ -77,6 +76,7 @@
   <component name="PropertiesComponent"><![CDATA[{
   "keyToString": {
     "ASKED_SHARE_PROJECT_CONFIGURATION_FILES": "true",
+    "JUnit.AccountApplicationServiceTest$UpdateAccount.executor": "Run",
     "JUnit.AccountApplicationServiceTest.executor": "Run",
     "JUnit.AccountApplicationServiceTest.shouldCreateAndSaveAccount.executor": "Run",
     "JUnit.AccountControllerTest$FindAllAccounts.executor": "Run",
@@ -101,7 +101,7 @@
     "RunOnceActivity.git.unshallow": "true",
     "RunOnceActivity.typescript.service.memoryLimit.init": "true",
     "codeWithMe.voiceChat.enabledByDefault": "false",
-    "git-widget-placeholder": "#6 on feature/persistence",
+    "git-widget-placeholder": "feature/persistence",
     "kotlin-language-version-configured": "true",
     "node.js.detected.package.jshint": "true",
     "node.js.selected.package.jshint": "",
@@ -117,7 +117,22 @@
       <recent name="com.pedro.ledger.infrastructure.persistence.account" />
     </key>
   </component>
-  <component name="RunManager" selected="JUnit.AccountControllerTest$FindAllAccounts">
+  <component name="RunManager" selected="JUnit.AccountControllerTest$UpdateAccount">
+    <configuration name="AccountApplicationServiceTest$UpdateAccount" type="JUnit" factoryName="JUnit" temporary="true" nameIsGenerated="true">
+      <module name="ledger" />
+      <extension name="coverage">
+        <pattern>
+          <option name="PATTERN" value="com.pedro.ledger.application.account.*" />
+          <option name="ENABLED" value="true" />
+        </pattern>
+      </extension>
+      <option name="PACKAGE_NAME" value="com.pedro.ledger.application.account.AccountApplicationServiceTest" />
+      <option name="MAIN_CLASS_NAME" value="com.pedro.ledger.application.account.AccountApplicationServiceTest$UpdateAccount" />
+      <option name="TEST_OBJECT" value="class" />
+      <method v="2">
+        <option name="Make" enabled="true" />
+      </method>
+    </configuration>
     <configuration name="AccountApplicationServiceTest" type="JUnit" factoryName="JUnit" temporary="true" nameIsGenerated="true">
       <module name="ledger" />
       <extension name="coverage">
@@ -133,22 +148,6 @@
         <option name="Make" enabled="true" />
       </method>
     </configuration>
-    <configuration name="AccountApplicationServiceTest.shouldCreateAndSaveAccount" type="JUnit" factoryName="JUnit" temporary="true" nameIsGenerated="true">
-      <module name="ledger" />
-      <extension name="coverage">
-        <pattern>
-          <option name="PATTERN" value="com.pedro.ledger.application.account.*" />
-          <option name="ENABLED" value="true" />
-        </pattern>
-      </extension>
-      <option name="PACKAGE_NAME" value="com.pedro.ledger.application.account" />
-      <option name="MAIN_CLASS_NAME" value="com.pedro.ledger.application.account.AccountApplicationServiceTest" />
-      <option name="METHOD_NAME" value="shouldCreateAndSaveAccount" />
-      <option name="TEST_OBJECT" value="method" />
-      <method v="2">
-        <option name="Make" enabled="true" />
-      </method>
-    </configuration>
     <configuration name="AccountControllerTest$FindAllAccounts" type="JUnit" factoryName="JUnit" temporary="true" nameIsGenerated="true">
       <module name="ledger" />
       <extension name="coverage">
@@ -159,6 +158,21 @@
       </extension>
       <option name="PACKAGE_NAME" value="com.pedro.ledger.infrastructure.web.account.AccountControllerTest" />
       <option name="MAIN_CLASS_NAME" value="com.pedro.ledger.infrastructure.web.account.AccountControllerTest$FindAllAccounts" />
+      <option name="TEST_OBJECT" value="class" />
+      <method v="2">
+        <option name="Make" enabled="true" />
+      </method>
+    </configuration>
+    <configuration name="AccountControllerTest$UpdateAccount" type="JUnit" factoryName="JUnit" temporary="true" nameIsGenerated="true">
+      <module name="ledger" />
+      <extension name="coverage">
+        <pattern>
+          <option name="PATTERN" value="com.pedro.ledger.infrastructure.web.account.*" />
+          <option name="ENABLED" value="true" />
+        </pattern>
+      </extension>
+      <option name="PACKAGE_NAME" value="com.pedro.ledger.infrastructure.web.account.AccountControllerTest" />
+      <option name="MAIN_CLASS_NAME" value="com.pedro.ledger.infrastructure.web.account.AccountControllerTest$UpdateAccount" />
       <option name="TEST_OBJECT" value="class" />
       <method v="2">
         <option name="Make" enabled="true" />
@@ -179,29 +193,13 @@
         <option name="Make" enabled="true" />
       </method>
     </configuration>
-    <configuration name="AccountPersistenceRepositoryTest.shouldUpdateExistingAccount" type="JUnit" factoryName="JUnit" temporary="true" nameIsGenerated="true">
-      <module name="ledger" />
-      <extension name="coverage">
-        <pattern>
-          <option name="PATTERN" value="com.pedro.ledger.infrastructure.persistence.account.*" />
-          <option name="ENABLED" value="true" />
-        </pattern>
-      </extension>
-      <option name="PACKAGE_NAME" value="com.pedro.ledger.infrastructure.persistence.account" />
-      <option name="MAIN_CLASS_NAME" value="com.pedro.ledger.infrastructure.persistence.account.AccountPersistenceRepositoryTest" />
-      <option name="METHOD_NAME" value="shouldUpdateExistingAccount" />
-      <option name="TEST_OBJECT" value="method" />
-      <method v="2">
-        <option name="Make" enabled="true" />
-      </method>
-    </configuration>
     <recent_temporary>
       <list>
+        <item itemvalue="JUnit.AccountControllerTest$UpdateAccount" />
+        <item itemvalue="JUnit.AccountApplicationServiceTest$UpdateAccount" />
         <item itemvalue="JUnit.AccountControllerTest$FindAllAccounts" />
         <item itemvalue="JUnit.AccountApplicationServiceTest" />
         <item itemvalue="JUnit.AccountControllerTest" />
-        <item itemvalue="JUnit.AccountApplicationServiceTest.shouldCreateAndSaveAccount" />
-        <item itemvalue="JUnit.AccountPersistenceRepositoryTest.shouldUpdateExistingAccount" />
       </list>
     </recent_temporary>
   </component>
