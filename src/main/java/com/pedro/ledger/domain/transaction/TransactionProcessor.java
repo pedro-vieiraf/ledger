@@ -30,6 +30,12 @@ public final class TransactionProcessor {
 
     ensureAccountMatchesTransaction(transaction, account);
 
+    if (!account.isActive()) {
+      throw new IllegalStateException(
+          "Account is inactive"
+      );
+    }
+
     switch (transaction.getType()) {
       case INCOME -> account.credit(transaction.getAmount());
       case EXPENSE -> account.debit(transaction.getAmount());
@@ -60,16 +66,11 @@ public final class TransactionProcessor {
   ) {
     validateTransaction(transaction);
     validateAccount(source);
+    ensureAccountMatchesTransaction(transaction, source);
 
     if (transaction.getType() != TransactionType.TRANSFER) {
       throw new IllegalArgumentException(
           "Only transfers can have a destination account"
-      );
-    }
-
-    if (!transaction.getAccountId().equals(source.getId())) {
-      throw new IllegalArgumentException(
-          "Account does not match transaction"
       );
     }
 
@@ -122,38 +123,21 @@ public final class TransactionProcessor {
   ) {
     validateTransaction(transaction);
     validateAccount(account);
-
     ensureAccountMatchesTransaction(transaction, account);
 
-    if (newAmount == null) {
-      throw new IllegalArgumentException(
-          "Transaction amount cannot be null"
-      );
+    if (!account.isActive()) {
+      throw new IllegalStateException("Account is inactive");
     }
-
-    if (newAmount.isZero() || newAmount.isNegative()) {
-      throw new IllegalArgumentException(
-          "Transaction amount must be greater than zero"
-      );
-    }
-
-    if (transaction.getSource() == TransactionSource.OPEN_FINANCE) {
-      throw new IllegalStateException(
-          "Open Finance transactions cannot have their amount changed"
-      );
-    }
-
     if (transaction.getType() == TransactionType.TRANSFER) {
-      throw new IllegalArgumentException(
-          "Transfer amount changes require both accounts"
-      );
+      throw new IllegalArgumentException("Transfer amount changes require both accounts");
     }
 
     Money oldAmount = transaction.getAmount();
-
     if (oldAmount.equals(newAmount)) {
       return;
     }
+
+    transaction.changeAmount(newAmount);
 
     Money difference = newAmount.subtract(oldAmount);
 
@@ -162,8 +146,6 @@ public final class TransactionProcessor {
     } else {
       adjustIncomeAmount(account, difference);
     }
-
-    transaction.changeAmount(newAmount);
   }
 
   /**
@@ -177,7 +159,7 @@ public final class TransactionProcessor {
       Money difference
   ) {
     if (difference.isNegative()) {
-      account.credit(difference.multiply(-1));
+      account.credit(difference.negate());
     } else {
       account.debit(difference);
     }
@@ -194,7 +176,7 @@ public final class TransactionProcessor {
       Money difference
   ) {
     if (difference.isNegative()) {
-      account.debit(difference.multiply(-1));
+      account.debit(difference.negate());
     } else {
       account.credit(difference);
     }
