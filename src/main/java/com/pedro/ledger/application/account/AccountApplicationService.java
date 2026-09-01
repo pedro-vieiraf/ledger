@@ -97,4 +97,20 @@ public class AccountApplicationService {
 
     return accountRepository.save(account);
   }
+
+  /**
+   * Deactivates an account.
+   *
+   * @param id account identifier
+   */
+  public void deactivate(UUID id) {
+    Account account = accountRepository.findById(id)
+        .orElseThrow(() ->
+            new IllegalArgumentException("Account not found")
+        );
+
+    account.deactivate();
+
+    accountRepository.save(account);
+  }
 }

@@ -2,6 +2,8 @@ package com.pedro.ledger.application.account;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -385,6 +387,49 @@ class AccountApplicationServiceTest {
 
       verify(accountRepository, never())
           .save(any(Account.class));
+    }
+  }
+
+  @Nested
+  class Deactivate {
+
+    @Test
+    void shouldDeactivateAccount() {
+      UUID id = UUID.randomUUID();
+
+      Account account = Account.open(
+          "Nubank",
+          AccountType.CHECKING,
+          Money.of("1000.00")
+      );
+
+      when(accountRepository.findById(id))
+          .thenReturn(Optional.of(account));
+
+      when(accountRepository.save(account))
+          .thenReturn(account);
+
+      accountApplicationService.deactivate(id);
+
+      assertFalse(account.isActive());
+      verify(accountRepository).findById(id);
+      verify(accountRepository).save(account);
+    }
+
+    @Test
+    void shouldThrowExceptionWhenAccountDoesNotExist() {
+      UUID id = UUID.randomUUID();
+
+      when(accountRepository.findById(id))
+          .thenReturn(Optional.empty());
+
+      assertThrows(
+          IllegalArgumentException.class,
+          () -> accountApplicationService.deactivate(id)
+      );
+
+      verify(accountRepository).findById(id);
+      verify(accountRepository, never()).save(any());
     }
   }
 }
