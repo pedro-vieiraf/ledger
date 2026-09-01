@@ -15,7 +15,7 @@ public record Money(BigDecimal amount, Currency currency) {
     }
 
     if (currency == null) {
-      throw new IllegalAccessException("Currency cannot be null");
+      throw new IllegalArgumentException("Currency cannot be null");
     }
 
     if (amount.scale() > SCALE) {
@@ -83,5 +83,9 @@ public record Money(BigDecimal amount, Currency currency) {
 
   public boolean isNegative() {
     return amount.compareTo(BigDecimal.ZERO) < 0;
+  }
+
+  public Money negate() {
+    return new Money(amount.negate(), currency);
   }
 }
