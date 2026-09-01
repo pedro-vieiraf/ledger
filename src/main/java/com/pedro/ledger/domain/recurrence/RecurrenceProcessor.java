@@ -7,11 +7,25 @@ import com.pedro.ledger.domain.transaction.TransactionSource;
 import java.time.Instant;
 import java.time.ZoneOffset;
 
+/**
+ * Processes recurring transactions and applies them to their accounts.
+ */
 public final class RecurrenceProcessor {
 
   private RecurrenceProcessor() {
   }
 
+  /**
+   * Processes a due recurrence and creates the corresponding transaction.
+   *
+   * @param recurrence recurrence to process
+   * @param account account associated with the recurrence
+   * @param timestamp timestamp at which the transaction is processed
+   * @return the transaction created from the recurrence
+   * @throws IllegalArgumentException if the recurrence, account, or timestamp
+   *     is null
+   * @throws IllegalStateException if the recurrence is inactive or not due yet
+   */
   public static Transaction process(
       Recurrence recurrence,
       Account account,
@@ -45,6 +59,12 @@ public final class RecurrenceProcessor {
     return transaction;
   }
 
+  /**
+   * Ensures that the recurrence is active.
+   *
+   * @param recurrence recurrence to validate
+   * @throws IllegalStateException if the recurrence is inactive
+   */
   private static void ensureActive(
       Recurrence recurrence
   ) {
@@ -55,6 +75,13 @@ public final class RecurrenceProcessor {
     }
   }
 
+  /**
+   * Ensures that the recurrence is due for processing.
+   *
+   * @param recurrence recurrence to validate
+   * @param timestamp timestamp used to determine whether the recurrence is due
+   * @throws IllegalStateException if the recurrence is not due yet
+   */
   private static void ensureDue(
       Recurrence recurrence,
       Instant timestamp
@@ -70,6 +97,12 @@ public final class RecurrenceProcessor {
     }
   }
 
+  /**
+   * Validates the recurrence.
+   *
+   * @param recurrence recurrence to validate
+   * @throws IllegalArgumentException if the recurrence is null
+   */
   private static void validateRecurrence(
       Recurrence recurrence
   ) {
@@ -80,6 +113,12 @@ public final class RecurrenceProcessor {
     }
   }
 
+  /**
+   * Validates the account.
+   *
+   * @param account account to validate
+   * @throws IllegalArgumentException if the account is null
+   */
   private static void validateAccount(
       Account account
   ) {
@@ -90,6 +129,12 @@ public final class RecurrenceProcessor {
     }
   }
 
+  /**
+   * Validates the transaction timestamp.
+   *
+   * @param timestamp timestamp to validate
+   * @throws IllegalArgumentException if the timestamp is null
+   */
   private static void validateTimestamp(
       Instant timestamp
   ) {
