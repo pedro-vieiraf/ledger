@@ -108,6 +108,12 @@ public class AccountController {
     return ResponseEntity.ok(AccountResponse.from(updatedAccount));
   }
 
+  /**
+   * Deactivates an account.
+   *
+   * @param id account identifier
+   * @return HTTP status 204 with no content
+   */
   @DeleteMapping("/{id}")
   public ResponseEntity<Void> delete(
       @PathVariable UUID id

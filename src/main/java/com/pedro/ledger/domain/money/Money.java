@@ -5,21 +5,25 @@ import java.math.RoundingMode;
 import java.util.Currency;
 
 /**
- * Represents a monetary value with a fixed scale of two decimal places.
+ * Represents a monetary value with a fixed scale of two decimal places
+ * and an associated currency.
  *
  * @param amount monetary amount
+ * @param currency currency of the monetary amount
  */
 public record Money(BigDecimal amount, Currency currency) {
 
   private static final int SCALE = 2;
-  private static final Currency DEFAULT_CURRENCY = Currency.getInstance("BRL");
+  private static final Currency DEFAULT_CURRENCY =
+      Currency.getInstance("BRL");
 
   /**
    * Creates a monetary value.
    *
    * @param amount monetary amount
-   * @throws IllegalArgumentException if the amount is null or has more than
-   *     two decimal places
+   * @param currency currency of the monetary amount
+   * @throws IllegalArgumentException if the amount or currency is null,
+   *     or if the amount has more than two decimal places
    */
   public Money {
     if (amount == null) {
@@ -39,10 +43,22 @@ public record Money(BigDecimal amount, Currency currency) {
     amount = amount.setScale(SCALE);
   }
 
+  /**
+   * Creates a monetary value using the default currency.
+   *
+   * @param amount monetary amount
+   * @return a monetary value using the default currency
+   */
   public static Money of(BigDecimal amount) {
     return new Money(amount, DEFAULT_CURRENCY);
   }
 
+  /**
+   * Creates a monetary value from a string using the default currency.
+   *
+   * @param amount string representation of the monetary amount
+   * @return a monetary value using the default currency
+   */
   public static Money of(String amount) {
     return new Money(new BigDecimal(amount), DEFAULT_CURRENCY);
   }
@@ -52,10 +68,15 @@ public record Money(BigDecimal amount, Currency currency) {
    *
    * @param other monetary value to add
    * @return the sum of both monetary values
+   * @throws CurrencyMismatchException if the currencies do not match
    */
   public Money add(Money other) {
     requireSameCurrency(other);
-    return new Money(amount.add(other.amount), currency);
+
+    return new Money(
+        amount.add(other.amount),
+        currency
+    );
   }
 
   /**
@@ -63,10 +84,15 @@ public record Money(BigDecimal amount, Currency currency) {
    *
    * @param other monetary value to subtract
    * @return the difference between the monetary values
+   * @throws CurrencyMismatchException if the currencies do not match
    */
   public Money subtract(Money other) {
     requireSameCurrency(other);
-    return new Money(amount.subtract(other.amount), currency);
+
+    return new Money(
+        amount.subtract(other.amount),
+        currency
+    );
   }
 
   /**
@@ -77,20 +103,30 @@ public record Money(BigDecimal amount, Currency currency) {
    */
   public Money multiply(int multiplier) {
     return new Money(
-        amount.multiply(BigDecimal.valueOf(multiplier))
-    , currency);
-  }
-
-  public Money divide(int divisor) {
-    return new Money(
-        amount.divide(BigDecimal.valueOf(divisor),
-        SCALE,
-        RoundingMode.HALF_EVEN),
-        currency);
+        amount.multiply(BigDecimal.valueOf(multiplier)),
+        currency
+    );
   }
 
   /**
-   * Creates a monetary value representing zero.
+   * Divides this monetary value by an integer.
+   *
+   * @param divisor integer divisor
+   * @return the resulting monetary value
+   */
+  public Money divide(int divisor) {
+    return new Money(
+        amount.divide(
+            BigDecimal.valueOf(divisor),
+            SCALE,
+            RoundingMode.HALF_EVEN
+        ),
+        currency
+    );
+  }
+
+  /**
+   * Creates a monetary value representing zero using the default currency.
    *
    * @return a zero monetary value
    */
@@ -98,6 +134,12 @@ public record Money(BigDecimal amount, Currency currency) {
     return new Money(BigDecimal.ZERO, DEFAULT_CURRENCY);
   }
 
+  /**
+   * Ensures that another monetary value uses the same currency.
+   *
+   * @param other monetary value to compare with
+   * @throws CurrencyMismatchException if the currencies do not match
+   */
   private void requireSameCurrency(Money other) {
     if (!this.currency.equals(other.currency)) {
       throw new CurrencyMismatchException(this.currency, other.currency);
@@ -109,9 +151,11 @@ public record Money(BigDecimal amount, Currency currency) {
    *
    * @param other monetary value to compare with
    * @return true if this value is greater than the other value
+   * @throws CurrencyMismatchException if the currencies do not match
    */
   public boolean isGreaterThan(Money other) {
     requireSameCurrency(other);
+
     return amount.compareTo(other.amount) > 0;
   }
 
@@ -120,9 +164,11 @@ public record Money(BigDecimal amount, Currency currency) {
    *
    * @param other monetary value to compare with
    * @return true if this value is less than the other value
+   * @throws CurrencyMismatchException if the currencies do not match
    */
   public boolean isLessThan(Money other) {
     requireSameCurrency(other);
+
     return amount.compareTo(other.amount) < 0;
   }
 
@@ -144,6 +190,11 @@ public record Money(BigDecimal amount, Currency currency) {
     return amount.compareTo(BigDecimal.ZERO) < 0;
   }
 
+  /**
+   * Creates a monetary value with the opposite sign.
+   *
+   * @return a monetary value with the opposite sign
+   */
   public Money negate() {
     return new Money(amount.negate(), currency);
   }
