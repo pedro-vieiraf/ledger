@@ -9,6 +9,7 @@ import jakarta.persistence.Enumerated;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 import java.math.BigDecimal;
+import java.util.Currency;
 import java.util.UUID;
 
 /**
@@ -35,6 +36,9 @@ public class AccountEntity {
   @Column(nullable = false, precision = 19, scale = 2)
   private BigDecimal balance;
 
+  @Column(nullable = false, length = 3)
+  private String currency;
+
   /**
    * Protected constructor required by JPA.
    */
@@ -49,19 +53,22 @@ public class AccountEntity {
    * @param type account type
    * @param status account status
    * @param balance account balance
+   * @param currency account currency
    */
   public AccountEntity(
       UUID id,
       String name,
       AccountType type,
       AccountStatus status,
-      BigDecimal balance
+      BigDecimal balance,
+      Currency currency
   ) {
     this.id = id;
     this.name = name;
     this.type = type;
     this.status = status;
     this.balance = balance;
+    this.currency = currency.getCurrencyCode();
   }
 
   /**
@@ -107,5 +114,14 @@ public class AccountEntity {
    */
   public BigDecimal getBalance() {
     return balance;
+  }
+
+  /**
+   * Returns the account currency.
+   *
+   * @return account currency
+   */
+  public Currency getCurrency() {
+    return Currency.getInstance(currency);
   }
 }

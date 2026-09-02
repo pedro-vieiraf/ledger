@@ -64,6 +64,26 @@ public record Money(BigDecimal amount, Currency currency) {
   }
 
   /**
+   * Crates a monetary value with custom currency.
+   *
+   * @param amount monetary amount
+   * @param currency money currency
+   */
+  public static Money of(BigDecimal amount, Currency currency) {
+    return new Money(amount, currency);
+  }
+
+  /**
+   * Crates a monetary value with custom currency.
+   *
+   * @param amount monetary amount
+   * @param currency money currency
+   */
+  public static Money of(String amount, Currency currency) {
+    return new Money(new BigDecimal(amount), currency);
+  }
+
+  /**
    * Adds another monetary value to this value.
    *
    * @param other monetary value to add

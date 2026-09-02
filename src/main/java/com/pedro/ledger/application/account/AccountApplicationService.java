@@ -42,7 +42,7 @@ public class AccountApplicationService {
       AccountType type,
       BigDecimal openingBalance
   ) {
-    Money money = new Money(openingBalance);
+    Money money = Money.of(openingBalance);
 
     Account account = Account.open(
         name,

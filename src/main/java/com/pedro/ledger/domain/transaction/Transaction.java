@@ -90,6 +90,33 @@ public class Transaction {
   }
 
   /**
+   * Restore function to Mapper.
+   */
+  public static Transaction restore(
+      UUID id,
+      Money amount,
+      TransactionType type,
+      String description,
+      Instant timestamp,
+      TransactionSource source,
+      UUID accountId,
+      UUID destinationAccountId,
+      UUID categoryId
+  ) {
+    return new Transaction(
+        id,
+        amount,
+        type,
+        description,
+        timestamp,
+        source,
+        accountId,
+        destinationAccountId,
+        categoryId
+    );
+  }
+
+  /**
    * Changes the transaction amount.
    *
    * @param newAmount new transaction amount
