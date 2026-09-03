@@ -1,5 +1,6 @@
 package com.pedro.ledger.domain.money;
 
+import java.util.Currency;
 import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -25,10 +26,11 @@ class MoneyTest {
 
   @Test
   void shouldRejectNullAmount() {
-    assertThatThrownBy(() -> new Money(null))
+    assertThatThrownBy(
+        () -> new Money(null, Currency.getInstance("BRL"))
+    )
         .isInstanceOf(IllegalArgumentException.class);
   }
-
   @Test
   void shouldRejectMoreThanTwoDecimalPlaces() {
     assertThatThrownBy(() -> Money.of("100.001"))
