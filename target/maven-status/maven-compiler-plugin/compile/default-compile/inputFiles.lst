@@ -1,0 +1,14 @@
+C:\Users\pedro-ferreira\IdeaProjects\ledger\src\main\java\com\pedro\ledger\domain\account\Account.java
+C:\Users\pedro-ferreira\IdeaProjects\ledger\src\main\java\com\pedro\ledger\domain\account\AccountStatus.java
+C:\Users\pedro-ferreira\IdeaProjects\ledger\src\main\java\com\pedro\ledger\domain\account\AccountType.java
+C:\Users\pedro-ferreira\IdeaProjects\ledger\src\main\java\com\pedro\ledger\domain\category\Category.java
+C:\Users\pedro-ferreira\IdeaProjects\ledger\src\main\java\com\pedro\ledger\domain\money\Money.java
+C:\Users\pedro-ferreira\IdeaProjects\ledger\src\main\java\com\pedro\ledger\domain\recurrence\Recurrence.java
+C:\Users\pedro-ferreira\IdeaProjects\ledger\src\main\java\com\pedro\ledger\domain\recurrence\RecurrenceFrequency.java
+C:\Users\pedro-ferreira\IdeaProjects\ledger\src\main\java\com\pedro\ledger\domain\recurrence\RecurrenceProcessor.java
+C:\Users\pedro-ferreira\IdeaProjects\ledger\src\main\java\com\pedro\ledger\domain\recurrence\RecurrenceStatus.java
+C:\Users\pedro-ferreira\IdeaProjects\ledger\src\main\java\com\pedro\ledger\domain\transaction\Transaction.java
+C:\Users\pedro-ferreira\IdeaProjects\ledger\src\main\java\com\pedro\ledger\domain\transaction\TransactionProcessor.java
+C:\Users\pedro-ferreira\IdeaProjects\ledger\src\main\java\com\pedro\ledger\domain\transaction\TransactionSource.java
+C:\Users\pedro-ferreira\IdeaProjects\ledger\src\main\java\com\pedro\ledger\domain\transaction\TransactionType.java
+C:\Users\pedro-ferreira\IdeaProjects\ledger\src\main\java\com\pedro\ledger\LedgerApplication.java
