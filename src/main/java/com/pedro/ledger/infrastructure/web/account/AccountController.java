@@ -62,7 +62,7 @@ public class AccountController {
    * @return a list of all accounts with HTTP status 200
    */
   @GetMapping
-  public ResponseEntity<List<AccountResponse>> getAll() {
+  public ResponseEntity<List<AccountResponse>> findAll() {
     List<AccountResponse> accounts = accountApplicationService.findAll()
         .stream()
         .map(AccountResponse::from)
@@ -78,7 +78,7 @@ public class AccountController {
    * @return the account if found, otherwise HTTP status 404
    */
   @GetMapping("/{id}")
-  public ResponseEntity<AccountResponse> getById(
+  public ResponseEntity<AccountResponse> findById(
       @PathVariable UUID id
   ) {
     return accountApplicationService.findById(id)

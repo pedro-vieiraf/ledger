@@ -6,6 +6,8 @@ import com.pedro.ledger.domain.transaction.TransactionRepository;
 import com.pedro.ledger.domain.transaction.TransactionSource;
 import com.pedro.ledger.domain.transaction.TransactionType;
 import java.time.Instant;
+import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 import org.springframework.stereotype.Service;
 
@@ -38,6 +40,27 @@ public class TransactionApplicationService {
         destinationAccountId,
         categoryId
     );
+
+    return transactionRepository.save(transaction);
+  }
+
+  public List<Transaction> findAll() {
+    return transactionRepository.findAll();
+  }
+
+  public Optional<Transaction> findById(UUID transactionId) {
+    return transactionRepository.findById(transactionId);
+  }
+
+  public Transaction update(UUID id, Money amount, String description, UUID categoryId) {
+    Transaction transaction = transactionRepository.findById(id)
+        .orElseThrow(() ->
+            new IllegalArgumentException("Transaction not found")
+        );
+
+    transaction.changeAmount(amount);
+    transaction.changeDescription(description);
+    transaction.changeCategory(categoryId);
 
     return transactionRepository.save(transaction);
   }
