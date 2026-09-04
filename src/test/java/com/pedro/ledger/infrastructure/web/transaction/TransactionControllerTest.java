@@ -1,9 +1,13 @@
 package com.pedro.ledger.infrastructure.web.transaction;
 
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.doNothing;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -241,6 +245,155 @@ class TransactionControllerTest {
           .andExpect(status().isNotFound());
 
       verify(service).findById(transactionId);
+    }
+  }
+
+  @Nested
+  class Update {
+
+    @Test
+    void shouldUpdateTransaction() throws Exception {
+      UUID transactionId = UUID.randomUUID();
+      UUID accountId = UUID.randomUUID();
+      UUID categoryId = UUID.randomUUID();
+      UUID newCategoryId = UUID.randomUUID();
+
+      Transaction transaction = Transaction.create(
+          Money.of("100.00"),
+          TransactionType.EXPENSE,
+          "Groceries",
+          Instant.now(),
+          TransactionSource.MANUAL,
+          accountId,
+          null,
+          categoryId
+      );
+
+      Transaction updatedTransaction = Transaction.create(
+          Money.of("150.00"),
+          TransactionType.EXPENSE,
+          "Groceries and household items",
+          transaction.getTimestamp(),
+          TransactionSource.MANUAL,
+          accountId,
+          null,
+          newCategoryId
+      );
+
+      when(service.update(
+          eq(transactionId),
+          eq(Money.of("150.00")),
+          eq("Groceries and household items"),
+          eq(newCategoryId)
+      )).thenReturn(updatedTransaction);
+
+      mockMvc.perform(
+              patch("/transactions/{id}", transactionId)
+                  .contentType(MediaType.APPLICATION_JSON)
+                  .content("""
+                {
+                  "amount": 150.00,
+                  "currency": "BRL",
+                  "description": "Groceries and household items",
+                  "categoryId": "%s"
+                }
+                """.formatted(newCategoryId))
+          )
+          .andExpect(status().isOk())
+          .andExpect(jsonPath("$.id")
+              .value(updatedTransaction.getId().toString()))
+          .andExpect(jsonPath("$.amount")
+              .value(150.00))
+          .andExpect(jsonPath("$.currency")
+              .value("BRL"))
+          .andExpect(jsonPath("$.type")
+              .value("EXPENSE"))
+          .andExpect(jsonPath("$.description")
+              .value("Groceries and household items"))
+          .andExpect(jsonPath("$.source")
+              .value("MANUAL"))
+          .andExpect(jsonPath("$.accountId")
+              .value(accountId.toString()))
+          .andExpect(jsonPath("$.categoryId")
+              .value(newCategoryId.toString()));
+
+      verify(service).update(
+          eq(transactionId),
+          eq(Money.of("150.00")),
+          eq("Groceries and household items"),
+          eq(newCategoryId)
+      );
+    }
+
+    @Test
+    void shouldReturnNotFoundWhenTransactionDoesNotExist()
+        throws Exception {
+      UUID transactionId = UUID.randomUUID();
+
+      when(service.update(
+          eq(transactionId),
+          eq(Money.of("150.00")),
+          eq("Updated description"),
+          eq(null)
+      )).thenThrow(
+          new IllegalArgumentException("Transaction not found")
+      );
+
+      mockMvc.perform(
+              patch("/transactions/{id}", transactionId)
+                  .contentType(MediaType.APPLICATION_JSON)
+                  .content("""
+                {
+                  "amount": 150.00,
+                  "currency": "BRL",
+                  "description": "Updated description",
+                  "categoryId": null
+                }
+                """)
+          )
+          .andExpect(status().isNotFound());
+
+      verify(service).update(
+          eq(transactionId),
+          eq(Money.of("150.00")),
+          eq("Updated description"),
+          eq(null)
+      );
+    }
+  }
+
+  @Nested
+  class Delete {
+
+    @Test
+    void shouldDeleteTransaction() throws Exception {
+      UUID transactionId = UUID.randomUUID();
+
+      doNothing().when(service).delete(transactionId);
+
+      mockMvc.perform(
+              delete("/transactions/{id}", transactionId)
+          )
+          .andExpect(status().isNoContent());
+
+      verify(service).delete(transactionId);
+    }
+
+    @Test
+    void shouldReturnNotFoundWhenTransactionDoesNotExist()
+        throws Exception {
+      UUID transactionId = UUID.randomUUID();
+
+      doThrow(
+          new IllegalArgumentException("Transaction not found")
+      ).when(service).delete(transactionId);
+
+      mockMvc.perform(
+              delete("/transactions/{id}", transactionId)
+          )
+          .andExpect(status().isNotFound());
+
+      verify(service).delete(transactionId);
     }
   }
 }

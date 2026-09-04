@@ -53,15 +53,24 @@ public class TransactionApplicationService {
   }
 
   public Transaction update(UUID id, Money amount, String description, UUID categoryId) {
-    Transaction transaction = transactionRepository.findById(id)
-        .orElseThrow(() ->
-            new IllegalArgumentException("Transaction not found")
-        );
+    Transaction transaction = getByIdOrThrow(id);
 
     transaction.changeAmount(amount);
     transaction.changeDescription(description);
     transaction.changeCategory(categoryId);
 
     return transactionRepository.save(transaction);
+  }
+
+  public void delete(UUID id) {
+    getByIdOrThrow(id);
+    transactionRepository.delete(id);
+  }
+
+  private Transaction getByIdOrThrow(UUID id) {
+    return transactionRepository.findById(id)
+        .orElseThrow(() ->
+            new IllegalArgumentException("Transaction not found")
+        );
   }
 }

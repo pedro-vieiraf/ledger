@@ -12,4 +12,6 @@ public interface TransactionRepository {
 
   List<Transaction> findAll();
 
+  void delete(UUID id);
+
 }

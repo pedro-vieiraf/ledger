@@ -278,4 +278,55 @@ class TransactionApplicationServiceTest {
           .save(any(Transaction.class));
     }
   }
+
+  @Nested
+  class Delete {
+
+    @Test
+    void shouldDeleteTransaction() {
+      UUID transactionId = UUID.randomUUID();
+
+      Transaction transaction = Transaction.create(
+          Money.of("100.00"),
+          TransactionType.EXPENSE,
+          "Groceries",
+          Instant.now(),
+          TransactionSource.MANUAL,
+          UUID.randomUUID(),
+          null,
+          null
+      );
+
+      when(transactionRepository.findById(transactionId))
+          .thenReturn(Optional.of(transaction));
+
+      transactionApplicationService.delete(transactionId);
+
+      verify(transactionRepository)
+          .findById(transactionId);
+
+      verify(transactionRepository)
+          .delete(transactionId);
+    }
+
+    @Test
+    void shouldThrowExceptionWhenTransactionDoesNotExist() {
+      UUID transactionId = UUID.randomUUID();
+
+      when(transactionRepository.findById(transactionId))
+          .thenReturn(Optional.empty());
+
+      assertThatThrownBy(() ->
+          transactionApplicationService.delete(transactionId)
+      )
+          .isInstanceOf(IllegalArgumentException.class)
+          .hasMessage("Transaction not found");
+
+      verify(transactionRepository)
+          .findById(transactionId);
+
+      verify(transactionRepository, never())
+          .delete(any(UUID.class));
+    }
+  }
 }

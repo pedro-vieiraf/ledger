@@ -42,4 +42,9 @@ public class TransactionPersistenceRepository implements TransactionRepository {
         .map(mapper::toDomain)
         .toList();
   }
+
+  @Override
+  public void delete(UUID id) {
+    jpaRepository.deleteById(id);
+  }
 }
