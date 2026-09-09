@@ -10,6 +10,7 @@ import com.pedro.ledger.domain.transaction.TransactionProcessor;
 import com.pedro.ledger.domain.transaction.TransactionRepository;
 import com.pedro.ledger.domain.transaction.TransactionSource;
 import com.pedro.ledger.domain.transaction.TransactionType;
+import org.springframework.transaction.annotation.Transactional;
 import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
@@ -30,6 +31,7 @@ public class TransactionApplicationService {
     this.accountRepository = accountRepository;
   }
 
+  @Transactional
   public Transaction create(
       Money amount,
       TransactionType type,
@@ -111,6 +113,7 @@ public class TransactionApplicationService {
     return transactionRepository.findById(transactionId);
   }
 
+  @Transactional
   public Transaction update(UUID id, Money amount, String description, UUID categoryId) {
     Transaction transaction = getByIdOrThrow(id);
 
@@ -134,6 +137,7 @@ public class TransactionApplicationService {
     return transaction;
   }
 
+  @Transactional
   public void delete(UUID id) {
     Transaction transaction = transactionRepository.findById(id)
         .orElseThrow(() ->
