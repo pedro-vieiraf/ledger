@@ -10,6 +10,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.pedro.ledger.domain.account.Account;
+import com.pedro.ledger.domain.account.AccountNotFoundException;
 import com.pedro.ledger.domain.account.AccountRepository;
 import com.pedro.ledger.domain.account.AccountStatus;
 import com.pedro.ledger.domain.account.AccountType;
@@ -347,7 +348,7 @@ class AccountApplicationServiceTest {
               AccountType.CHECKING
           )
       )
-          .isInstanceOf(IllegalArgumentException.class)
+          .isInstanceOf(AccountNotFoundException.class)
           .hasMessage("Account not found");
 
       verify(accountRepository)
@@ -379,7 +380,7 @@ class AccountApplicationServiceTest {
               null
           )
       )
-          .isInstanceOf(IllegalArgumentException.class)
+          .isInstanceOf(AccountNotFoundException.class)
           .hasMessage("Account name cannot be null or blank");
 
       verify(accountRepository)
@@ -424,7 +425,7 @@ class AccountApplicationServiceTest {
           .thenReturn(Optional.empty());
 
       assertThrows(
-          IllegalArgumentException.class,
+          AccountNotFoundException.class,
           () -> accountApplicationService.deactivate(id)
       );
 

@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 
 import com.pedro.ledger.domain.account.Account;
+import com.pedro.ledger.domain.account.AccountInactiveException;
 import com.pedro.ledger.domain.account.AccountType;
 import com.pedro.ledger.domain.money.Money;
 import java.time.Instant;
@@ -126,7 +127,7 @@ class TransactionProcessorTest {
     assertThatThrownBy(() ->
         TransactionProcessor.process(transaction, account)
     )
-        .isInstanceOf(IllegalStateException.class)
+        .isInstanceOf(AccountInactiveException.class)
         .hasMessage("Account is inactive");
   }
 
@@ -238,7 +239,7 @@ class TransactionProcessorTest {
             destination
         )
     )
-        .isInstanceOf(IllegalStateException.class)
+        .isInstanceOf(AccountInactiveException.class)
         .hasMessage("Destination account is inactive");
 
     assertThat(source.getBalance())

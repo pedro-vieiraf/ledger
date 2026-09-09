@@ -1,6 +1,7 @@
 package com.pedro.ledger.application.account;
 
 import com.pedro.ledger.domain.account.Account;
+import com.pedro.ledger.domain.account.AccountNotFoundException;
 import com.pedro.ledger.domain.account.AccountRepository;
 import com.pedro.ledger.domain.account.AccountType;
 import com.pedro.ledger.domain.money.Money;
@@ -84,7 +85,7 @@ public class AccountApplicationService {
   public Account update(UUID id, String name, AccountType type) {
     Account account = accountRepository.findById(id)
         .orElseThrow(() ->
-            new IllegalArgumentException("Account not found")
+            new AccountNotFoundException("Account not found")
         );
 
     if (name != null) {
@@ -106,7 +107,7 @@ public class AccountApplicationService {
   public void deactivate(UUID id) {
     Account account = accountRepository.findById(id)
         .orElseThrow(() ->
-            new IllegalArgumentException("Account not found")
+            new AccountNotFoundException("Account not found")
         );
 
     account.deactivate();

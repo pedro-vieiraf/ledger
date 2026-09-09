@@ -15,6 +15,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import com.pedro.ledger.application.account.AccountApplicationService;
 import com.pedro.ledger.domain.account.Account;
+import com.pedro.ledger.domain.account.AccountNotFoundException;
 import com.pedro.ledger.domain.account.AccountStatus;
 import com.pedro.ledger.domain.account.AccountType;
 import com.pedro.ledger.domain.money.Money;
@@ -375,7 +376,7 @@ class AccountControllerTest {
           "Updated Account",
           AccountType.CHECKING
       )).thenThrow(
-          new IllegalArgumentException("Account not found")
+          new AccountNotFoundException("Account not found")
       );
 
       mockMvc.perform(

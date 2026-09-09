@@ -216,7 +216,7 @@ public class Account {
    */
   private void ensureActive() {
     if (status == AccountStatus.INACTIVE) {
-      throw new IllegalStateException(
+      throw new AccountInactiveException(
           "Account is inactive"
       );
     }

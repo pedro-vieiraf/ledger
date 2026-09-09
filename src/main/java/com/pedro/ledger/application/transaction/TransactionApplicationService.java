@@ -1,7 +1,12 @@
 package com.pedro.ledger.application.transaction;
 
+import com.pedro.ledger.domain.account.Account;
+import com.pedro.ledger.domain.account.AccountNotFoundException;
+import com.pedro.ledger.domain.account.AccountRepository;
 import com.pedro.ledger.domain.money.Money;
 import com.pedro.ledger.domain.transaction.Transaction;
+import com.pedro.ledger.domain.transaction.TransactionNotFoundException;
+import com.pedro.ledger.domain.transaction.TransactionProcessor;
 import com.pedro.ledger.domain.transaction.TransactionRepository;
 import com.pedro.ledger.domain.transaction.TransactionSource;
 import com.pedro.ledger.domain.transaction.TransactionType;
@@ -16,8 +21,13 @@ public class TransactionApplicationService {
 
   private final TransactionRepository transactionRepository;
 
-  public TransactionApplicationService(TransactionRepository transactionRepository) {
+  private final AccountRepository accountRepository;
+
+  public TransactionApplicationService(
+      TransactionRepository transactionRepository,
+      AccountRepository accountRepository) {
     this.transactionRepository = transactionRepository;
+    this.accountRepository = accountRepository;
   }
 
   public Transaction create(
@@ -28,20 +38,69 @@ public class TransactionApplicationService {
       UUID destinationAccountId,
       UUID categoryId
   ) {
-    Instant timestamp = Instant.now();
+    if (type == TransactionType.TRANSFER) {
+
+      Account sourceAccount = accountRepository.findById(accountId)
+          .orElseThrow(() ->
+              new AccountNotFoundException("Account not found")
+          );
+
+      Account destinationAccount = accountRepository
+          .findById(destinationAccountId)
+          .orElseThrow(() ->
+              new AccountNotFoundException("Destination account not found")
+          );
+
+      Transaction transaction = Transaction.create(
+          amount,
+          type,
+          description,
+          Instant.now(),
+          TransactionSource.MANUAL,
+          accountId,
+          destinationAccountId,
+          categoryId
+      );
+
+      TransactionProcessor.process(
+          transaction,
+          sourceAccount,
+          destinationAccount
+      );
+
+      accountRepository.save(sourceAccount);
+      accountRepository.save(destinationAccount);
+
+      transactionRepository.save(transaction);
+
+      return transaction;
+    }
+
+    Account account = accountRepository.findById(accountId)
+        .orElseThrow(() ->
+            new AccountNotFoundException("Account not found")
+        );
 
     Transaction transaction = Transaction.create(
         amount,
         type,
         description,
-        timestamp,
+        Instant.now(),
         TransactionSource.MANUAL,
         accountId,
         destinationAccountId,
         categoryId
     );
 
-    return transactionRepository.save(transaction);
+    TransactionProcessor.process(
+        transaction,
+        account
+    );
+
+    accountRepository.save(account);
+    transactionRepository.save(transaction);
+
+    return transaction;
   }
 
   public List<Transaction> findAll() {
@@ -55,22 +114,76 @@ public class TransactionApplicationService {
   public Transaction update(UUID id, Money amount, String description, UUID categoryId) {
     Transaction transaction = getByIdOrThrow(id);
 
-    transaction.changeAmount(amount);
+    Account account = accountRepository.findById(transaction.getAccountId())
+            .orElseThrow(() ->
+                new AccountNotFoundException("Account not found")
+            );
+
+    TransactionProcessor.changeAmount(
+        transaction,
+        amount,
+        account
+    );
+
     transaction.changeDescription(description);
     transaction.changeCategory(categoryId);
 
-    return transactionRepository.save(transaction);
+    accountRepository.save(account);
+    transactionRepository.save(transaction);
+
+    return transaction;
   }
 
   public void delete(UUID id) {
-    getByIdOrThrow(id);
+    Transaction transaction = transactionRepository.findById(id)
+        .orElseThrow(() ->
+            new TransactionNotFoundException()
+        );
+
+    if (transaction.getType().equals(TransactionType.TRANSFER)) {
+
+      Account sourceAccount = accountRepository
+          .findById(transaction.getAccountId())
+          .orElseThrow(() ->
+              new AccountNotFoundException("Account not found")
+          );
+
+      Account destinationAccount = accountRepository
+          .findById(transaction.getDestinationAccountId())
+          .orElseThrow(() ->
+              new AccountNotFoundException("Destination account not found")
+          );
+
+      TransactionProcessor.reverse(
+          transaction,
+          sourceAccount,
+          destinationAccount
+      );
+
+      accountRepository.save(sourceAccount);
+      accountRepository.save(destinationAccount);
+    } else {
+      Account account = accountRepository
+          .findById(transaction.getAccountId())
+          .orElseThrow(() ->
+              new AccountNotFoundException("Account not found")
+          );
+
+      TransactionProcessor.reverse(
+          transaction,
+          account
+      );
+
+      accountRepository.save(account);
+    }
+
     transactionRepository.delete(id);
   }
 
   private Transaction getByIdOrThrow(UUID id) {
     return transactionRepository.findById(id)
         .orElseThrow(() ->
-            new IllegalArgumentException("Transaction not found")
+            new TransactionNotFoundException()
         );
   }
 }

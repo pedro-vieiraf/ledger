@@ -1,6 +1,7 @@
 package com.pedro.ledger.domain.transaction;
 
 import com.pedro.ledger.domain.account.Account;
+import com.pedro.ledger.domain.account.AccountInactiveException;
 import com.pedro.ledger.domain.money.Money;
 
 /**
@@ -19,7 +20,7 @@ public final class TransactionProcessor {
    * @throws IllegalArgumentException if the transaction or account is invalid,
    *     if the account does not match the transaction, or if the transaction
    *     is a transfer
-   * @throws IllegalStateException if the account is inactive
+   * @throws AccountInactiveException if the account is inactive
    */
   public static void process(
       Transaction transaction,
@@ -31,7 +32,7 @@ public final class TransactionProcessor {
     ensureAccountMatchesTransaction(transaction, account);
 
     if (!account.isActive()) {
-      throw new IllegalStateException(
+      throw new AccountInactiveException(
           "Account is inactive"
       );
     }
@@ -88,13 +89,13 @@ public final class TransactionProcessor {
     }
 
     if (!source.isActive()) {
-      throw new IllegalStateException(
+      throw new AccountInactiveException(
           "Account is inactive"
       );
     }
 
     if (!destination.isActive()) {
-      throw new IllegalStateException(
+      throw new AccountInactiveException(
           "Destination account is inactive"
       );
     }
@@ -126,7 +127,7 @@ public final class TransactionProcessor {
     ensureAccountMatchesTransaction(transaction, account);
 
     if (!account.isActive()) {
-      throw new IllegalStateException("Account is inactive");
+      throw new AccountInactiveException("Account is inactive");
     }
     if (transaction.getType() == TransactionType.TRANSFER) {
       throw new IllegalArgumentException("Transfer amount changes require both accounts");
@@ -146,6 +147,61 @@ public final class TransactionProcessor {
     } else {
       adjustIncomeAmount(account, difference);
     }
+  }
+
+  public static void reverse(Transaction transaction, Account account) {
+    if (transaction == null) {
+      throw new IllegalArgumentException("Transaction cannot be null");
+    }
+
+    if (account == null) {
+      throw new IllegalArgumentException("Account cannot be null");
+    }
+
+    ensureAccountMatchesTransaction(transaction, account);
+
+    switch (transaction.getType()) {
+      case EXPENSE -> account.credit(transaction.getAmount());
+      case INCOME -> account.debit(transaction.getAmount());
+      case TRANSFER -> throw new IllegalArgumentException(
+          "Transfer requires source and destination accounts"
+      );
+    }
+  }
+
+  public static void reverse(
+      Transaction transaction,
+      Account source,
+      Account destination
+  ) {
+    if (transaction == null) {
+      throw new IllegalArgumentException("Transaction cannot be null");
+    }
+
+    if (source == null) {
+      throw new IllegalArgumentException("Source account cannot be null");
+    }
+
+    if (destination == null) {
+      throw new IllegalArgumentException("Destination account cannot be null");
+    }
+
+    if (transaction.getType() != TransactionType.TRANSFER) {
+      throw new IllegalArgumentException(
+          "Transaction is not a transfer"
+      );
+    }
+
+    ensureAccountMatchesTransaction(transaction, source);
+
+    if (!destination.getId().equals(transaction.getDestinationAccountId())) {
+      throw new IllegalArgumentException(
+          "Destination account does not match transaction"
+      );
+    }
+
+    source.credit(transaction.getAmount());
+    destination.debit(transaction.getAmount());
   }
 
   /**
