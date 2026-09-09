@@ -6,6 +6,10 @@ import com.pedro.ledger.domain.money.Money;
 
 /**
  * Processes financial transactions and applies their effects to accounts.
+ *
+ * <p>This class contains domain logic responsible for applying, adjusting,
+ * and reversing the financial effects of transactions. It does not perform
+ * persistence or application-level orchestration.
  */
 public final class TransactionProcessor {
 
@@ -15,9 +19,13 @@ public final class TransactionProcessor {
   /**
    * Processes an income or expense transaction against an account.
    *
+   * <p>An income increases the account balance, while an expense decreases
+   * it. Transfer transactions must be processed using the overload that
+   * receives both source and destination accounts.
+   *
    * @param transaction transaction to process
    * @param account account affected by the transaction
-   * @throws IllegalArgumentException if the transaction or account is invalid,
+   * @throws IllegalArgumentException if the transaction or account is null,
    *     if the account does not match the transaction, or if the transaction
    *     is a transfer
    * @throws AccountInactiveException if the account is inactive
@@ -52,13 +60,17 @@ public final class TransactionProcessor {
   /**
    * Processes a transfer between two accounts.
    *
+   * <p>The transaction's source account is debited and its destination
+   * account is credited by the transaction amount.
+   *
    * @param transaction transfer transaction to process
    * @param source source account
    * @param destination destination account
-   * @throws IllegalArgumentException if the transaction, source, or
-   *     destination is invalid or does not match the transaction
-   * @throws IllegalStateException if the source or destination account is
-   *     inactive
+   * @throws IllegalArgumentException if the transaction or source is null,
+   *     if the destination is null, if either account does not match the
+   *     transaction, or if the transaction is not a transfer
+   * @throws AccountInactiveException if the source or destination account
+   *     is inactive
    */
   public static void process(
       Transaction transaction,
@@ -105,15 +117,23 @@ public final class TransactionProcessor {
   }
 
   /**
-   * Changes the amount of a non-transfer transaction and adjusts the account
-   * balance by the corresponding difference.
+   * Changes the amount of a non-transfer transaction and adjusts the
+   * affected account balance by the corresponding difference.
+   *
+   * <p>For an expense, increasing the amount decreases the account balance,
+   * while decreasing the amount restores the corresponding difference.
+   * For an income, the inverse operation is performed.
+   *
+   * <p>Transactions imported through Open Finance are not allowed to have
+   * their amounts changed. That rule is enforced by the transaction itself.
    *
    * @param transaction transaction whose amount will be changed
    * @param newAmount new transaction amount
    * @param account account affected by the amount adjustment
    * @throws IllegalArgumentException if the transaction, account, or new
-   *     amount is invalid, if the account does not match the transaction, or
-   *     if the transaction is a transfer
+   *     amount is invalid, if the account does not match the transaction,
+   *     or if the transaction is a transfer
+   * @throws AccountInactiveException if the account is inactive
    * @throws IllegalStateException if the transaction was imported through
    *     Open Finance
    */
@@ -129,11 +149,15 @@ public final class TransactionProcessor {
     if (!account.isActive()) {
       throw new AccountInactiveException("Account is inactive");
     }
+
     if (transaction.getType() == TransactionType.TRANSFER) {
-      throw new IllegalArgumentException("Transfer amount changes require both accounts");
+      throw new IllegalArgumentException(
+          "Transfer amount changes require both accounts"
+      );
     }
 
     Money oldAmount = transaction.getAmount();
+
     if (oldAmount.equals(newAmount)) {
       return;
     }
@@ -149,14 +173,28 @@ public final class TransactionProcessor {
     }
   }
 
-  public static void reverse(Transaction transaction, Account account) {
-    if (transaction == null) {
-      throw new IllegalArgumentException("Transaction cannot be null");
-    }
-
-    if (account == null) {
-      throw new IllegalArgumentException("Account cannot be null");
-    }
+  /**
+   * Reverses the financial effect of an income or expense transaction.
+   *
+   * <p>Reversing an expense credits the transaction amount back to the
+   * account. Reversing an income debits the transaction amount from the
+   * account.
+   *
+   * <p>Transfer transactions must be reversed using the overload that
+   * receives both source and destination accounts.
+   *
+   * @param transaction transaction whose financial effect will be reversed
+   * @param account account affected by the transaction
+   * @throws IllegalArgumentException if the transaction or account is null,
+   *     if the account does not match the transaction, or if the transaction
+   *     is a transfer
+   */
+  public static void reverse(
+      Transaction transaction,
+      Account account
+  ) {
+    validateTransaction(transaction);
+    validateAccount(account);
 
     ensureAccountMatchesTransaction(transaction, account);
 
@@ -166,25 +204,34 @@ public final class TransactionProcessor {
       case TRANSFER -> throw new IllegalArgumentException(
           "Transfer requires source and destination accounts"
       );
+      default -> throw new IllegalArgumentException(
+          "Unsupported transaction type"
+      );
     }
   }
 
+  /**
+   * Reverses the financial effect of a transfer between two accounts.
+   *
+   * <p>The original source account is credited and the original destination
+   * account is debited by the transaction amount.
+   *
+   * @param transaction transfer transaction whose financial effect will be
+   *     reversed
+   * @param source source account of the original transfer
+   * @param destination destination account of the original transfer
+   * @throws IllegalArgumentException if the transaction, source, or
+   *     destination is null, if the source or destination does not match
+   *     the transaction, or if the transaction is not a transfer
+   */
   public static void reverse(
       Transaction transaction,
       Account source,
       Account destination
   ) {
-    if (transaction == null) {
-      throw new IllegalArgumentException("Transaction cannot be null");
-    }
-
-    if (source == null) {
-      throw new IllegalArgumentException("Source account cannot be null");
-    }
-
-    if (destination == null) {
-      throw new IllegalArgumentException("Destination account cannot be null");
-    }
+    validateTransaction(transaction);
+    validateAccount(source);
+    validateAccount(destination);
 
     if (transaction.getType() != TransactionType.TRANSFER) {
       throw new IllegalArgumentException(
@@ -207,6 +254,9 @@ public final class TransactionProcessor {
   /**
    * Adjusts an account balance after an expense amount changes.
    *
+   * <p>Increasing the expense decreases the account balance. Decreasing the
+   * expense restores the corresponding difference to the account.
+   *
    * @param account account affected by the adjustment
    * @param difference difference between the new and old amounts
    */
@@ -224,6 +274,9 @@ public final class TransactionProcessor {
   /**
    * Adjusts an account balance after an income amount changes.
    *
+   * <p>Increasing the income increases the account balance. Decreasing the
+   * income removes the corresponding difference from the account.
+   *
    * @param account account affected by the adjustment
    * @param difference difference between the new and old amounts
    */
@@ -239,7 +292,7 @@ public final class TransactionProcessor {
   }
 
   /**
-   * Validates a transaction.
+   * Validates that a transaction is not null.
    *
    * @param transaction transaction to validate
    * @throws IllegalArgumentException if the transaction is null
@@ -255,7 +308,7 @@ public final class TransactionProcessor {
   }
 
   /**
-   * Validates an account.
+   * Validates that an account is not null.
    *
    * @param account account to validate
    * @throws IllegalArgumentException if the account is null
