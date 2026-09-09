@@ -1,13 +1,16 @@
 package com.pedro.ledger.application.transaction;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.pedro.ledger.domain.account.Account;
+import com.pedro.ledger.domain.account.AccountNotFoundException;
 import com.pedro.ledger.domain.account.AccountRepository;
 import com.pedro.ledger.domain.account.AccountType;
 import com.pedro.ledger.domain.money.Money;
@@ -90,6 +93,9 @@ class TransactionApplicationServiceTest {
       assertThat(result.getAccountId())
           .isEqualTo(accountId);
 
+      assertThat(result.getDestinationAccountId())
+          .isNull();
+
       assertThat(result.getTimestamp())
           .isNotNull();
 
@@ -103,7 +109,7 @@ class TransactionApplicationServiceTest {
           .save(account);
 
       verify(transactionRepository)
-          .save(any(Transaction.class));
+          .save(result);
     }
 
     @Test
@@ -137,6 +143,15 @@ class TransactionApplicationServiceTest {
       assertThat(result.getType())
           .isEqualTo(TransactionType.INCOME);
 
+      assertThat(result.getDescription())
+          .isEqualTo("Salary");
+
+      assertThat(result.getSource())
+          .isEqualTo(TransactionSource.MANUAL);
+
+      assertThat(result.getAccountId())
+          .isEqualTo(accountId);
+
       assertThat(account.getBalance())
           .isEqualTo(Money.of("3500.00"));
 
@@ -147,7 +162,7 @@ class TransactionApplicationServiceTest {
           .save(account);
 
       verify(transactionRepository)
-          .save(any(Transaction.class));
+          .save(result);
     }
 
     @Test
@@ -194,6 +209,9 @@ class TransactionApplicationServiceTest {
       assertThat(result.getDestinationAccountId())
           .isEqualTo(destinationAccountId);
 
+      assertThat(result.getCategoryId())
+          .isNull();
+
       assertThat(sourceAccount.getBalance())
           .isEqualTo(Money.of("800.00"));
 
@@ -213,7 +231,7 @@ class TransactionApplicationServiceTest {
           .save(destinationAccount);
 
       verify(transactionRepository)
-          .save(any(Transaction.class));
+          .save(result);
     }
 
     @Test
@@ -233,10 +251,52 @@ class TransactionApplicationServiceTest {
               null
           )
       )
-          .isInstanceOf(RuntimeException.class);
+          .isInstanceOf(AccountNotFoundException.class);
 
       verify(accountRepository)
           .findById(accountId);
+
+      verify(accountRepository, never())
+          .save(any(Account.class));
+
+      verify(transactionRepository, never())
+          .save(any(Transaction.class));
+    }
+
+    @Test
+    void shouldThrowExceptionWhenTransferDestinationDoesNotExist() {
+      Account sourceAccount = Account.open(
+          "Checking Account",
+          AccountType.CHECKING,
+          Money.of("1000.00")
+      );
+
+      UUID sourceAccountId = sourceAccount.getId();
+      UUID destinationAccountId = UUID.randomUUID();
+
+      when(accountRepository.findById(sourceAccountId))
+          .thenReturn(Optional.of(sourceAccount));
+
+      when(accountRepository.findById(destinationAccountId))
+          .thenReturn(Optional.empty());
+
+      assertThatThrownBy(() ->
+          transactionApplicationService.create(
+              Money.of("200.00"),
+              TransactionType.TRANSFER,
+              "Transfer to savings",
+              sourceAccountId,
+              destinationAccountId,
+              null
+          )
+      )
+          .isInstanceOf(AccountNotFoundException.class);
+
+      verify(accountRepository)
+          .findById(sourceAccountId);
+
+      verify(accountRepository)
+          .findById(destinationAccountId);
 
       verify(accountRepository, never())
           .save(any(Account.class));
@@ -315,7 +375,6 @@ class TransactionApplicationServiceTest {
 
     @Test
     void shouldFindTransactionById() {
-      UUID transactionId = UUID.randomUUID();
       UUID accountId = UUID.randomUUID();
 
       Transaction transaction = Transaction.create(
@@ -328,6 +387,8 @@ class TransactionApplicationServiceTest {
           null,
           null
       );
+
+      UUID transactionId = transaction.getId();
 
       when(transactionRepository.findById(transactionId))
           .thenReturn(Optional.of(transaction));
@@ -365,7 +426,7 @@ class TransactionApplicationServiceTest {
   class Update {
 
     @Test
-    void shouldUpdateExpenseAndAdjustAccountBalance() {
+    void shouldUpdateExpenseAndIncreaseDebit() {
       Account account = Account.open(
           "Checking Account",
           AccountType.CHECKING,
@@ -373,8 +434,6 @@ class TransactionApplicationServiceTest {
       );
 
       UUID accountId = account.getId();
-      UUID categoryId = UUID.randomUUID();
-      UUID newCategoryId = UUID.randomUUID();
 
       Transaction transaction = Transaction.create(
           Money.of("100.00"),
@@ -384,8 +443,10 @@ class TransactionApplicationServiceTest {
           TransactionSource.MANUAL,
           accountId,
           null,
-          categoryId
+          null
       );
+
+      account.debit(transaction.getAmount());
 
       UUID transactionId = transaction.getId();
 
@@ -402,26 +463,14 @@ class TransactionApplicationServiceTest {
           transactionId,
           Money.of("150.00"),
           "Groceries and household items",
-          newCategoryId
+          null
       );
-
-      assertThat(result.getId())
-          .isEqualTo(transactionId);
 
       assertThat(result.getAmount())
           .isEqualTo(Money.of("150.00"));
 
       assertThat(result.getDescription())
           .isEqualTo("Groceries and household items");
-
-      assertThat(result.getCategoryId())
-          .isEqualTo(newCategoryId);
-
-      assertThat(result.getType())
-          .isEqualTo(TransactionType.EXPENSE);
-
-      assertThat(result.getAccountId())
-          .isEqualTo(accountId);
 
       assertThat(account.getBalance())
           .isEqualTo(Money.of("850.00"));
@@ -431,6 +480,177 @@ class TransactionApplicationServiceTest {
 
       verify(accountRepository)
           .findById(accountId);
+
+      verify(accountRepository)
+          .save(account);
+
+      verify(transactionRepository)
+          .save(transaction);
+    }
+
+    @Test
+    void shouldUpdateExpenseAndDecreaseDebit() {
+      Account account = Account.open(
+          "Checking Account",
+          AccountType.CHECKING,
+          Money.of("1000.00")
+      );
+
+      UUID accountId = account.getId();
+
+      Transaction transaction = Transaction.create(
+          Money.of("150.00"),
+          TransactionType.EXPENSE,
+          "Groceries",
+          Instant.now(),
+          TransactionSource.MANUAL,
+          accountId,
+          null,
+          null
+      );
+
+      account.debit(transaction.getAmount());
+
+      UUID transactionId = transaction.getId();
+
+      when(transactionRepository.findById(transactionId))
+          .thenReturn(Optional.of(transaction));
+
+      when(accountRepository.findById(accountId))
+          .thenReturn(Optional.of(account));
+
+      when(transactionRepository.save(any(Transaction.class)))
+          .thenAnswer(invocation -> invocation.getArgument(0));
+
+      Transaction result = transactionApplicationService.update(
+          transactionId,
+          Money.of("100.00"),
+          "Groceries",
+          null
+      );
+
+      assertThat(result.getAmount())
+          .isEqualTo(Money.of("100.00"));
+
+      assertThat(account.getBalance())
+          .isEqualTo(Money.of("900.00"));
+
+      verify(accountRepository)
+          .save(account);
+
+      verify(transactionRepository)
+          .save(transaction);
+    }
+
+    @Test
+    void shouldUpdateIncomeAndAdjustAccountBalance() {
+      Account account = Account.open(
+          "Checking Account",
+          AccountType.CHECKING,
+          Money.of("1000.00")
+      );
+
+      UUID accountId = account.getId();
+
+      Transaction transaction = Transaction.create(
+          Money.of("500.00"),
+          TransactionType.INCOME,
+          "Salary",
+          Instant.now(),
+          TransactionSource.MANUAL,
+          accountId,
+          null,
+          null
+      );
+
+      account.credit(transaction.getAmount());
+
+      UUID transactionId = transaction.getId();
+
+      when(transactionRepository.findById(transactionId))
+          .thenReturn(Optional.of(transaction));
+
+      when(accountRepository.findById(accountId))
+          .thenReturn(Optional.of(account));
+
+      when(transactionRepository.save(any(Transaction.class)))
+          .thenAnswer(invocation -> invocation.getArgument(0));
+
+      Transaction result = transactionApplicationService.update(
+          transactionId,
+          Money.of("700.00"),
+          "Salary",
+          null
+      );
+
+      assertThat(result.getAmount())
+          .isEqualTo(Money.of("700.00"));
+
+      assertThat(account.getBalance())
+          .isEqualTo(Money.of("1700.00"));
+
+      verify(accountRepository)
+          .save(account);
+
+      verify(transactionRepository)
+          .save(transaction);
+    }
+
+    @Test
+    void shouldUpdateCategoryAndDescriptionWithoutChangingBalance() {
+      Account account = Account.open(
+          "Checking Account",
+          AccountType.CHECKING,
+          Money.of("1000.00")
+      );
+
+      UUID accountId = account.getId();
+
+      UUID categoryId = UUID.randomUUID();
+      UUID newCategoryId = UUID.randomUUID();
+
+      Transaction transaction = Transaction.create(
+          Money.of("100.00"),
+          TransactionType.EXPENSE,
+          "Groceries",
+          Instant.now(),
+          TransactionSource.MANUAL,
+          accountId,
+          null,
+          categoryId
+      );
+
+      account.debit(transaction.getAmount());
+
+      UUID transactionId = transaction.getId();
+
+      when(transactionRepository.findById(transactionId))
+          .thenReturn(Optional.of(transaction));
+
+      when(accountRepository.findById(accountId))
+          .thenReturn(Optional.of(account));
+
+      when(transactionRepository.save(any(Transaction.class)))
+          .thenAnswer(invocation -> invocation.getArgument(0));
+
+      Transaction result = transactionApplicationService.update(
+          transactionId,
+          Money.of("100.00"),
+          "Household groceries",
+          newCategoryId
+      );
+
+      assertThat(result.getAmount())
+          .isEqualTo(Money.of("100.00"));
+
+      assertThat(result.getDescription())
+          .isEqualTo("Household groceries");
+
+      assertThat(result.getCategoryId())
+          .isEqualTo(newCategoryId);
+
+      assertThat(account.getBalance())
+          .isEqualTo(Money.of("900.00"));
 
       verify(accountRepository)
           .save(account);
@@ -468,6 +688,58 @@ class TransactionApplicationServiceTest {
       verify(accountRepository, never())
           .save(any(Account.class));
     }
+
+    @Test
+    void shouldThrowExceptionWhenAccountDoesNotExist() {
+      Account account = Account.open(
+          "Checking Account",
+          AccountType.CHECKING,
+          Money.of("1000.00")
+      );
+
+      UUID accountId = account.getId();
+
+      Transaction transaction = Transaction.create(
+          Money.of("100.00"),
+          TransactionType.EXPENSE,
+          "Groceries",
+          Instant.now(),
+          TransactionSource.MANUAL,
+          accountId,
+          null,
+          null
+      );
+
+      UUID transactionId = transaction.getId();
+
+      when(transactionRepository.findById(transactionId))
+          .thenReturn(Optional.of(transaction));
+
+      when(accountRepository.findById(accountId))
+          .thenReturn(Optional.empty());
+
+      assertThatThrownBy(() ->
+          transactionApplicationService.update(
+              transactionId,
+              Money.of("150.00"),
+              "Updated description",
+              null
+          )
+      )
+          .isInstanceOf(AccountNotFoundException.class);
+
+      verify(transactionRepository)
+          .findById(transactionId);
+
+      verify(accountRepository)
+          .findById(accountId);
+
+      verify(accountRepository, never())
+          .save(any(Account.class));
+
+      verify(transactionRepository, never())
+          .save(any(Transaction.class));
+    }
   }
 
   @Nested
@@ -483,8 +755,6 @@ class TransactionApplicationServiceTest {
 
       UUID accountId = account.getId();
 
-      account.debit(Money.of("100.00"));
-
       Transaction transaction = Transaction.create(
           Money.of("100.00"),
           TransactionType.EXPENSE,
@@ -495,6 +765,8 @@ class TransactionApplicationServiceTest {
           null,
           null
       );
+
+      account.debit(transaction.getAmount());
 
       UUID transactionId = transaction.getId();
 
@@ -532,8 +804,6 @@ class TransactionApplicationServiceTest {
 
       UUID accountId = account.getId();
 
-      account.credit(Money.of("100.00"));
-
       Transaction transaction = Transaction.create(
           Money.of("100.00"),
           TransactionType.INCOME,
@@ -544,6 +814,8 @@ class TransactionApplicationServiceTest {
           null,
           null
       );
+
+      account.credit(transaction.getAmount());
 
       UUID transactionId = transaction.getId();
 
@@ -557,6 +829,9 @@ class TransactionApplicationServiceTest {
 
       assertThat(account.getBalance())
           .isEqualTo(Money.of("1000.00"));
+
+      verify(transactionRepository)
+          .findById(transactionId);
 
       verify(accountRepository)
           .findById(accountId);
@@ -585,9 +860,6 @@ class TransactionApplicationServiceTest {
       UUID sourceAccountId = sourceAccount.getId();
       UUID destinationAccountId = destinationAccount.getId();
 
-      sourceAccount.debit(Money.of("200.00"));
-      destinationAccount.credit(Money.of("200.00"));
-
       Transaction transaction = Transaction.create(
           Money.of("200.00"),
           TransactionType.TRANSFER,
@@ -598,6 +870,9 @@ class TransactionApplicationServiceTest {
           destinationAccountId,
           null
       );
+
+      sourceAccount.debit(transaction.getAmount());
+      destinationAccount.credit(transaction.getAmount());
 
       UUID transactionId = transaction.getId();
 
@@ -617,6 +892,9 @@ class TransactionApplicationServiceTest {
 
       assertThat(destinationAccount.getBalance())
           .isEqualTo(Money.of("500.00"));
+
+      verify(transactionRepository)
+          .findById(transactionId);
 
       verify(accountRepository)
           .findById(sourceAccountId);
@@ -651,6 +929,146 @@ class TransactionApplicationServiceTest {
 
       verify(accountRepository, never())
           .findById(any(UUID.class));
+
+      verify(accountRepository, never())
+          .save(any(Account.class));
+
+      verify(transactionRepository, never())
+          .delete(any(UUID.class));
+    }
+
+    @Test
+    void shouldThrowExceptionWhenExpenseAccountDoesNotExist() {
+      UUID accountId = UUID.randomUUID();
+
+      Transaction transaction = Transaction.create(
+          Money.of("100.00"),
+          TransactionType.EXPENSE,
+          "Groceries",
+          Instant.now(),
+          TransactionSource.MANUAL,
+          accountId,
+          null,
+          null
+      );
+
+      UUID transactionId = transaction.getId();
+
+      when(transactionRepository.findById(transactionId))
+          .thenReturn(Optional.of(transaction));
+
+      when(accountRepository.findById(accountId))
+          .thenReturn(Optional.empty());
+
+      assertThatThrownBy(() ->
+          transactionApplicationService.delete(transactionId)
+      )
+          .isInstanceOf(AccountNotFoundException.class);
+
+      verify(transactionRepository)
+          .findById(transactionId);
+
+      verify(accountRepository)
+          .findById(accountId);
+
+      verify(accountRepository, never())
+          .save(any(Account.class));
+
+      verify(transactionRepository, never())
+          .delete(any(UUID.class));
+    }
+
+    @Test
+    void shouldThrowExceptionWhenTransferSourceAccountDoesNotExist() {
+      UUID sourceAccountId = UUID.randomUUID();
+      UUID destinationAccountId = UUID.randomUUID();
+
+      Transaction transaction = Transaction.create(
+          Money.of("200.00"),
+          TransactionType.TRANSFER,
+          "Transfer",
+          Instant.now(),
+          TransactionSource.MANUAL,
+          sourceAccountId,
+          destinationAccountId,
+          null
+      );
+
+      UUID transactionId = transaction.getId();
+
+      when(transactionRepository.findById(transactionId))
+          .thenReturn(Optional.of(transaction));
+
+      when(accountRepository.findById(sourceAccountId))
+          .thenReturn(Optional.empty());
+
+      assertThatThrownBy(() ->
+          transactionApplicationService.delete(transactionId)
+      )
+          .isInstanceOf(AccountNotFoundException.class);
+
+      verify(transactionRepository)
+          .findById(transactionId);
+
+      verify(accountRepository)
+          .findById(sourceAccountId);
+
+      verify(accountRepository, never())
+          .findById(destinationAccountId);
+
+      verify(accountRepository, never())
+          .save(any(Account.class));
+
+      verify(transactionRepository, never())
+          .delete(any(UUID.class));
+    }
+
+    @Test
+    void shouldThrowExceptionWhenTransferDestinationAccountDoesNotExist() {
+      Account sourceAccount = Account.open(
+          "Checking Account",
+          AccountType.CHECKING,
+          Money.of("1000.00")
+      );
+
+      UUID sourceAccountId = sourceAccount.getId();
+      UUID destinationAccountId = UUID.randomUUID();
+
+      Transaction transaction = Transaction.create(
+          Money.of("200.00"),
+          TransactionType.TRANSFER,
+          "Transfer",
+          Instant.now(),
+          TransactionSource.MANUAL,
+          sourceAccountId,
+          destinationAccountId,
+          null
+      );
+
+      UUID transactionId = transaction.getId();
+
+      when(transactionRepository.findById(transactionId))
+          .thenReturn(Optional.of(transaction));
+
+      when(accountRepository.findById(sourceAccountId))
+          .thenReturn(Optional.of(sourceAccount));
+
+      when(accountRepository.findById(destinationAccountId))
+          .thenReturn(Optional.empty());
+
+      assertThatThrownBy(() ->
+          transactionApplicationService.delete(transactionId)
+      )
+          .isInstanceOf(AccountNotFoundException.class);
+
+      verify(transactionRepository)
+          .findById(transactionId);
+
+      verify(accountRepository)
+          .findById(sourceAccountId);
+
+      verify(accountRepository)
+          .findById(destinationAccountId);
 
       verify(accountRepository, never())
           .save(any(Account.class));
