@@ -44,6 +44,16 @@ public class Category {
   }
 
   /**
+   * Restores an account from persisted data.
+  */
+  public static Category restore(
+      UUID id,
+      String name
+  ) {
+    return new Category(id, name);
+  }
+
+  /**
    * Returns the category identifier.
    *
    * @return category identifier

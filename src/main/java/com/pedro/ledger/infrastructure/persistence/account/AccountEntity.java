@@ -13,7 +13,7 @@ import java.util.Currency;
 import java.util.UUID;
 
 /**
- * JPA entity representing an account in the persistence layer.
+   * JPA entity representing an account in the persistence layer.
  */
 @Entity
 @Table(name = "accounts")
@@ -71,11 +71,11 @@ public class AccountEntity {
     this.currency = currency.getCurrencyCode();
   }
 
-  /**
-   * Returns the account identifier.
-   *
-   * @return account identifier
-   */
+      /**
+       * Returns the account identifier.
+       *
+       * @return account identifier
+       */
   public UUID getId() {
     return id;
   }
