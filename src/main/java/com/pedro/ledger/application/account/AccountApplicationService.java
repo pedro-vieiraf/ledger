@@ -24,9 +24,7 @@ public class AccountApplicationService {
    *
    * @param accountRepository repository used to persist and retrieve accounts
    */
-  public AccountApplicationService(
-      AccountRepository accountRepository
-  ) {
+  public AccountApplicationService(AccountRepository accountRepository) {
     this.accountRepository = accountRepository;
   }
 
