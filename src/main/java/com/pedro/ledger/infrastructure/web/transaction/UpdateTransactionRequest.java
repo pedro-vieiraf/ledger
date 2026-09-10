@@ -15,8 +15,9 @@ public record UpdateTransactionRequest(
 
     @DecimalMin(value = "0.01")
     BigDecimal amount,
-    String currency,
+
     String description,
+
     UUID categoryId
 ) {
 }

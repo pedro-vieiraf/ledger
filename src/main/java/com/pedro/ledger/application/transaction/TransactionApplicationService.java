@@ -3,6 +3,9 @@ package com.pedro.ledger.application.transaction;
 import com.pedro.ledger.domain.account.Account;
 import com.pedro.ledger.domain.account.AccountNotFoundException;
 import com.pedro.ledger.domain.account.AccountRepository;
+import com.pedro.ledger.domain.category.Category;
+import com.pedro.ledger.domain.category.CategoryNotFoundException;
+import com.pedro.ledger.domain.category.CategoryRepository;
 import com.pedro.ledger.domain.money.Money;
 import com.pedro.ledger.domain.transaction.Transaction;
 import com.pedro.ledger.domain.transaction.TransactionNotFoundException;
@@ -10,6 +13,7 @@ import com.pedro.ledger.domain.transaction.TransactionProcessor;
 import com.pedro.ledger.domain.transaction.TransactionRepository;
 import com.pedro.ledger.domain.transaction.TransactionSource;
 import com.pedro.ledger.domain.transaction.TransactionType;
+import java.math.BigDecimal;
 import org.springframework.transaction.annotation.Transactional;
 import java.time.Instant;
 import java.util.List;
@@ -24,11 +28,16 @@ public class TransactionApplicationService {
 
   private final AccountRepository accountRepository;
 
+  private final CategoryRepository categoryRepository;
+
   public TransactionApplicationService(
       TransactionRepository transactionRepository,
-      AccountRepository accountRepository) {
+      AccountRepository accountRepository,
+      CategoryRepository categoryRepository
+  ) {
     this.transactionRepository = transactionRepository;
     this.accountRepository = accountRepository;
+    this.categoryRepository = categoryRepository;
   }
 
   @Transactional
@@ -40,48 +49,7 @@ public class TransactionApplicationService {
       UUID destinationAccountId,
       UUID categoryId
   ) {
-    if (type == TransactionType.TRANSFER) {
-
-      Account sourceAccount = accountRepository.findById(accountId)
-          .orElseThrow(() ->
-              new AccountNotFoundException("Account not found")
-          );
-
-      Account destinationAccount = accountRepository
-          .findById(destinationAccountId)
-          .orElseThrow(() ->
-              new AccountNotFoundException("Destination account not found")
-          );
-
-      Transaction transaction = Transaction.create(
-          amount,
-          type,
-          description,
-          Instant.now(),
-          TransactionSource.MANUAL,
-          accountId,
-          destinationAccountId,
-          categoryId
-      );
-
-      TransactionProcessor.process(
-          transaction,
-          sourceAccount,
-          destinationAccount
-      );
-
-      accountRepository.save(sourceAccount);
-      accountRepository.save(destinationAccount);
-
-      transactionRepository.save(transaction);
-
-      return transaction;
-    }
-
-    Account account = accountRepository.findById(accountId)
-        .orElseThrow(() ->
-            new AccountNotFoundException("Account not found")
-        );
+    validateCategory(categoryId);
 
     Transaction transaction = Transaction.create(
         amount,
@@ -94,15 +62,41 @@ public class TransactionApplicationService {
         categoryId
     );
 
-    TransactionProcessor.process(
-        transaction,
-        account
-    );
+    if (type == TransactionType.TRANSFER) {
+      Account sourceAccount = accountRepository.findById(accountId)
+          .orElseThrow(() ->
+              new AccountNotFoundException("Account not found")
+          );
 
-    accountRepository.save(account);
-    transactionRepository.save(transaction);
+      Account destinationAccount = accountRepository
+          .findById(destinationAccountId)
+          .orElseThrow(() ->
+              new AccountNotFoundException("Destination account not found")
+          );
 
-    return transaction;
+      TransactionProcessor.process(
+          transaction,
+          sourceAccount,
+          destinationAccount
+      );
+
+      accountRepository.save(sourceAccount);
+      accountRepository.save(destinationAccount);
+    } else {
+      Account account = accountRepository.findById(accountId)
+          .orElseThrow(() ->
+              new AccountNotFoundException("Account not found")
+          );
+
+      TransactionProcessor.process(
+          transaction,
+          account
+      );
+
+      accountRepository.save(account);
+    }
+
+    return transactionRepository.save(transaction);
   }
 
   public List<Transaction> findAll() {
@@ -114,27 +108,38 @@ public class TransactionApplicationService {
   }
 
   @Transactional
-  public Transaction update(UUID id, Money amount, String description, UUID categoryId) {
+  public Transaction update(
+      UUID id,
+      BigDecimal amount,
+      String description,
+      UUID categoryId
+  ) {
     Transaction transaction = getByIdOrThrow(id);
 
-    Account account = accountRepository.findById(transaction.getAccountId())
-            .orElseThrow(() ->
-                new AccountNotFoundException("Account not found")
-            );
+    validateCategory(categoryId);
 
-    TransactionProcessor.changeAmount(
-        transaction,
-        amount,
-        account
-    );
+    Account account = null;
+
+    if (amount != null) {
+      account = accountRepository.findById(
+          transaction.getAccountId()
+      ).orElseThrow(() ->
+          new AccountNotFoundException("Account not found")
+      );
+
+      TransactionProcessor.changeAmount(
+          transaction,
+          Money.of(amount, transaction.getAmount().currency()),
+          account
+      );
+
+      accountRepository.save(account);
+    }
 
     transaction.changeDescription(description);
     transaction.changeCategory(categoryId);
 
-    accountRepository.save(account);
-    transactionRepository.save(transaction);
-
-    return transaction;
+    return transactionRepository.save(transaction);
   }
 
   @Transactional
@@ -188,6 +193,17 @@ public class TransactionApplicationService {
     return transactionRepository.findById(id)
         .orElseThrow(() ->
             new TransactionNotFoundException()
+        );
+  }
+
+  private void validateCategory(UUID categoryId) {
+    if (categoryId == null) {
+      return;
+    }
+
+    categoryRepository.findById(categoryId)
+        .orElseThrow(() ->
+            new CategoryNotFoundException()
         );
   }
 }

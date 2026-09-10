@@ -73,19 +73,15 @@ public class TransactionController {
       @PathVariable UUID id,
       @RequestBody UpdateTransactionRequest request
   ) {
-    Money amount = Money.of(
-        request.amount(),
-        Currency.getInstance(request.currency())
-    );
-
     Transaction updatedTransaction = service.update(
         id,
-        amount,
+        request.amount(),
         request.description(),
         request.categoryId()
     );
 
-    TransactionResponse response = TransactionResponse.from(updatedTransaction);
+    TransactionResponse response =
+        TransactionResponse.from(updatedTransaction);
 
     return ResponseEntity.ok(response);
   }
