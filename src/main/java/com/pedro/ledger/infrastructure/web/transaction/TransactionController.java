@@ -3,6 +3,7 @@ package com.pedro.ledger.infrastructure.web.transaction;
 import com.pedro.ledger.application.transaction.TransactionApplicationService;
 import com.pedro.ledger.domain.money.Money;
 import com.pedro.ledger.domain.transaction.Transaction;
+import jakarta.validation.Valid;
 import java.util.Currency;
 import java.util.List;
 import java.util.UUID;
@@ -29,6 +30,7 @@ public class TransactionController {
 
   @PostMapping
   public ResponseEntity<TransactionResponse> save(
+      @Valid
       @RequestBody CreateTransactionRequest request
   ) {
     Transaction transaction = service.create(
@@ -71,6 +73,7 @@ public class TransactionController {
   @PatchMapping("/{id}")
   public ResponseEntity<TransactionResponse> update(
       @PathVariable UUID id,
+      @Valid
       @RequestBody UpdateTransactionRequest request
   ) {
     Transaction updatedTransaction = service.update(

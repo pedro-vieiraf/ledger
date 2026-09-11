@@ -6,6 +6,7 @@ import com.pedro.ledger.domain.account.AccountRepository;
 import com.pedro.ledger.domain.account.AccountType;
 import com.pedro.ledger.domain.money.Money;
 import java.math.BigDecimal;
+import java.util.Currency;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -39,14 +40,22 @@ public class AccountApplicationService {
   public Account create(
       String name,
       AccountType type,
-      BigDecimal openingBalance
+      BigDecimal openingBalance,
+      String currency
   ) {
-    Money money = Money.of(openingBalance);
+    Currency accountCurrency = currency == null
+        ? Currency.getInstance("BRL")
+        : Currency.getInstance(currency);
+
+    Money balance = Money.of(
+        openingBalance,
+        accountCurrency
+    );
 
     Account account = Account.open(
         name,
         type,
-        money
+        balance
     );
 
     return accountRepository.save(account);

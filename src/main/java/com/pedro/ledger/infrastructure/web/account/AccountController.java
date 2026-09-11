@@ -2,6 +2,7 @@ package com.pedro.ledger.infrastructure.web.account;
 
 import com.pedro.ledger.application.account.AccountApplicationService;
 import com.pedro.ledger.domain.account.Account;
+import jakarta.validation.Valid;
 import java.util.List;
 import java.util.UUID;
 import org.springframework.http.HttpStatus;
@@ -43,12 +44,14 @@ public class AccountController {
    */
   @PostMapping
   public ResponseEntity<AccountResponse> create(
+      @Valid
       @RequestBody CreateAccountRequest request
   ) {
     Account account = accountApplicationService.create(
         request.name(),
         request.type(),
-        request.openingBalance()
+        request.openingBalance(),
+        request.currency()
     );
 
     AccountResponse response = AccountResponse.from(account);

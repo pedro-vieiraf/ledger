@@ -2,6 +2,7 @@ package com.pedro.ledger.infrastructure.web.category;
 
 import com.pedro.ledger.application.category.CategoryApplicationService;
 import com.pedro.ledger.domain.category.Category;
+import jakarta.validation.Valid;
 import java.util.List;
 import java.util.UUID;
 import org.springframework.http.HttpStatus;
@@ -30,6 +31,7 @@ public class CategoryController {
    */
   @PostMapping
   public ResponseEntity<CategoryResponse> create(
+      @Valid
       @RequestBody CategoryRequest request
   ) {
     Category category = categoryApplicationService.create(
@@ -73,6 +75,7 @@ public class CategoryController {
   @PatchMapping("/{id}")
   public ResponseEntity<CategoryResponse> update(
       @PathVariable UUID id,
+      @Valid
       @RequestBody CategoryRequest request
   ) {
     Category category = categoryApplicationService.update(
