@@ -1,0 +1,4 @@
+-------------------------------------------------------------------------------
+Test set: com.pedro.ledger.domain.transaction.TransactionTest
+-------------------------------------------------------------------------------
+Tests run: 23, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.050 s -- in com.pedro.ledger.domain.transaction.TransactionTest
