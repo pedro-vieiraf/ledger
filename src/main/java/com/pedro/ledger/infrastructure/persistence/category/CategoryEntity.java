@@ -15,7 +15,7 @@ public class CategoryEntity {
 
   @Id
   private UUID id;
-  
+
   @Column(nullable = false, unique = true)
   private String name;
 
@@ -29,7 +29,6 @@ public class CategoryEntity {
     this.id = id;
     this.name = name;
   }
-
 
   /**
    * Returns the category identifier.

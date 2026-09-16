@@ -116,9 +116,9 @@ public record Money(BigDecimal amount, Currency currency) {
   }
 
   /**
-   * Multiplies this monetary value by an integer.
+   * Multiplies this monetary value by a BigDecimal.
    *
-   * @param multiplier integer multiplier
+   * @param multiplier BigDecimal multiplier
    * @return the resulting monetary value
    */
   public Money multiply(BigDecimal multiplier) {
@@ -132,6 +132,12 @@ public record Money(BigDecimal amount, Currency currency) {
     );
   }
 
+  /**
+   * Multiplies this monetary value by an integer.
+   *
+   * @param multiplier integer multiplier
+   * @return the resulting monetary value
+   */
   public Money multiply(int multiplier) {
     return multiply(BigDecimal.valueOf(multiplier));
   }
@@ -162,6 +168,12 @@ public record Money(BigDecimal amount, Currency currency) {
     return zero(DEFAULT_CURRENCY);
   }
 
+  /**
+   * Creates a monetary value representing zero using a specific currency.
+   *
+   * @param currency specific currency
+   * @return a zero monetary value
+   */
   public static Money zero(Currency currency) {
     return new Money(BigDecimal.ZERO, currency);
   }

@@ -7,6 +7,5 @@ import org.springframework.data.jpa.repository.JpaRepository;
  * JPA Repository.
  */
 public interface TransactionJpaRepository
-  extends JpaRepository<TransactionEntity, UUID> {
-
+    extends JpaRepository<TransactionEntity, UUID> {
 }

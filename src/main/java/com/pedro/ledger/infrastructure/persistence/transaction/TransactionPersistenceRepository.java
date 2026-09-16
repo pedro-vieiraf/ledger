@@ -13,7 +13,6 @@ public class TransactionPersistenceRepository implements TransactionRepository {
   private final TransactionJpaRepository jpaRepository;
   private final TransactionMapper mapper;
 
-
   public TransactionPersistenceRepository(TransactionJpaRepository jpaRepository,
       TransactionMapper mapper) {
     this.jpaRepository = jpaRepository;
