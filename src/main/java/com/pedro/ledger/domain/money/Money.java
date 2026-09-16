@@ -40,7 +40,7 @@ public record Money(BigDecimal amount, Currency currency) {
       );
     }
 
-    amount = amount.setScale(SCALE);
+    amount = amount.setScale(SCALE, RoundingMode.UNNECESSARY);
   }
 
   /**
@@ -121,11 +121,19 @@ public record Money(BigDecimal amount, Currency currency) {
    * @param multiplier integer multiplier
    * @return the resulting monetary value
    */
-  public Money multiply(int multiplier) {
+  public Money multiply(BigDecimal multiplier) {
+    if (multiplier == null) {
+      throw new IllegalArgumentException("Multiplier cannot be null");
+    }
+
     return new Money(
-        amount.multiply(BigDecimal.valueOf(multiplier)),
+        amount.multiply(multiplier),
         currency
     );
+  }
+
+  public Money multiply(int multiplier) {
+    return multiply(BigDecimal.valueOf(multiplier));
   }
 
   /**
@@ -151,7 +159,11 @@ public record Money(BigDecimal amount, Currency currency) {
    * @return a zero monetary value
    */
   public static Money zero() {
-    return new Money(BigDecimal.ZERO, DEFAULT_CURRENCY);
+    return zero(DEFAULT_CURRENCY);
+  }
+
+  public static Money zero(Currency currency) {
+    return new Money(BigDecimal.ZERO, currency);
   }
 
   /**
@@ -161,6 +173,10 @@ public record Money(BigDecimal amount, Currency currency) {
    * @throws CurrencyMismatchException if the currencies do not match
    */
   private void requireSameCurrency(Money other) {
+    if (other == null) {
+      throw new IllegalArgumentException("Money cannot be null");
+    }
+
     if (!this.currency.equals(other.currency)) {
       throw new CurrencyMismatchException(this.currency, other.currency);
     }
