@@ -54,19 +54,20 @@ class AccountControllerTest {
       when(accountApplicationService.create(
           "Checking Account",
           AccountType.CHECKING,
-          new BigDecimal("1000.00")
+          new BigDecimal("1000.00"),
+          null
       )).thenReturn(account);
 
       mockMvc.perform(
               post("/accounts")
                   .contentType(MediaType.APPLICATION_JSON)
                   .content("""
-                    {
-                      "name": "Checking Account",
-                      "type": "CHECKING",
-                      "openingBalance": 1000.00
-                    }
-                    """)
+                {
+                  "name": "Checking Account",
+                  "type": "CHECKING",
+                  "openingBalance": 1000.00
+                }
+                """)
           )
           .andExpect(status().isCreated())
           .andExpect(jsonPath("$.id").value(account.getId().toString()))
@@ -78,7 +79,8 @@ class AccountControllerTest {
       verify(accountApplicationService).create(
           eq("Checking Account"),
           eq(AccountType.CHECKING),
-          eq(new BigDecimal("1000.00"))
+          eq(new BigDecimal("1000.00")),
+          eq(null)
       );
     }
 
@@ -114,6 +116,97 @@ class AccountControllerTest {
                       "name": "Checking Account",
                       "type": "CHECKING",
                       "openingBalance": 1000.00
+                """)
+          )
+          .andExpect(status().isBadRequest());
+
+      verifyNoInteractions(accountApplicationService);
+    }
+
+    @Test
+    void shouldReturnBadRequestWhenNameIsBlank() throws Exception {
+      mockMvc.perform(
+              post("/accounts")
+                  .contentType(MediaType.APPLICATION_JSON)
+                  .content("""
+                {
+                  "name": "   ",
+                  "type": "CHECKING",
+                  "openingBalance": 1000.00
+                }
+                """)
+          )
+          .andExpect(status().isBadRequest());
+
+      verifyNoInteractions(accountApplicationService);
+    }
+
+    @Test
+    void shouldReturnBadRequestWhenNameIsMissing() throws Exception {
+      mockMvc.perform(
+              post("/accounts")
+                  .contentType(MediaType.APPLICATION_JSON)
+                  .content("""
+                {
+                  "type": "CHECKING",
+                  "openingBalance": 1000.00
+                }
+                """)
+          )
+          .andExpect(status().isBadRequest());
+
+      verifyNoInteractions(accountApplicationService);
+    }
+
+    @Test
+    void shouldReturnBadRequestWhenTypeIsMissing() throws Exception {
+      mockMvc.perform(
+              post("/accounts")
+                  .contentType(MediaType.APPLICATION_JSON)
+                  .content("""
+                {
+                  "name": "Checking Account",
+                  "openingBalance": 1000.00
+                }
+                """)
+          )
+          .andExpect(status().isBadRequest());
+
+      verifyNoInteractions(accountApplicationService);
+    }
+
+    @Test
+    void shouldReturnBadRequestWhenOpeningBalanceIsMissing()
+        throws Exception {
+
+      mockMvc.perform(
+              post("/accounts")
+                  .contentType(MediaType.APPLICATION_JSON)
+                  .content("""
+                {
+                  "name": "Checking Account",
+                  "type": "CHECKING"
+                }
+                """)
+          )
+          .andExpect(status().isBadRequest());
+
+      verifyNoInteractions(accountApplicationService);
+    }
+
+    @Test
+    void shouldReturnBadRequestWhenOpeningBalanceIsNegative()
+        throws Exception {
+
+      mockMvc.perform(
+              post("/accounts")
+                  .contentType(MediaType.APPLICATION_JSON)
+                  .content("""
+                {
+                  "name": "Checking Account",
+                  "type": "CHECKING",
+                  "openingBalance": -100.00
+                }
                 """)
           )
           .andExpect(status().isBadRequest());

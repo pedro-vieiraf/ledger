@@ -4,6 +4,7 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -17,6 +18,7 @@ import com.pedro.ledger.domain.money.Money;
 import com.pedro.ledger.domain.transaction.Transaction;
 import com.pedro.ledger.domain.transaction.TransactionSource;
 import com.pedro.ledger.domain.transaction.TransactionType;
+import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
@@ -109,6 +111,142 @@ class TransactionControllerTest {
           eq(null),
           eq(categoryId)
       );
+    }
+
+    @Test
+    void shouldReturnBadRequestWhenAmountIsMissing() throws Exception {
+      mockMvc.perform(
+              post("/transactions")
+                  .contentType(MediaType.APPLICATION_JSON)
+                  .content("""
+              {
+                "currency": "BRL",
+                "type": "EXPENSE",
+                "description": "Groceries",
+                "accountId": "%s"
+              }
+              """.formatted(UUID.randomUUID()))
+          )
+          .andExpect(status().isBadRequest());
+
+      verifyNoInteractions(service);
+    }
+
+    @Test
+    void shouldReturnBadRequestWhenAmountIsZero() throws Exception {
+      mockMvc.perform(
+              post("/transactions")
+                  .contentType(MediaType.APPLICATION_JSON)
+                  .content("""
+              {
+                "amount": 0.00,
+                "currency": "BRL",
+                "type": "EXPENSE",
+                "description": "Groceries",
+                "accountId": "%s"
+              }
+              """.formatted(UUID.randomUUID()))
+          )
+          .andExpect(status().isBadRequest());
+
+      verifyNoInteractions(service);
+    }
+
+    @Test
+    void shouldReturnBadRequestWhenAmountIsNegative() throws Exception {
+      mockMvc.perform(
+              post("/transactions")
+                  .contentType(MediaType.APPLICATION_JSON)
+                  .content("""
+              {
+                "amount": -100.00,
+                "currency": "BRL",
+                "type": "EXPENSE",
+                "description": "Groceries",
+                "accountId": "%s"
+              }
+              """.formatted(UUID.randomUUID()))
+          )
+          .andExpect(status().isBadRequest());
+
+      verifyNoInteractions(service);
+    }
+
+    @Test
+    void shouldReturnBadRequestWhenCurrencyIsMissing() throws Exception {
+      mockMvc.perform(
+              post("/transactions")
+                  .contentType(MediaType.APPLICATION_JSON)
+                  .content("""
+              {
+                "amount": 100.00,
+                "type": "EXPENSE",
+                "description": "Groceries",
+                "accountId": "%s"
+              }
+              """.formatted(UUID.randomUUID()))
+          )
+          .andExpect(status().isBadRequest());
+
+      verifyNoInteractions(service);
+    }
+
+    @Test
+    void shouldReturnBadRequestWhenCurrencyIsBlank() throws Exception {
+      mockMvc.perform(
+              post("/transactions")
+                  .contentType(MediaType.APPLICATION_JSON)
+                  .content("""
+              {
+                "amount": 100.00,
+                "currency": "   ",
+                "type": "EXPENSE",
+                "description": "Groceries",
+                "accountId": "%s"
+              }
+              """.formatted(UUID.randomUUID()))
+          )
+          .andExpect(status().isBadRequest());
+
+      verifyNoInteractions(service);
+    }
+
+    @Test
+    void shouldReturnBadRequestWhenTypeIsMissing() throws Exception {
+      mockMvc.perform(
+              post("/transactions")
+                  .contentType(MediaType.APPLICATION_JSON)
+                  .content("""
+              {
+                "amount": 100.00,
+                "currency": "BRL",
+                "description": "Groceries",
+                "accountId": "%s"
+              }
+              """.formatted(UUID.randomUUID()))
+          )
+          .andExpect(status().isBadRequest());
+
+      verifyNoInteractions(service);
+    }
+
+    @Test
+    void shouldReturnBadRequestWhenAccountIdIsMissing() throws Exception {
+      mockMvc.perform(
+              post("/transactions")
+                  .contentType(MediaType.APPLICATION_JSON)
+                  .content("""
+              {
+                "amount": 100.00,
+                "currency": "BRL",
+                "type": "EXPENSE",
+                "description": "Groceries"
+              }
+              """)
+          )
+          .andExpect(status().isBadRequest());
+
+      verifyNoInteractions(service);
     }
   }
 
@@ -282,7 +420,7 @@ class TransactionControllerTest {
 
       when(service.update(
           eq(transactionId),
-          eq(Money.of("150.00")),
+          eq(new BigDecimal("150.00")),
           eq("Groceries and household items"),
           eq(newCategoryId)
       )).thenReturn(updatedTransaction);
@@ -291,13 +429,12 @@ class TransactionControllerTest {
               patch("/transactions/{id}", transactionId)
                   .contentType(MediaType.APPLICATION_JSON)
                   .content("""
-                {
-                  "amount": 150.00,
-                  "currency": "BRL",
-                  "description": "Groceries and household items",
-                  "categoryId": "%s"
-                }
-                """.formatted(newCategoryId))
+            {
+              "amount": 150.00,
+              "description": "Groceries and household items",
+              "categoryId": "%s"
+            }
+            """.formatted(newCategoryId))
           )
           .andExpect(status().isOk())
           .andExpect(jsonPath("$.id")
@@ -319,7 +456,7 @@ class TransactionControllerTest {
 
       verify(service).update(
           eq(transactionId),
-          eq(Money.of("150.00")),
+          eq(new BigDecimal("150.00")),
           eq("Groceries and household items"),
           eq(newCategoryId)
       );
@@ -332,7 +469,7 @@ class TransactionControllerTest {
 
       when(service.update(
           eq(transactionId),
-          eq(Money.of("150.00")),
+          eq(new BigDecimal("150.00")),
           eq("Updated description"),
           eq(null)
       )).thenThrow(
@@ -343,22 +480,57 @@ class TransactionControllerTest {
               patch("/transactions/{id}", transactionId)
                   .contentType(MediaType.APPLICATION_JSON)
                   .content("""
-                {
-                  "amount": 150.00,
-                  "currency": "BRL",
-                  "description": "Updated description",
-                  "categoryId": null
-                }
-                """)
+            {
+              "amount": 150.00,
+              "description": "Updated description",
+              "categoryId": null
+            }
+            """)
           )
           .andExpect(status().isNotFound());
 
       verify(service).update(
           eq(transactionId),
-          eq(Money.of("150.00")),
+          eq(new BigDecimal("150.00")),
           eq("Updated description"),
           eq(null)
       );
+    }
+
+    @Test
+    void shouldReturnBadRequestWhenUpdatedAmountIsZero() throws Exception {
+      UUID transactionId = UUID.randomUUID();
+
+      mockMvc.perform(
+              patch("/transactions/{id}", transactionId)
+                  .contentType(MediaType.APPLICATION_JSON)
+                  .content("""
+              {
+                "amount": 0.00
+              }
+              """)
+          )
+          .andExpect(status().isBadRequest());
+
+      verifyNoInteractions(service);
+    }
+
+    @Test
+    void shouldReturnBadRequestWhenUpdatedAmountIsNegative() throws Exception {
+      UUID transactionId = UUID.randomUUID();
+
+      mockMvc.perform(
+              patch("/transactions/{id}", transactionId)
+                  .contentType(MediaType.APPLICATION_JSON)
+                  .content("""
+              {
+                "amount": -50.00
+              }
+              """)
+          )
+          .andExpect(status().isBadRequest());
+
+      verifyNoInteractions(service);
     }
   }
 

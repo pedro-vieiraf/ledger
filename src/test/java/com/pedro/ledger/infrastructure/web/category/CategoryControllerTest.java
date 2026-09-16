@@ -4,6 +4,7 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -112,6 +113,53 @@ class CategoryControllerTest {
 
       verify(service)
           .findAll();
+    }
+
+    @Test
+    void shouldReturnBadRequestWhenNameIsBlank() throws Exception {
+      mockMvc.perform(
+              post("/categories")
+                  .contentType(MediaType.APPLICATION_JSON)
+                  .content("""
+              {
+                "name": "   "
+              }
+              """)
+          )
+          .andExpect(status().isBadRequest());
+
+      verifyNoInteractions(service);
+    }
+
+    @Test
+    void shouldReturnBadRequestWhenNameIsEmpty() throws Exception {
+      mockMvc.perform(
+              post("/categories")
+                  .contentType(MediaType.APPLICATION_JSON)
+                  .content("""
+              {
+                "name": ""
+              }
+              """)
+          )
+          .andExpect(status().isBadRequest());
+
+      verifyNoInteractions(service);
+    }
+
+    @Test
+    void shouldReturnBadRequestWhenNameIsMissing() throws Exception {
+      mockMvc.perform(
+              post("/categories")
+                  .contentType(MediaType.APPLICATION_JSON)
+                  .content("""
+              {
+              }
+              """)
+          )
+          .andExpect(status().isBadRequest());
+
+      verifyNoInteractions(service);
     }
   }
 
