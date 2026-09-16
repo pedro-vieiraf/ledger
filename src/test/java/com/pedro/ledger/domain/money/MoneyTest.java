@@ -324,4 +324,24 @@ class MoneyTest {
     assertThat(money.currency())
         .isEqualTo(usd);
   }
+
+  @Test
+  void shouldRoundDivisionUsingHalfEven() {
+    Money money = Money.of("1.00");
+
+    Money result = money.divide(8);
+
+    assertThat(result.amount())
+        .isEqualByComparingTo("0.12");
+  }
+
+  @Test
+  void shouldRoundHalfToEven() {
+    Money money = Money.of("0.07");
+
+    Money result = money.divide(2);
+
+    assertThat(result.amount())
+        .isEqualByComparingTo("0.04");
+  }
 }
