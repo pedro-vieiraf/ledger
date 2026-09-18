@@ -53,7 +53,7 @@ public class Account {
   ) {
     validateName(name);
     validateType(type);
-    validateBalance(openingBalance);
+    validateOpeningBalance(openingBalance);
 
     return new Account(
         UUID.randomUUID(),
@@ -131,6 +131,19 @@ public class Account {
     }
 
     status = AccountStatus.INACTIVE;
+  }
+
+  /**
+   * Activate the account.
+   */
+  public void activate() {
+    if (status == AccountStatus.ACTIVE) {
+      throw new IllegalStateException(
+          "Account is already active"
+      );
+    }
+
+    status = AccountStatus.ACTIVE;
   }
 
   /**
@@ -283,6 +296,25 @@ public class Account {
     if (balance == null) {
       throw new IllegalArgumentException(
           "Account balance cannot be null"
+      );
+    }
+  }
+
+  /**
+   * Validates an account balance on opening.
+   *
+   * @param balance account balance
+   */
+  private static void validateOpeningBalance(Money balance) {
+    if (balance == null) {
+      throw new IllegalArgumentException(
+          "Account balance cannot be null"
+      );
+    }
+
+    if (balance.isNegative()) {
+      throw new IllegalArgumentException(
+          "Opening balance cannot be negative"
       );
     }
   }
