@@ -336,6 +336,16 @@ class MoneyTest {
   }
 
   @Test
+  void shouldRoundDivisionUpWhenHalfIsReachedAndRetainedDigitIsOdd() {
+    Money money = Money.of("1.00");
+
+    Money result = money.divide(40);
+
+    assertThat(result.amount())
+        .isEqualByComparingTo("0.03");
+  }
+
+  @Test
   void shouldRoundHalfToEven() {
     Money money = Money.of("0.07");
 
