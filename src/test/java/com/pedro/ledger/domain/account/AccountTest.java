@@ -606,4 +606,26 @@ class AccountTest {
     assertThat(account.getBalance().currency())
         .isEqualTo(usd);
   }
+
+  @Test
+  void shouldReportWhetherAccountIsActive() {
+    Account account = Account.open(
+        "Nubank",
+        AccountType.CHECKING,
+        Money.zero()
+    );
+
+    assertThat(account.isActive())
+        .isTrue();
+
+    account.deactivate();
+
+    assertThat(account.isActive())
+        .isFalse();
+
+    account.activate();
+
+    assertThat(account.isActive())
+        .isTrue();
+  }
 }
