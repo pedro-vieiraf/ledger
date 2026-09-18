@@ -12,6 +12,7 @@ public class Transaction {
   private final UUID id;
   private Money amount;
   private final TransactionType type;
+  private TransactionStatus status;
   private String description;
   private final Instant timestamp;
   private final TransactionSource source;
@@ -23,6 +24,7 @@ public class Transaction {
       UUID id,
       Money amount,
       TransactionType type,
+      TransactionStatus status,
       String description,
       Instant timestamp,
       TransactionSource source,
@@ -33,6 +35,7 @@ public class Transaction {
     this.id = id;
     this.amount = amount;
     this.type = type;
+    this.status = status;
     this.description = description;
     this.timestamp = timestamp;
     this.source = source;
@@ -80,6 +83,7 @@ public class Transaction {
         UUID.randomUUID(),
         amount,
         type,
+        TransactionStatus.ACTIVE,
         normalizeDescription(description),
         timestamp,
         source,
@@ -90,12 +94,28 @@ public class Transaction {
   }
 
   /**
-   * Restore function to Mapper.
+   * Restores an existing transaction from persistence.
+   *
+   * @param id existing transaction identifier
+   * @param amount transaction amount
+   * @param type transaction type
+   * @param status transaction status
+   * @param description optional transaction description
+   * @param timestamp transaction timestamp
+   * @param source transaction source
+   * @param accountId identifier of the source account
+   * @param destinationAccountId identifier of the destination account for
+   *     transfers
+   * @param categoryId identifier of the transaction category
+   * @return a restored transaction
+   * @throws IllegalArgumentException if any value is invalid or if the
+   *     transaction violates its type-specific rules
    */
   public static Transaction restore(
       UUID id,
       Money amount,
       TransactionType type,
+      TransactionStatus status,
       String description,
       Instant timestamp,
       TransactionSource source,
@@ -103,10 +123,24 @@ public class Transaction {
       UUID destinationAccountId,
       UUID categoryId
   ) {
+    validateId(id);
+    validateAmount(amount);
+    validateType(type);
+    validateStatus(status);
+    validateTimestamp(timestamp);
+    validateSource(source);
+    validateAccountId(accountId);
+    validateDestinationAccount(type, destinationAccountId);
+    validateDifferentAccounts(type, accountId, destinationAccountId);
+    validateCategory(type, categoryId);
+
+    description = normalizeDescription(description);
+
     return new Transaction(
         id,
         amount,
         type,
+        status,
         description,
         timestamp,
         source,
@@ -225,6 +259,22 @@ public class Transaction {
    */
   public UUID getDestinationAccountId() {
     return destinationAccountId;
+  }
+
+  private static void validateId(UUID id) {
+    if (id == null) {
+      throw new IllegalArgumentException(
+          "Transaction ID cannot be null"
+      );
+    }
+  }
+
+  private static void validateStatus(TransactionStatus status) {
+    if (status == null) {
+      throw new IllegalArgumentException(
+          "Transaction status cannot be null"
+      );
+    }
   }
 
   /**
