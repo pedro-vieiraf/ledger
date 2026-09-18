@@ -134,6 +134,19 @@ public class Account {
   }
 
   /**
+   * Activate the account.
+   */
+  public void activate() {
+    if (status == AccountStatus.ACTIVE) {
+      throw new IllegalStateException(
+          "Account is already active"
+      );
+    }
+
+    status = AccountStatus.ACTIVE;
+  }
+
+  /**
    * Changes the account name.
    *
    * @param newName new account name
