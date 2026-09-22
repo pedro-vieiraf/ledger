@@ -2,6 +2,7 @@ package com.pedro.ledger.domain.transaction;
 
 import com.pedro.ledger.domain.account.Account;
 import com.pedro.ledger.domain.account.AccountInactiveException;
+import com.pedro.ledger.domain.money.CurrencyMismatchException;
 import com.pedro.ledger.domain.money.Money;
 
 /**
@@ -44,6 +45,11 @@ public final class TransactionProcessor {
           "Account is inactive"
       );
     }
+
+    ensureSameCurrency(
+        transaction.getAmount(),
+        account.getBalance()
+    );
 
     switch (transaction.getType()) {
       case INCOME -> account.credit(transaction.getAmount());
@@ -112,6 +118,11 @@ public final class TransactionProcessor {
       );
     }
 
+    ensureSameCurrency(
+        transaction.getAmount(),
+        destination.getBalance()
+    );
+
     source.debit(transaction.getAmount());
     destination.credit(transaction.getAmount());
   }
@@ -162,9 +173,11 @@ public final class TransactionProcessor {
       return;
     }
 
-    transaction.changeAmount(newAmount);
+    ensureSameCurrency(newAmount, oldAmount);
 
     Money difference = newAmount.subtract(oldAmount);
+
+    transaction.changeAmount(newAmount);
 
     if (transaction.getType() == TransactionType.EXPENSE) {
       adjustExpenseAmount(account, difference);
@@ -180,6 +193,9 @@ public final class TransactionProcessor {
    * account. Reversing an income debits the transaction amount from the
    * account.
    *
+   * <p>The transaction is marked as reversed after its financial effect
+   * is successfully applied.
+   *
    * <p>Transfer transactions must be reversed using the overload that
    * receives both source and destination accounts.
    *
@@ -188,6 +204,10 @@ public final class TransactionProcessor {
    * @throws IllegalArgumentException if the transaction or account is null,
    *     if the account does not match the transaction, or if the transaction
    *     is a transfer
+   * @throws AccountInactiveException if the account is inactive
+   * @throws CurrencyMismatchException if the transaction and account use
+   *     different currencies
+   * @throws IllegalStateException if the transaction is already reversed
    */
   public static void reverse(
       Transaction transaction,
@@ -198,23 +218,46 @@ public final class TransactionProcessor {
 
     ensureAccountMatchesTransaction(transaction, account);
 
+    if (!account.isActive()) {
+      throw new AccountInactiveException(
+          "Account is inactive"
+      );
+    }
+
+    if (transaction.getStatus() == TransactionStatus.REVERSED) {
+      throw new IllegalStateException(
+          "Transaction is already reversed"
+      );
+    }
+
+    if (transaction.getType() == TransactionType.TRANSFER) {
+      throw new IllegalArgumentException(
+          "Transfer requires source and destination accounts"
+      );
+    }
+
+    ensureSameCurrency(
+        transaction.getAmount(),
+        account.getBalance()
+    );
+
     switch (transaction.getType()) {
       case EXPENSE -> account.credit(transaction.getAmount());
       case INCOME -> account.debit(transaction.getAmount());
-      case TRANSFER -> throw new IllegalArgumentException(
-          "Transfer requires source and destination accounts"
-      );
       default -> throw new IllegalArgumentException(
           "Unsupported transaction type"
       );
     }
+
+    transaction.reverse();
   }
 
   /**
    * Reverses the financial effect of a transfer between two accounts.
    *
    * <p>The original source account is credited and the original destination
-   * account is debited by the transaction amount.
+   * account is debited by the transaction amount. The transaction is marked
+   * as reversed after both financial effects are successfully applied.
    *
    * @param transaction transfer transaction whose financial effect will be
    *     reversed
@@ -223,6 +266,11 @@ public final class TransactionProcessor {
    * @throws IllegalArgumentException if the transaction, source, or
    *     destination is null, if the source or destination does not match
    *     the transaction, or if the transaction is not a transfer
+   * @throws AccountInactiveException if the source or destination account
+   *     is inactive
+   * @throws CurrencyMismatchException if the transaction, source, and
+   *     destination currencies do not match
+   * @throws IllegalStateException if the transaction is already reversed
    */
   public static void reverse(
       Transaction transaction,
@@ -241,14 +289,46 @@ public final class TransactionProcessor {
 
     ensureAccountMatchesTransaction(transaction, source);
 
-    if (!destination.getId().equals(transaction.getDestinationAccountId())) {
+    if (!destination.getId().equals(
+        transaction.getDestinationAccountId()
+    )) {
       throw new IllegalArgumentException(
           "Destination account does not match transaction"
       );
     }
 
+    if (!source.isActive()) {
+      throw new AccountInactiveException(
+          "Account is inactive"
+      );
+    }
+
+    if (!destination.isActive()) {
+      throw new AccountInactiveException(
+          "Destination account is inactive"
+      );
+    }
+
+    if (transaction.getStatus() == TransactionStatus.REVERSED) {
+      throw new IllegalStateException(
+          "Transaction is already reversed"
+      );
+    }
+
+    ensureSameCurrency(
+        transaction.getAmount(),
+        source.getBalance()
+    );
+
+    ensureSameCurrency(
+        transaction.getAmount(),
+        destination.getBalance()
+    );
+
     source.credit(transaction.getAmount());
     destination.debit(transaction.getAmount());
+
+    transaction.reverse();
   }
 
   /**
@@ -340,6 +420,28 @@ public final class TransactionProcessor {
         .equals(account.getId())) {
       throw new IllegalArgumentException(
           "Account does not match transaction"
+      );
+    }
+  }
+
+  /**
+   * Ensures that the transaction amount and account balance use the same
+   * currency.
+   *
+   * @param transactionAmount transaction amount
+   * @param accountBalance account balance
+   * @throws CurrencyMismatchException if the currencies do not match
+   */
+  private static void ensureSameCurrency(
+      Money transactionAmount,
+      Money accountBalance
+  ) {
+    if (!transactionAmount.currency()
+        .equals(accountBalance.currency())) {
+
+      throw new CurrencyMismatchException(
+          transactionAmount.currency(),
+          accountBalance.currency()
       );
     }
   }

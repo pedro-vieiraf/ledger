@@ -6,6 +6,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import com.pedro.ledger.domain.account.Account;
 import com.pedro.ledger.domain.account.AccountInactiveException;
 import com.pedro.ledger.domain.account.AccountType;
+import com.pedro.ledger.domain.money.CurrencyMismatchException;
 import com.pedro.ledger.domain.money.Money;
 import java.time.Instant;
 import java.util.UUID;
@@ -1326,5 +1327,164 @@ class TransactionProcessorTest {
       assertThat(otherDestination.getBalance())
           .isEqualTo(Money.of("300.00"));
     }
+  }
+
+  @Test
+  void shouldRejectExpenseWhenCurrencyDoesNotMatchAccount() {
+    Account account = Account.open(
+        "Checking Account",
+        AccountType.CHECKING,
+        Money.of("1000.00")
+    );
+
+    Transaction transaction = Transaction.create(
+        Money.of(
+            "100.00",
+            java.util.Currency.getInstance("USD")
+        ),
+        TransactionType.EXPENSE,
+        "Groceries",
+        Instant.now(),
+        TransactionSource.MANUAL,
+        account.getId(),
+        null,
+        null
+    );
+
+    assertThatThrownBy(() ->
+        TransactionProcessor.process(transaction, account)
+    )
+        .isInstanceOf(CurrencyMismatchException.class)
+        .hasMessage("Currency mismatch: expected USD but got BRL");
+
+    assertThat(account.getBalance())
+        .isEqualTo(Money.of("1000.00"));
+  }
+
+  @Test
+  void shouldRejectIncomeWhenCurrencyDoesNotMatchAccount() {
+    Account account = Account.open(
+        "Checking Account",
+        AccountType.CHECKING,
+        Money.of("1000.00")
+    );
+
+    Transaction transaction = Transaction.create(
+        Money.of(
+            "500.00",
+            java.util.Currency.getInstance("USD")
+        ),
+        TransactionType.INCOME,
+        "Salary",
+        Instant.now(),
+        TransactionSource.MANUAL,
+        account.getId(),
+        null,
+        null
+    );
+
+    assertThatThrownBy(() ->
+        TransactionProcessor.process(transaction, account)
+    )
+        .isInstanceOf(CurrencyMismatchException.class)
+        .hasMessage("Currency mismatch: expected USD but got BRL");
+
+    assertThat(account.getBalance())
+        .isEqualTo(Money.of("1000.00"));
+  }
+
+  @Test
+  void shouldRejectTransferWhenSourceCurrencyDoesNotMatch() {
+    Account source = Account.open(
+        "Checking Account",
+        AccountType.CHECKING,
+        Money.of("1000.00")
+    );
+
+    Account destination = Account.open(
+        "Savings Account",
+        AccountType.SAVINGS,
+        Money.of("500.00")
+    );
+
+    Transaction transaction = Transaction.create(
+        Money.of(
+            "200.00",
+            java.util.Currency.getInstance("USD")
+        ),
+        TransactionType.TRANSFER,
+        "Transfer",
+        Instant.now(),
+        TransactionSource.MANUAL,
+        source.getId(),
+        destination.getId(),
+        null
+    );
+
+    assertThatThrownBy(() ->
+        TransactionProcessor.process(
+            transaction,
+            source,
+            destination
+        )
+    )
+        .isInstanceOf(CurrencyMismatchException.class)
+        .hasMessage("Currency mismatch: expected USD but got BRL");
+
+    assertThat(source.getBalance())
+        .isEqualTo(Money.of("1000.00"));
+
+    assertThat(destination.getBalance())
+        .isEqualTo(Money.of("500.00"));
+  }
+
+  @Test
+  void shouldRejectTransferWhenDestinationCurrencyDoesNotMatch() {
+    Account source = Account.open(
+        "Checking Account",
+        AccountType.CHECKING,
+        Money.of("1000.00")
+    );
+
+    Account destination = Account.open(
+        "Dollar Account",
+        AccountType.SAVINGS,
+        Money.of(
+            "500.00",
+            java.util.Currency.getInstance("USD")
+        )
+    );
+
+    Transaction transaction = Transaction.create(
+        Money.of("200.00"),
+        TransactionType.TRANSFER,
+        "Transfer",
+        Instant.now(),
+        TransactionSource.MANUAL,
+        source.getId(),
+        destination.getId(),
+        null
+    );
+
+    assertThatThrownBy(() ->
+        TransactionProcessor.process(
+            transaction,
+            source,
+            destination
+        )
+    )
+        .isInstanceOf(CurrencyMismatchException.class)
+        .hasMessage("Currency mismatch: expected BRL but got USD");
+
+    assertThat(source.getBalance())
+        .isEqualTo(Money.of("1000.00"));
+
+    assertThat(destination.getBalance())
+        .isEqualTo(
+            Money.of(
+                "500.00",
+                java.util.Currency.getInstance("USD")
+            )
+        );
   }
 }

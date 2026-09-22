@@ -151,14 +151,30 @@ public class Transaction {
   }
 
   /**
+   * Reverses the transaction.
+   *
+   * @throws IllegalStateException if the transaction is already reversed
+   */
+  public void reverse() {
+    if (status == TransactionStatus.REVERSED) {
+      throw new IllegalStateException(
+          "Transaction is already reversed"
+      );
+    }
+
+    status = TransactionStatus.REVERSED;
+  }
+
+  /**
    * Changes the transaction amount.
    *
    * @param newAmount new transaction amount
-   * @throws IllegalStateException if the transaction was imported through
-   *     Open Finance
+   * @throws IllegalStateException if the transaction is reversed or was
+   *     imported through Open Finance
    * @throws IllegalArgumentException if the amount is invalid
    */
   public void changeAmount(Money newAmount) {
+    ensureActive();
     if (source == TransactionSource.OPEN_FINANCE) {
       throw new IllegalStateException(
           "Open Finance transactions cannot have their amount changed"
@@ -176,6 +192,7 @@ public class Transaction {
    * @param newDescription new transaction description
    */
   public void changeDescription(String newDescription) {
+    ensureActive();
     this.description = normalizeDescription(newDescription);
   }
 
@@ -240,6 +257,14 @@ public class Transaction {
    */
   public TransactionSource getSource() {
     return source;
+  }
+
+  /**
+   * Returns the transaction status.
+   * @return transaction status
+   */
+  public TransactionStatus getStatus() {
+    return status;
   }
 
   /**
@@ -350,6 +375,7 @@ public class Transaction {
    * @throws IllegalStateException if a transfer is assigned a category
    */
   public void changeCategory(UUID newCategoryId) {
+    ensureActive();
     if (type == TransactionType.TRANSFER && newCategoryId != null) {
       throw new IllegalStateException(
           "Transfer transactions cannot have a category"
@@ -446,6 +472,17 @@ public class Transaction {
 
       throw new IllegalArgumentException(
           "Transfer source and destination accounts must be different"
+      );
+    }
+  }
+
+  /**
+   * Ensure transaction is active.
+   */
+  private void ensureActive() {
+    if (status == TransactionStatus.REVERSED) {
+      throw new IllegalStateException(
+          "Reversed transactions cannot be modified"
       );
     }
   }

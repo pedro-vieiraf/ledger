@@ -454,4 +454,144 @@ class TransactionTest {
             "Transfer transactions cannot have a category"
         );
   }
+
+  @Test
+  void shouldStartAsActive() {
+    Transaction transaction = Transaction.create(
+        Money.of("100.00"),
+        TransactionType.EXPENSE,
+        "Supermarket",
+        TIMESTAMP,
+        TransactionSource.MANUAL,
+        ACCOUNT_ID,
+        null,
+        null
+    );
+
+    assertThat(transaction.getStatus())
+        .isEqualTo(TransactionStatus.ACTIVE);
+  }
+
+  @Test
+  void shouldReverseTransaction() {
+    Transaction transaction = Transaction.create(
+        Money.of("100.00"),
+        TransactionType.EXPENSE,
+        "Supermarket",
+        TIMESTAMP,
+        TransactionSource.MANUAL,
+        ACCOUNT_ID,
+        null,
+        null
+    );
+
+    transaction.reverse();
+
+    assertThat(transaction.getStatus())
+        .isEqualTo(TransactionStatus.REVERSED);
+  }
+
+  @Test
+  void shouldNotReverseTransactionTwice() {
+    Transaction transaction = Transaction.create(
+        Money.of("100.00"),
+        TransactionType.EXPENSE,
+        "Supermarket",
+        TIMESTAMP,
+        TransactionSource.MANUAL,
+        ACCOUNT_ID,
+        null,
+        null
+    );
+
+    transaction.reverse();
+
+    assertThatThrownBy(transaction::reverse)
+        .isInstanceOf(IllegalStateException.class)
+        .hasMessage("Transaction is already reversed");
+  }
+
+  @Test
+  void shouldNotChangeAmountWhenReversed() {
+    Transaction transaction = Transaction.create(
+        Money.of("100.00"),
+        TransactionType.EXPENSE,
+        "Supermarket",
+        TIMESTAMP,
+        TransactionSource.MANUAL,
+        ACCOUNT_ID,
+        null,
+        null
+    );
+
+    transaction.reverse();
+
+    assertThatThrownBy(() ->
+        transaction.changeAmount(Money.of("150.00"))
+    )
+        .isInstanceOf(IllegalStateException.class)
+        .hasMessage(
+            "Reversed transactions cannot be modified"
+        );
+
+    assertThat(transaction.getAmount())
+        .isEqualTo(Money.of("100.00"));
+  }
+
+  @Test
+  void shouldNotChangeDescriptionWhenReversed() {
+    Transaction transaction = Transaction.create(
+        Money.of("100.00"),
+        TransactionType.EXPENSE,
+        "Supermarket",
+        TIMESTAMP,
+        TransactionSource.MANUAL,
+        ACCOUNT_ID,
+        null,
+        null
+    );
+
+    transaction.reverse();
+
+    assertThatThrownBy(() ->
+        transaction.changeDescription("Restaurant")
+    )
+        .isInstanceOf(IllegalStateException.class)
+        .hasMessage(
+            "Reversed transactions cannot be modified"
+        );
+
+    assertThat(transaction.getDescription())
+        .isEqualTo("Supermarket");
+  }
+
+  @Test
+  void shouldNotChangeCategoryWhenReversed() {
+    UUID originalCategoryId = UUID.randomUUID();
+    UUID newCategoryId = UUID.randomUUID();
+
+    Transaction transaction = Transaction.create(
+        Money.of("100.00"),
+        TransactionType.EXPENSE,
+        "Supermarket",
+        TIMESTAMP,
+        TransactionSource.MANUAL,
+        ACCOUNT_ID,
+        null,
+        originalCategoryId
+    );
+
+    transaction.reverse();
+
+    assertThatThrownBy(() ->
+        transaction.changeCategory(newCategoryId)
+    )
+        .isInstanceOf(IllegalStateException.class)
+        .hasMessage(
+            "Reversed transactions cannot be modified"
+        );
+
+    assertThat(transaction.getCategoryId())
+        .isEqualTo(originalCategoryId);
+  }
 }
