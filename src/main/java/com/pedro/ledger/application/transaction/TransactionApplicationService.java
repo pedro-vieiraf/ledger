@@ -116,12 +116,8 @@ public class TransactionApplicationService {
   ) {
     Transaction transaction = getByIdOrThrow(id);
 
-    validateCategory(categoryId);
-
-    Account account = null;
-
     if (amount != null) {
-      account = accountRepository.findById(
+      Account account = accountRepository.findById(
           transaction.getAccountId()
       ).orElseThrow(() ->
           new AccountNotFoundException("Account not found")
@@ -129,15 +125,24 @@ public class TransactionApplicationService {
 
       TransactionProcessor.changeAmount(
           transaction,
-          Money.of(amount, transaction.getAmount().currency()),
+          Money.of(
+              amount,
+              transaction.getAmount().currency()
+          ),
           account
       );
 
       accountRepository.save(account);
     }
 
-    transaction.changeDescription(description);
-    transaction.changeCategory(categoryId);
+    if (description != null) {
+      transaction.changeDescription(description);
+    }
+
+    if (categoryId != null) {
+      validateCategory(categoryId);
+      transaction.changeCategory(categoryId);
+    }
 
     return transactionRepository.save(transaction);
   }
