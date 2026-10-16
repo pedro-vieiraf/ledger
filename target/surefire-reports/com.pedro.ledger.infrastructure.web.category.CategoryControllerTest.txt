@@ -1,4 +1,4 @@
 -------------------------------------------------------------------------------
 Test set: com.pedro.ledger.infrastructure.web.category.CategoryControllerTest
 -------------------------------------------------------------------------------
-Tests run: 0, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 1.127 s -- in com.pedro.ledger.infrastructure.web.category.CategoryControllerTest
+Tests run: 0, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 1.092 s -- in com.pedro.ledger.infrastructure.web.category.CategoryControllerTest

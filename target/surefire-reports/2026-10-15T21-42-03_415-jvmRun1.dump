@@ -1,5 +1,5 @@
-# Created at 2026-10-15T21:18:42.387
-Thread dump for process (85060@localhost) after 30 seconds shutdown timeout:
+# Created at 2026-10-15T21:43:03.324
+Thread dump for process (92452@localhost) after 30 seconds shutdown timeout:
 "main" 
    java.lang.Thread.State: WAITING
         at java.base@21.0.12.1/java.lang.Object.wait0(Native Method)
@@ -75,10 +75,10 @@ Thread dump for process (85060@localhost) after 30 seconds shutdown timeout:
         at java.base@21.0.12.1/java.lang.Object.wait0(Native Method)
         at java.base@21.0.12.1/java.lang.Object.wait(Object.java:366)
         at app//org.testcontainers.utility.RyukResourceReaper.lambda$maybeStart$0(RyukResourceReaper.java:102)
-        at app//org.testcontainers.utility.RyukResourceReaper$$Lambda/0x00007e2130506228.run(Unknown Source)
+        at app//org.testcontainers.utility.RyukResourceReaper$$Lambda/0x0000799768506000.run(Unknown Source)
         at app//org.rnorth.ducttape.ratelimits.RateLimiter.doWhenReady(RateLimiter.java:27)
         at app//org.testcontainers.utility.RyukResourceReaper.lambda$maybeStart$1(RyukResourceReaper.java:88)
-        at app//org.testcontainers.utility.RyukResourceReaper$$Lambda/0x00007e2130506000.run(Unknown Source)
+        at app//org.testcontainers.utility.RyukResourceReaper$$Lambda/0x0000799768503d28.run(Unknown Source)
         at java.base@21.0.12.1/java.lang.Thread.runWith(Thread.java:1596)
         at java.base@21.0.12.1/java.lang.Thread.run(Thread.java:1583)
 
@@ -109,18 +109,18 @@ Thread dump for process (85060@localhost) after 30 seconds shutdown timeout:
         at java.base@21.0.12.1/java.lang.Thread.run(Thread.java:1583)
 
 "ForkJoinPool.commonPool-worker-1" 
-   java.lang.Thread.State: TIMED_WAITING
-        at java.base@21.0.12.1/jdk.internal.misc.Unsafe.park(Native Method)
-        at java.base@21.0.12.1/java.util.concurrent.locks.LockSupport.parkUntil(LockSupport.java:449)
-        at java.base@21.0.12.1/java.util.concurrent.ForkJoinPool.awaitWork(ForkJoinPool.java:1891)
-        at java.base@21.0.12.1/java.util.concurrent.ForkJoinPool.runWorker(ForkJoinPool.java:1809)
-        at java.base@21.0.12.1/java.util.concurrent.ForkJoinWorkerThread.run(ForkJoinWorkerThread.java:188)
-
-"ForkJoinPool.commonPool-worker-2" 
    java.lang.Thread.State: WAITING
         at java.base@21.0.12.1/jdk.internal.misc.Unsafe.park(Native Method)
         at java.base@21.0.12.1/java.util.concurrent.locks.LockSupport.park(LockSupport.java:371)
         at java.base@21.0.12.1/java.util.concurrent.ForkJoinPool.awaitWork(ForkJoinPool.java:1893)
+        at java.base@21.0.12.1/java.util.concurrent.ForkJoinPool.runWorker(ForkJoinPool.java:1809)
+        at java.base@21.0.12.1/java.util.concurrent.ForkJoinWorkerThread.run(ForkJoinWorkerThread.java:188)
+
+"ForkJoinPool.commonPool-worker-2" 
+   java.lang.Thread.State: TIMED_WAITING
+        at java.base@21.0.12.1/jdk.internal.misc.Unsafe.park(Native Method)
+        at java.base@21.0.12.1/java.util.concurrent.locks.LockSupport.parkUntil(LockSupport.java:449)
+        at java.base@21.0.12.1/java.util.concurrent.ForkJoinPool.awaitWork(ForkJoinPool.java:1891)
         at java.base@21.0.12.1/java.util.concurrent.ForkJoinPool.runWorker(ForkJoinPool.java:1809)
         at java.base@21.0.12.1/java.util.concurrent.ForkJoinWorkerThread.run(ForkJoinWorkerThread.java:188)
 
@@ -187,15 +187,15 @@ Thread dump for process (85060@localhost) after 30 seconds shutdown timeout:
         at app//org.hibernate.boot.internal.SessionFactoryObserverForSchemaExport.sessionFactoryClosing(SessionFactoryObserverForSchemaExport.java:46)
         at app//org.hibernate.internal.SessionFactoryObserverChain.sessionFactoryClosing(SessionFactoryObserverChain.java:46)
         at app//org.hibernate.internal.SessionFactoryImpl.close(SessionFactoryImpl.java:801)
-        at java.base@21.0.12.1/java.lang.invoke.LambdaForm$DMH/0x00007e2130108400.invokeInterface(LambdaForm$DMH)
-        at java.base@21.0.12.1/java.lang.invoke.LambdaForm$MH/0x00007e213015c800.invoke(LambdaForm$MH)
+        at java.base@21.0.12.1/java.lang.invoke.LambdaForm$DMH/0x0000799768108400.invokeInterface(LambdaForm$DMH)
+        at java.base@21.0.12.1/java.lang.invoke.LambdaForm$MH/0x000079976815c800.invoke(LambdaForm$MH)
         at java.base@21.0.12.1/java.lang.invoke.Invokers$Holder.invokeExact_MT(Invokers$Holder)
         at java.base@21.0.12.1/jdk.internal.reflect.DirectMethodHandleAccessor.invokeImpl(DirectMethodHandleAccessor.java:153)
         at java.base@21.0.12.1/jdk.internal.reflect.DirectMethodHandleAccessor.invoke(DirectMethodHandleAccessor.java:103)
         at java.base@21.0.12.1/java.lang.reflect.Method.invoke(Method.java:580)
         at app//org.springframework.orm.jpa.AbstractEntityManagerFactoryBean.invokeProxyMethod(AbstractEntityManagerFactoryBean.java:547)
         at app//org.springframework.orm.jpa.AbstractEntityManagerFactoryBean$ManagedEntityManagerFactoryInvocationHandler.invoke(AbstractEntityManagerFactoryBean.java:782)
-        at app/jdk.proxy2/jdk.proxy2.$Proxy193.close(Unknown Source)
+        at app/jdk.proxy2/jdk.proxy2.$Proxy194.close(Unknown Source)
         at app//org.springframework.orm.jpa.AbstractEntityManagerFactoryBean.destroy(AbstractEntityManagerFactoryBean.java:695)
         at app//org.springframework.beans.factory.support.DisposableBeanAdapter.destroy(DisposableBeanAdapter.java:209)
         at app//org.springframework.beans.factory.support.DefaultSingletonBeanRegistry.destroyBean(DefaultSingletonBeanRegistry.java:795)
@@ -207,7 +207,7 @@ Thread dump for process (85060@localhost) after 30 seconds shutdown timeout:
         at app//org.springframework.context.support.AbstractApplicationContext.doClose(AbstractApplicationContext.java:1207)
         at app//org.springframework.context.support.AbstractApplicationContext.close(AbstractApplicationContext.java:1153)
         at app//org.springframework.boot.SpringApplicationShutdownHook.closeAndWait(SpringApplicationShutdownHook.java:147)
-        at app//org.springframework.boot.SpringApplicationShutdownHook$$Lambda/0x00007e2130e1a330.accept(Unknown Source)
+        at app//org.springframework.boot.SpringApplicationShutdownHook$$Lambda/0x0000799768e1adb8.accept(Unknown Source)
         at java.base@21.0.12.1/java.lang.Iterable.forEach(Iterable.java:75)
         at app//org.springframework.boot.SpringApplicationShutdownHook.run(SpringApplicationShutdownHook.java:116)
         at java.base@21.0.12.1/java.lang.Thread.runWith(Thread.java:1596)

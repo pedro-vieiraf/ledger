@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<testsuite xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://maven.apache.org/surefire/maven-surefire-plugin/xsd/surefire-test-report.xsd" version="3.0.2" name="com.pedro.ledger.infrastructure.persistence.transaction.TransactionPersistenceRepositoryTest" time="14.584" tests="6" errors="0" skipped="0" failures="0" flakes="0">
+<testsuite xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://maven.apache.org/surefire/maven-surefire-plugin/xsd/surefire-test-report.xsd" version="3.0.2" name="com.pedro.ledger.infrastructure.persistence.transaction.TransactionPersistenceRepositoryTest" time="12.667" tests="6" errors="0" skipped="0" failures="0" flakes="0">
   <properties>
     <property name="java.specification.version" value="21"/>
     <property name="sun.jnu.encoding" value="UTF-8"/>
@@ -11,9 +11,10 @@
     <property name="org.jboss.logging.provider" value="slf4j"/>
     <property name="os.name" value="Linux"/>
     <property name="java.vm.specification.version" value="21"/>
+    <property name="APPLICATION_NAME" value="ledger"/>
     <property name="sun.java.launcher" value="SUN_STANDARD"/>
     <property name="sun.boot.library.path" value="/home/pedro/.jdks/ms-21.0.12.1/lib"/>
-    <property name="sun.java.command" value="/home/pedro/projeto/java/ledger/target/surefire/surefirebooter-20261015211740054_3.jar /home/pedro/projeto/java/ledger/target/surefire 2026-10-15T21-17-39_882-jvmRun1 surefire-20261015211740054_1tmp surefire_0-20261015211740054_2tmp"/>
+    <property name="sun.java.command" value="/home/pedro/projeto/java/ledger/target/surefire/surefirebooter-20261015214203553_3.jar /home/pedro/projeto/java/ledger/target/surefire 2026-10-15T21-42-03_415-jvmRun1 surefire-20261015214203553_1tmp surefire_0-20261015214203553_2tmp"/>
     <property name="jdk.debug" value="release"/>
     <property name="surefire.test.class.path" value="/home/pedro/projeto/java/ledger/target/test-classes:/home/pedro/projeto/java/ledger/target/classes:/home/pedro/.m2/repository/org/springframework/boot/spring-boot-starter-webmvc/4.0.7/spring-boot-starter-webmvc-4.0.7.jar:/home/pedro/.m2/repository/org/springframework/boot/spring-boot-starter-jackson/4.0.7/spring-boot-starter-jackson-4.0.7.jar:/home/pedro/.m2/repository/org/springframework/boot/spring-boot-jackson/4.0.7/spring-boot-jackson-4.0.7.jar:/home/pedro/.m2/repository/tools/jackson/core/jackson-databind/3.1.4/jackson-databind-3.1.4.jar:/home/pedro/.m2/repository/tools/jackson/core/jackson-core/3.1.4/jackson-core-3.1.4.jar:/home/pedro/.m2/repository/org/springframework/boot/spring-boot-starter-tomcat/4.0.7/spring-boot-starter-tomcat-4.0.7.jar:/home/pedro/.m2/repository/org/springframework/boot/spring-boot-starter-tomcat-runtime/4.0.7/spring-boot-starter-tomcat-runtime-4.0.7.jar:/home/pedro/.m2/repository/org/apache/tomcat/embed/tomcat-embed-core/11.0.22/tomcat-embed-core-11.0.22.jar:/home/pedro/.m2/repository/org/apache/tomcat/embed/tomcat-embed-websocket/11.0.22/tomcat-embed-websocket-11.0.22.jar:/home/pedro/.m2/repository/org/springframework/boot/spring-boot-tomcat/4.0.7/spring-boot-tomcat-4.0.7.jar:/home/pedro/.m2/repository/org/springframework/boot/spring-boot-http-converter/4.0.7/spring-boot-http-converter-4.0.7.jar:/home/pedro/.m2/repository/org/springframework/boot/spring-boot/4.0.7/spring-boot-4.0.7.jar:/home/pedro/.m2/repository/org/springframework/spring-context/7.0.8/spring-context-7.0.8.jar:/home/pedro/.m2/repository/org/springframework/spring-web/7.0.8/spring-web-7.0.8.jar:/home/pedro/.m2/repository/org/springframework/spring-beans/7.0.8/spring-beans-7.0.8.jar:/home/pedro/.m2/repository/io/micrometer/micrometer-observation/1.16.6/micrometer-observation-1.16.6.jar:/home/pedro/.m2/repository/io/micrometer/micrometer-commons/1.16.6/micrometer-commons-1.16.6.jar:/home/pedro/.m2/repository/org/springframework/boot/spring-boot-webmvc/4.0.7/spring-boot-webmvc-4.0.7.jar:/home/pedro/.m2/repository/org/springframework/boot/spring-boot-servlet/4.0.7/spring-boot-servlet-4.0.7.jar:/home/pedro/.m2/repository/org/springframework/spring-webmvc/7.0.8/spring-webmvc-7.0.8.jar:/home/pedro/.m2/repository/org/springframework/spring-aop/7.0.8/spring-aop-7.0.8.jar:/home/pedro/.m2/repository/org/springframework/spring-expression/7.0.8/spring-expression-7.0.8.jar:/home/pedro/.m2/repository/org/springframework/boot/spring-boot-starter/4.0.7/spring-boot-starter-4.0.7.jar:/home/pedro/.m2/repository/org/springframework/boot/spring-boot-starter-logging/4.0.7/spring-boot-starter-logging-4.0.7.jar:/home/pedro/.m2/repository/ch/qos/logback/logback-classic/1.5.34/logback-classic-1.5.34.jar:/home/pedro/.m2/repository/ch/qos/logback/logback-core/1.5.34/logback-core-1.5.34.jar:/home/pedro/.m2/repository/org/apache/logging/log4j/log4j-to-slf4j/2.25.4/log4j-to-slf4j-2.25.4.jar:/home/pedro/.m2/repository/org/apache/logging/log4j/log4j-api/2.25.4/log4j-api-2.25.4.jar:/home/pedro/.m2/repository/org/slf4j/jul-to-slf4j/2.0.18/jul-to-slf4j-2.0.18.jar:/home/pedro/.m2/repository/org/springframework/boot/spring-boot-autoconfigure/4.0.7/spring-boot-autoconfigure-4.0.7.jar:/home/pedro/.m2/repository/jakarta/annotation/jakarta.annotation-api/3.0.0/jakarta.annotation-api-3.0.0.jar:/home/pedro/.m2/repository/org/yaml/snakeyaml/2.5/snakeyaml-2.5.jar:/home/pedro/.m2/repository/org/springframework/boot/spring-boot-starter-validation/4.0.7/spring-boot-starter-validation-4.0.7.jar:/home/pedro/.m2/repository/org/springframework/boot/spring-boot-validation/4.0.7/spring-boot-validation-4.0.7.jar:/home/pedro/.m2/repository/org/apache/tomcat/embed/tomcat-embed-el/11.0.22/tomcat-embed-el-11.0.22.jar:/home/pedro/.m2/repository/org/hibernate/validator/hibernate-validator/9.0.1.Final/hibernate-validator-9.0.1.Final.jar:/home/pedro/.m2/repository/jakarta/validation/jakarta.validation-api/3.1.1/jakarta.validation-api-3.1.1.jar:/home/pedro/.m2/repository/org/jboss/logging/jboss-logging/3.6.3.Final/jboss-logging-3.6.3.Final.jar:/home/pedro/.m2/repository/com/fasterxml/classmate/1.7.3/classmate-1.7.3.jar:/home/pedro/.m2/repository/org/springframework/boot/spring-boot-starter-test/4.0.7/spring-boot-starter-test-4.0.7.jar:/home/pedro/.m2/repository/org/springframework/boot/spring-boot-test/4.0.7/spring-boot-test-4.0.7.jar:/home/pedro/.m2/repository/org/springframework/boot/spring-boot-test-autoconfigure/4.0.7/spring-boot-test-autoconfigure-4.0.7.jar:/home/pedro/.m2/repository/com/jayway/jsonpath/json-path/2.10.0/json-path-2.10.0.jar:/home/pedro/.m2/repository/org/slf4j/slf4j-api/2.0.18/slf4j-api-2.0.18.jar:/home/pedro/.m2/repository/jakarta/xml/bind/jakarta.xml.bind-api/4.0.5/jakarta.xml.bind-api-4.0.5.jar:/home/pedro/.m2/repository/jakarta/activation/jakarta.activation-api/2.1.4/jakarta.activation-api-2.1.4.jar:/home/pedro/.m2/repository/net/minidev/json-smart/2.6.0/json-smart-2.6.0.jar:/home/pedro/.m2/repository/net/minidev/accessors-smart/2.6.0/accessors-smart-2.6.0.jar:/home/pedro/.m2/repository/org/ow2/asm/asm/9.7.1/asm-9.7.1.jar:/home/pedro/.m2/repository/org/assertj/assertj-core/3.27.7/assertj-core-3.27.7.jar:/home/pedro/.m2/repository/net/bytebuddy/byte-buddy/1.17.8/byte-buddy-1.17.8.jar:/home/pedro/.m2/repository/org/awaitility/awaitility/4.3.0/awaitility-4.3.0.jar:/home/pedro/.m2/repository/org/hamcrest/hamcrest/3.0/hamcrest-3.0.jar:/home/pedro/.m2/repository/org/junit/jupiter/junit-jupiter/6.0.3/junit-jupiter-6.0.3.jar:/home/pedro/.m2/repository/org/junit/jupiter/junit-jupiter-api/6.0.3/junit-jupiter-api-6.0.3.jar:/home/pedro/.m2/repository/org/opentest4j/opentest4j/1.3.0/opentest4j-1.3.0.jar:/home/pedro/.m2/repository/org/junit/platform/junit-platform-commons/6.0.3/junit-platform-commons-6.0.3.jar:/home/pedro/.m2/repository/org/apiguardian/apiguardian-api/1.1.2/apiguardian-api-1.1.2.jar:/home/pedro/.m2/repository/org/junit/jupiter/junit-jupiter-params/6.0.3/junit-jupiter-params-6.0.3.jar:/home/pedro/.m2/repository/org/junit/jupiter/junit-jupiter-engine/6.0.3/junit-jupiter-engine-6.0.3.jar:/home/pedro/.m2/repository/org/junit/platform/junit-platform-engine/6.0.3/junit-platform-engine-6.0.3.jar:/home/pedro/.m2/repository/org/mockito/mockito-core/5.20.0/mockito-core-5.20.0.jar:/home/pedro/.m2/repository/net/bytebuddy/byte-buddy-agent/1.17.8/byte-buddy-agent-1.17.8.jar:/home/pedro/.m2/repository/org/objenesis/objenesis/3.3/objenesis-3.3.jar:/home/pedro/.m2/repository/org/mockito/mockito-junit-jupiter/5.20.0/mockito-junit-jupiter-5.20.0.jar:/home/pedro/.m2/repository/org/skyscreamer/jsonassert/1.5.3/jsonassert-1.5.3.jar:/home/pedro/.m2/repository/com/vaadin/external/google/android-json/0.0.20131108.vaadin1/android-json-0.0.20131108.vaadin1.jar:/home/pedro/.m2/repository/org/springframework/spring-core/7.0.8/spring-core-7.0.8.jar:/home/pedro/.m2/repository/commons-logging/commons-logging/1.3.6/commons-logging-1.3.6.jar:/home/pedro/.m2/repository/org/jspecify/jspecify/1.0.0/jspecify-1.0.0.jar:/home/pedro/.m2/repository/org/springframework/spring-test/7.0.8/spring-test-7.0.8.jar:/home/pedro/.m2/repository/org/xmlunit/xmlunit-core/2.10.4/xmlunit-core-2.10.4.jar:/home/pedro/.m2/repository/org/springframework/boot/spring-boot-starter-webmvc-test/4.0.7/spring-boot-starter-webmvc-test-4.0.7.jar:/home/pedro/.m2/repository/org/springframework/boot/spring-boot-starter-jackson-test/4.0.7/spring-boot-starter-jackson-test-4.0.7.jar:/home/pedro/.m2/repository/org/springframework/boot/spring-boot-webmvc-test/4.0.7/spring-boot-webmvc-test-4.0.7.jar:/home/pedro/.m2/repository/org/springframework/boot/spring-boot-web-server/4.0.7/spring-boot-web-server-4.0.7.jar:/home/pedro/.m2/repository/org/springframework/boot/spring-boot-resttestclient/4.0.7/spring-boot-resttestclient-4.0.7.jar:/home/pedro/.m2/repository/org/springframework/boot/spring-boot-starter-data-jpa/4.0.7/spring-boot-starter-data-jpa-4.0.7.jar:/home/pedro/.m2/repository/org/springframework/boot/spring-boot-starter-jdbc/4.0.7/spring-boot-starter-jdbc-4.0.7.jar:/home/pedro/.m2/repository/com/zaxxer/HikariCP/7.0.2/HikariCP-7.0.2.jar:/home/pedro/.m2/repository/org/springframework/boot/spring-boot-data-jpa/4.0.7/spring-boot-data-jpa-4.0.7.jar:/home/pedro/.m2/repository/org/springframework/boot/spring-boot-data-commons/4.0.7/spring-boot-data-commons-4.0.7.jar:/home/pedro/.m2/repository/org/springframework/boot/spring-boot-persistence/4.0.7/spring-boot-persistence-4.0.7.jar:/home/pedro/.m2/repository/org/springframework/data/spring-data-commons/4.0.6/spring-data-commons-4.0.6.jar:/home/pedro/.m2/repository/org/springframework/boot/spring-boot-hibernate/4.0.7/spring-boot-hibernate-4.0.7.jar:/home/pedro/.m2/repository/org/springframework/boot/spring-boot-jpa/4.0.7/spring-boot-jpa-4.0.7.jar:/home/pedro/.m2/repository/jakarta/persistence/jakarta.persistence-api/3.2.0/jakarta.persistence-api-3.2.0.jar:/home/pedro/.m2/repository/org/hibernate/orm/hibernate-core/7.2.19.Final/hibernate-core-7.2.19.Final.jar:/home/pedro/.m2/repository/jakarta/transaction/jakarta.transaction-api/2.0.1/jakarta.transaction-api-2.0.1.jar:/home/pedro/.m2/repository/org/hibernate/models/hibernate-models/1.0.1/hibernate-models-1.0.1.jar:/home/pedro/.m2/repository/org/glassfish/jaxb/jaxb-runtime/4.0.9/jaxb-runtime-4.0.9.jar:/home/pedro/.m2/repository/org/glassfish/jaxb/jaxb-core/4.0.9/jaxb-core-4.0.9.jar:/home/pedro/.m2/repository/org/eclipse/angus/angus-activation/2.0.3/angus-activation-2.0.3.jar:/home/pedro/.m2/repository/org/glassfish/jaxb/txw2/4.0.9/txw2-4.0.9.jar:/home/pedro/.m2/repository/com/sun/istack/istack-commons-runtime/4.1.2/istack-commons-runtime-4.1.2.jar:/home/pedro/.m2/repository/jakarta/inject/jakarta.inject-api/2.0.1/jakarta.inject-api-2.0.1.jar:/home/pedro/.m2/repository/org/springframework/spring-orm/7.0.8/spring-orm-7.0.8.jar:/home/pedro/.m2/repository/org/springframework/data/spring-data-jpa/4.0.6/spring-data-jpa-4.0.6.jar:/home/pedro/.m2/repository/org/springframework/spring-tx/7.0.8/spring-tx-7.0.8.jar:/home/pedro/.m2/repository/org/antlr/antlr4-runtime/4.13.2/antlr4-runtime-4.13.2.jar:/home/pedro/.m2/repository/org/springframework/spring-aspects/7.0.8/spring-aspects-7.0.8.jar:/home/pedro/.m2/repository/org/aspectj/aspectjweaver/1.9.25.1/aspectjweaver-1.9.25.1.jar:/home/pedro/.m2/repository/org/springframework/boot/spring-boot-jdbc/4.0.7/spring-boot-jdbc-4.0.7.jar:/home/pedro/.m2/repository/org/springframework/boot/spring-boot-sql/4.0.7/spring-boot-sql-4.0.7.jar:/home/pedro/.m2/repository/org/springframework/boot/spring-boot-transaction/4.0.7/spring-boot-transaction-4.0.7.jar:/home/pedro/.m2/repository/org/springframework/spring-jdbc/7.0.8/spring-jdbc-7.0.8.jar:/home/pedro/.m2/repository/org/postgresql/postgresql/42.7.11/postgresql-42.7.11.jar:/home/pedro/.m2/repository/org/testcontainers/testcontainers-postgresql/2.0.5/testcontainers-postgresql-2.0.5.jar:/home/pedro/.m2/repository/org/testcontainers/testcontainers-jdbc/2.0.5/testcontainers-jdbc-2.0.5.jar:/home/pedro/.m2/repository/org/testcontainers/testcontainers-database-commons/2.0.5/testcontainers-database-commons-2.0.5.jar:/home/pedro/.m2/repository/org/testcontainers/testcontainers-junit-jupiter/2.0.5/testcontainers-junit-jupiter-2.0.5.jar:/home/pedro/.m2/repository/org/testcontainers/testcontainers/2.0.5/testcontainers-2.0.5.jar:/home/pedro/.m2/repository/org/apache/commons/commons-compress/1.28.0/commons-compress-1.28.0.jar:/home/pedro/.m2/repository/commons-codec/commons-codec/1.19.0/commons-codec-1.19.0.jar:/home/pedro/.m2/repository/commons-io/commons-io/2.20.0/commons-io-2.20.0.jar:/home/pedro/.m2/repository/org/apache/commons/commons-lang3/3.19.0/commons-lang3-3.19.0.jar:/home/pedro/.m2/repository/org/rnorth/duct-tape/duct-tape/1.0.8/duct-tape-1.0.8.jar:/home/pedro/.m2/repository/org/jetbrains/annotations/17.0.0/annotations-17.0.0.jar:/home/pedro/.m2/repository/com/github/docker-java/docker-java-api/3.7.1/docker-java-api-3.7.1.jar:/home/pedro/.m2/repository/com/fasterxml/jackson/core/jackson-annotations/2.21/jackson-annotations-2.21.jar:/home/pedro/.m2/repository/com/github/docker-java/docker-java-transport-zerodep/3.7.1/docker-java-transport-zerodep-3.7.1.jar:/home/pedro/.m2/repository/com/github/docker-java/docker-java-transport/3.7.1/docker-java-transport-3.7.1.jar:/home/pedro/.m2/repository/net/java/dev/jna/jna/5.18.1/jna-5.18.1.jar:/home/pedro/.m2/repository/org/springframework/boot/spring-boot-testcontainers/4.0.7/spring-boot-testcontainers-4.0.7.jar:"/>
     <property name="sun.cpu.endian" value="little"/>
@@ -30,7 +31,7 @@
     <property name="java.vm.specification.vendor" value="Oracle Corporation"/>
     <property name="FILE_LOG_CHARSET" value="UTF-8"/>
     <property name="java.awt.headless" value="true"/>
-    <property name="surefire.real.class.path" value="/home/pedro/projeto/java/ledger/target/surefire/surefirebooter-20261015211740054_3.jar"/>
+    <property name="surefire.real.class.path" value="/home/pedro/projeto/java/ledger/target/surefire/surefirebooter-20261015214203553_3.jar"/>
     <property name="sun.management.compiler" value="HotSpot 64-Bit Tiered Compilers"/>
     <property name="java.runtime.version" value="21.0.12.1+1-LTS"/>
     <property name="user.name" value="pedro"/>
@@ -49,7 +50,7 @@
     <property name="user.dir" value="/home/pedro/projeto/java/ledger"/>
     <property name="os.arch" value="amd64"/>
     <property name="java.vm.specification.name" value="Java Virtual Machine Specification"/>
-    <property name="PID" value="85060"/>
+    <property name="PID" value="92452"/>
     <property name="CONSOLE_LOG_CHARSET" value="UTF-8"/>
     <property name="native.encoding" value="UTF-8"/>
     <property name="java.library.path" value="/usr/java/packages/lib:/usr/lib64:/lib64:/lib:/usr/lib"/>
@@ -59,41 +60,42 @@
     <property name="java.vm.version" value="21.0.12.1+1-LTS"/>
     <property name="sun.io.unicode.encoding" value="UnicodeLittle"/>
     <property name="java.class.version" value="65.0"/>
+    <property name="LOGGED_APPLICATION_NAME" value="[ledger] "/>
   </properties>
-  <testcase name="shouldDeleteTransactionById" classname="com.pedro.ledger.infrastructure.persistence.transaction.TransactionPersistenceRepositoryTest$DeleteById" time="0.409">
-    <system-out><![CDATA[21:17:44.800 [main] INFO org.testcontainers.images.PullPolicy -- Image pull policy will be performed by: DefaultPullPolicy()
-21:17:44.812 [main] INFO org.testcontainers.utility.ImageNameSubstitutor -- Image name substitution will be performed by: DefaultImageNameSubstitutor (composite of 'ConfigurationFileImageNameSubstitutor' and 'PrefixingImageNameSubstitutor')
-21:17:44.840 [main] INFO org.testcontainers.DockerClientFactory -- Testcontainers version: 2.0.5
-21:17:45.343 [main] INFO org.testcontainers.dockerclient.DockerClientProviderStrategy -- Loaded org.testcontainers.dockerclient.UnixSocketClientProviderStrategy from ~/.testcontainers.properties, will try it first
-21:17:46.053 [main] INFO org.testcontainers.dockerclient.DockerClientProviderStrategy -- Found Docker environment with local Unix socket (unix:///var/run/docker.sock)
-21:17:46.055 [main] INFO org.testcontainers.DockerClientFactory -- Docker host IP address is localhost
-21:17:46.093 [main] INFO org.testcontainers.DockerClientFactory -- Connected to docker: 
+  <testcase name="shouldDeleteTransactionById" classname="com.pedro.ledger.infrastructure.persistence.transaction.TransactionPersistenceRepositoryTest$DeleteById" time="0.231">
+    <system-out><![CDATA[21:42:07.838 [main] INFO org.testcontainers.images.PullPolicy -- Image pull policy will be performed by: DefaultPullPolicy()
+21:42:07.845 [main] INFO org.testcontainers.utility.ImageNameSubstitutor -- Image name substitution will be performed by: DefaultImageNameSubstitutor (composite of 'ConfigurationFileImageNameSubstitutor' and 'PrefixingImageNameSubstitutor')
+21:42:07.864 [main] INFO org.testcontainers.DockerClientFactory -- Testcontainers version: 2.0.5
+21:42:08.661 [main] INFO org.testcontainers.dockerclient.DockerClientProviderStrategy -- Loaded org.testcontainers.dockerclient.UnixSocketClientProviderStrategy from ~/.testcontainers.properties, will try it first
+21:42:09.374 [main] INFO org.testcontainers.dockerclient.DockerClientProviderStrategy -- Found Docker environment with local Unix socket (unix:///var/run/docker.sock)
+21:42:09.376 [main] INFO org.testcontainers.DockerClientFactory -- Docker host IP address is localhost
+21:42:09.407 [main] INFO org.testcontainers.DockerClientFactory -- Connected to docker: 
   Server Version: 28.3.3
   API Version: 1.51
   Operating System: Docker Desktop (containerized)
   Total Memory: 7915 MB
   Labels: 
     com.docker.desktop.address=unix:///var/run/docker-cli.sock
-21:17:46.153 [main] INFO tc.testcontainers/ryuk:0.14.0 -- Creating container for image: testcontainers/ryuk:0.14.0
-21:17:46.297 [main] INFO org.testcontainers.utility.RegistryAuthLocator -- Credential helper/store (docker-credential-desktop.exe) does not have credentials for https://index.docker.io/v1/
-21:17:46.463 [main] INFO tc.testcontainers/ryuk:0.14.0 -- Container testcontainers/ryuk:0.14.0 is starting: 4c4ec6ca839a226a35e99cf0e6898603617a3b46de57dd20285db579495c4cc2
-21:17:47.027 [main] INFO tc.testcontainers/ryuk:0.14.0 -- Container testcontainers/ryuk:0.14.0 started in PT0.873454071S
-21:17:47.037 [main] INFO org.testcontainers.utility.RyukResourceReaper -- Ryuk started - will monitor and terminate Testcontainers containers on JVM exit
-21:17:47.037 [main] INFO org.testcontainers.DockerClientFactory -- Checking the system...
-21:17:47.037 [main] INFO org.testcontainers.DockerClientFactory -- ✔︎ Docker server version should be at least 1.6.0
-21:17:47.038 [main] INFO tc.postgres:17 -- Creating container for image: postgres:17
-21:17:47.099 [main] INFO tc.postgres:17 -- Container postgres:17 is starting: ea36afc6cf6f377d96ef1feec06c91cbce4c74815d04e77e5fb6c6c52c2b9332
-21:17:49.504 [main] INFO tc.postgres:17 -- Container postgres:17 started in PT2.465690165S
-21:17:49.505 [main] INFO tc.postgres:17 -- Container is started (JDBC URL: jdbc:postgresql://localhost:62361/test?loggerLevel=OFF)
-21:17:49.688 [main] INFO org.springframework.test.context.support.AnnotationConfigContextLoaderUtils -- Could not detect default configuration classes for test class [com.pedro.ledger.infrastructure.persistence.transaction.TransactionPersistenceRepositoryTest]: TransactionPersistenceRepositoryTest does not declare any static, non-private, non-final, nested classes annotated with @Configuration.
-21:17:49.886 [main] INFO org.springframework.boot.test.context.SpringBootTestContextBootstrapper -- Found @SpringBootConfiguration com.pedro.ledger.LedgerApplication for test class com.pedro.ledger.infrastructure.persistence.transaction.TransactionPersistenceRepositoryTest
-21:17:49.978 [main] INFO org.springframework.test.context.support.AnnotationConfigContextLoaderUtils -- Could not detect default configuration classes for test class [com.pedro.ledger.infrastructure.persistence.transaction.TransactionPersistenceRepositoryTest]: TransactionPersistenceRepositoryTest does not declare any static, non-private, non-final, nested classes annotated with @Configuration.
-21:17:49.990 [main] INFO org.springframework.boot.test.context.SpringBootTestContextBootstrapper -- Found @SpringBootConfiguration com.pedro.ledger.LedgerApplication for test class com.pedro.ledger.infrastructure.persistence.transaction.TransactionPersistenceRepositoryTest
-21:17:50.031 [main] INFO org.springframework.test.context.support.AnnotationConfigContextLoaderUtils -- Could not detect default configuration classes for test class [com.pedro.ledger.infrastructure.persistence.transaction.TransactionPersistenceRepositoryTest$DeleteById]: DeleteById does not declare any static, non-private, non-final, nested classes annotated with @Configuration.
-21:17:50.041 [main] INFO org.springframework.boot.test.context.SpringBootTestContextBootstrapper -- Found @SpringBootConfiguration com.pedro.ledger.LedgerApplication for test class com.pedro.ledger.infrastructure.persistence.transaction.TransactionPersistenceRepositoryTest$DeleteById
-21:17:50.044 [main] INFO org.springframework.test.context.support.AnnotationConfigContextLoaderUtils -- Could not detect default configuration classes for test class [com.pedro.ledger.infrastructure.persistence.transaction.TransactionPersistenceRepositoryTest$DeleteById]: DeleteById does not declare any static, non-private, non-final, nested classes annotated with @Configuration.
-21:17:50.045 [main] INFO org.springframework.test.context.support.AnnotationConfigContextLoaderUtils -- Could not detect default configuration classes for test class [com.pedro.ledger.infrastructure.persistence.transaction.TransactionPersistenceRepositoryTest]: TransactionPersistenceRepositoryTest does not declare any static, non-private, non-final, nested classes annotated with @Configuration.
-21:17:50.054 [main] INFO org.springframework.boot.test.context.SpringBootTestContextBootstrapper -- Found @SpringBootConfiguration com.pedro.ledger.LedgerApplication for test class com.pedro.ledger.infrastructure.persistence.transaction.TransactionPersistenceRepositoryTest$DeleteById
+21:42:09.447 [main] INFO tc.testcontainers/ryuk:0.14.0 -- Creating container for image: testcontainers/ryuk:0.14.0
+21:42:09.625 [main] INFO org.testcontainers.utility.RegistryAuthLocator -- Credential helper/store (docker-credential-desktop.exe) does not have credentials for https://index.docker.io/v1/
+21:42:09.872 [main] INFO tc.testcontainers/ryuk:0.14.0 -- Container testcontainers/ryuk:0.14.0 is starting: 32d4bfc334627a9688577b4278f73ba70a4ad2c92807cff5d96f761ff5b74d13
+21:42:10.457 [main] INFO tc.testcontainers/ryuk:0.14.0 -- Container testcontainers/ryuk:0.14.0 started in PT1.009784564S
+21:42:10.465 [main] INFO org.testcontainers.utility.RyukResourceReaper -- Ryuk started - will monitor and terminate Testcontainers containers on JVM exit
+21:42:10.466 [main] INFO org.testcontainers.DockerClientFactory -- Checking the system...
+21:42:10.466 [main] INFO org.testcontainers.DockerClientFactory -- ✔︎ Docker server version should be at least 1.6.0
+21:42:10.468 [main] INFO tc.postgres:17 -- Creating container for image: postgres:17
+21:42:10.542 [main] INFO tc.postgres:17 -- Container postgres:17 is starting: 87fbf657e45fe6ef2cb39bc193c5bf1a3b57413fd79dfb9c17264712ddd1eed0
+21:42:12.542 [main] INFO tc.postgres:17 -- Container postgres:17 started in PT2.074691799S
+21:42:12.544 [main] INFO tc.postgres:17 -- Container is started (JDBC URL: jdbc:postgresql://localhost:57159/test?loggerLevel=OFF)
+21:42:12.720 [main] INFO org.springframework.test.context.support.AnnotationConfigContextLoaderUtils -- Could not detect default configuration classes for test class [com.pedro.ledger.infrastructure.persistence.transaction.TransactionPersistenceRepositoryTest]: TransactionPersistenceRepositoryTest does not declare any static, non-private, non-final, nested classes annotated with @Configuration.
+21:42:12.890 [main] INFO org.springframework.boot.test.context.SpringBootTestContextBootstrapper -- Found @SpringBootConfiguration com.pedro.ledger.LedgerApplication for test class com.pedro.ledger.infrastructure.persistence.transaction.TransactionPersistenceRepositoryTest
+21:42:12.991 [main] INFO org.springframework.test.context.support.AnnotationConfigContextLoaderUtils -- Could not detect default configuration classes for test class [com.pedro.ledger.infrastructure.persistence.transaction.TransactionPersistenceRepositoryTest]: TransactionPersistenceRepositoryTest does not declare any static, non-private, non-final, nested classes annotated with @Configuration.
+21:42:12.999 [main] INFO org.springframework.boot.test.context.SpringBootTestContextBootstrapper -- Found @SpringBootConfiguration com.pedro.ledger.LedgerApplication for test class com.pedro.ledger.infrastructure.persistence.transaction.TransactionPersistenceRepositoryTest
+21:42:13.036 [main] INFO org.springframework.test.context.support.AnnotationConfigContextLoaderUtils -- Could not detect default configuration classes for test class [com.pedro.ledger.infrastructure.persistence.transaction.TransactionPersistenceRepositoryTest$DeleteById]: DeleteById does not declare any static, non-private, non-final, nested classes annotated with @Configuration.
+21:42:13.043 [main] INFO org.springframework.boot.test.context.SpringBootTestContextBootstrapper -- Found @SpringBootConfiguration com.pedro.ledger.LedgerApplication for test class com.pedro.ledger.infrastructure.persistence.transaction.TransactionPersistenceRepositoryTest$DeleteById
+21:42:13.045 [main] INFO org.springframework.test.context.support.AnnotationConfigContextLoaderUtils -- Could not detect default configuration classes for test class [com.pedro.ledger.infrastructure.persistence.transaction.TransactionPersistenceRepositoryTest$DeleteById]: DeleteById does not declare any static, non-private, non-final, nested classes annotated with @Configuration.
+21:42:13.046 [main] INFO org.springframework.test.context.support.AnnotationConfigContextLoaderUtils -- Could not detect default configuration classes for test class [com.pedro.ledger.infrastructure.persistence.transaction.TransactionPersistenceRepositoryTest]: TransactionPersistenceRepositoryTest does not declare any static, non-private, non-final, nested classes annotated with @Configuration.
+21:42:13.055 [main] INFO org.springframework.boot.test.context.SpringBootTestContextBootstrapper -- Found @SpringBootConfiguration com.pedro.ledger.LedgerApplication for test class com.pedro.ledger.infrastructure.persistence.transaction.TransactionPersistenceRepositoryTest$DeleteById
 
   .   ____          _            __ _ _
  /\\ / ___'_ __ _ _(_)_ __  __ _ \ \ \ \
@@ -104,18 +106,18 @@
 
  :: Spring Boot ::                (v4.0.7)
 
-2026-10-15T21:17:50.562-03:00  INFO 85060 --- [           main] tionPersistenceRepositoryTest$DeleteById : Starting TransactionPersistenceRepositoryTest.DeleteById using Java 21.0.12.1 with PID 85060 (started by pedro in /home/pedro/projeto/java/ledger)
-2026-10-15T21:17:50.565-03:00  INFO 85060 --- [           main] tionPersistenceRepositoryTest$DeleteById : No active profile set, falling back to 1 default profile: "default"
-2026-10-15T21:17:51.796-03:00  INFO 85060 --- [           main] .s.d.r.c.RepositoryConfigurationDelegate : Bootstrapping Spring Data JPA repositories in DEFAULT mode.
-2026-10-15T21:17:51.893-03:00  INFO 85060 --- [           main] .s.d.r.c.RepositoryConfigurationDelegate : Finished Spring Data repository scanning in 87 ms. Found 3 JPA repository interfaces.
-2026-10-15T21:17:52.646-03:00  INFO 85060 --- [           main] org.hibernate.orm.jpa                    : HHH008540: Processing PersistenceUnitInfo [name: default]
-2026-10-15T21:17:52.750-03:00  INFO 85060 --- [           main] org.hibernate.orm.core                   : HHH000001: Hibernate ORM core version 7.2.19.Final
-2026-10-15T21:17:53.176-03:00  INFO 85060 --- [           main] o.s.o.j.p.SpringPersistenceUnitInfo      : No LoadTimeWeaver setup: ignoring JPA class transformer
-2026-10-15T21:17:53.212-03:00  INFO 85060 --- [           main] com.zaxxer.hikari.HikariDataSource       : HikariPool-1 - Starting...
-2026-10-15T21:17:53.480-03:00  INFO 85060 --- [           main] com.zaxxer.hikari.pool.HikariPool        : HikariPool-1 - Added connection org.postgresql.jdbc.PgConnection@63b85d97
-2026-10-15T21:17:53.485-03:00  INFO 85060 --- [           main] com.zaxxer.hikari.HikariDataSource       : HikariPool-1 - Start completed.
-2026-10-15T21:17:53.633-03:00  INFO 85060 --- [           main] org.hibernate.orm.connections.pooling    : HHH10001005: Database info:
-	Database JDBC URL [jdbc:postgresql://localhost:62361/test?loggerLevel=OFF]
+2026-10-15T21:42:13.653-03:00  INFO 92452 --- [ledger] [           main] tionPersistenceRepositoryTest$DeleteById : Starting TransactionPersistenceRepositoryTest.DeleteById using Java 21.0.12.1 with PID 92452 (started by pedro in /home/pedro/projeto/java/ledger)
+2026-10-15T21:42:13.657-03:00  INFO 92452 --- [ledger] [           main] tionPersistenceRepositoryTest$DeleteById : No active profile set, falling back to 1 default profile: "default"
+2026-10-15T21:42:14.584-03:00  INFO 92452 --- [ledger] [           main] .s.d.r.c.RepositoryConfigurationDelegate : Bootstrapping Spring Data JPA repositories in DEFAULT mode.
+2026-10-15T21:42:14.702-03:00  INFO 92452 --- [ledger] [           main] .s.d.r.c.RepositoryConfigurationDelegate : Finished Spring Data repository scanning in 101 ms. Found 3 JPA repository interfaces.
+2026-10-15T21:42:15.488-03:00  INFO 92452 --- [ledger] [           main] org.hibernate.orm.jpa                    : HHH008540: Processing PersistenceUnitInfo [name: default]
+2026-10-15T21:42:15.583-03:00  INFO 92452 --- [ledger] [           main] org.hibernate.orm.core                   : HHH000001: Hibernate ORM core version 7.2.19.Final
+2026-10-15T21:42:15.952-03:00  INFO 92452 --- [ledger] [           main] o.s.o.j.p.SpringPersistenceUnitInfo      : No LoadTimeWeaver setup: ignoring JPA class transformer
+2026-10-15T21:42:15.994-03:00  INFO 92452 --- [ledger] [           main] com.zaxxer.hikari.HikariDataSource       : HikariPool-1 - Starting...
+2026-10-15T21:42:16.251-03:00  INFO 92452 --- [ledger] [           main] com.zaxxer.hikari.pool.HikariPool        : HikariPool-1 - Added connection org.postgresql.jdbc.PgConnection@64b242b3
+2026-10-15T21:42:16.254-03:00  INFO 92452 --- [ledger] [           main] com.zaxxer.hikari.HikariDataSource       : HikariPool-1 - Start completed.
+2026-10-15T21:42:16.369-03:00  INFO 92452 --- [ledger] [           main] org.hibernate.orm.connections.pooling    : HHH10001005: Database info:
+	Database JDBC URL [jdbc:postgresql://localhost:57159/test?loggerLevel=OFF]
 	Database driver: PostgreSQL JDBC Driver
 	Database dialect: PostgreSQLDialect
 	Database version: 17.11
@@ -126,37 +128,283 @@
 	Pool: DataSourceConnectionProvider
 	Minimum pool size: undefined/unknown
 	Maximum pool size: undefined/unknown
-2026-10-15T21:17:54.847-03:00  INFO 85060 --- [           main] org.hibernate.orm.core                   : HHH000489: No JTA platform available (set 'hibernate.transaction.jta.platform' to enable JTA platform integration)
-2026-10-15T21:17:54.917-03:00  INFO 85060 --- [           main] j.LocalContainerEntityManagerFactoryBean : Initialized JPA EntityManagerFactory for persistence unit 'default'
-2026-10-15T21:17:55.091-03:00  INFO 85060 --- [           main] o.s.d.j.r.query.QueryEnhancerFactories   : Hibernate is in classpath; If applicable, HQL parser will be used.
-2026-10-15T21:17:56.173-03:00  WARN 85060 --- [           main] JpaBaseConfiguration$JpaWebConfiguration : spring.jpa.open-in-view is enabled by default. Therefore, database queries may be performed during view rendering. Explicitly configure spring.jpa.open-in-view to disable this warning
-2026-10-15T21:17:57.657-03:00  INFO 85060 --- [           main] tionPersistenceRepositoryTest$DeleteById : Started TransactionPersistenceRepositoryTest.DeleteById in 7.548 seconds (process running for 17.501)
+2026-10-15T21:42:17.441-03:00  INFO 92452 --- [ledger] [           main] org.hibernate.orm.core                   : HHH000489: No JTA platform available (set 'hibernate.transaction.jta.platform' to enable JTA platform integration)
+Hibernate: 
+    set client_min_messages = WARNING
+Hibernate: 
+    alter table if exists transactions 
+       drop constraint if exists FK20w7wsg13u9srbq3bd7chfxdh
+Hibernate: 
+    alter table if exists transactions 
+       drop constraint if exists FK5598b948ilps8u4o3qvfo4j52
+Hibernate: 
+    drop table if exists accounts cascade
+Hibernate: 
+    drop table if exists categories cascade
+Hibernate: 
+    drop table if exists transactions cascade
+Hibernate: 
+    create table accounts (
+        balance numeric(19,2) not null,
+        currency varchar(3) not null,
+        id uuid not null,
+        name varchar(255) not null,
+        status varchar(255) not null check ((status in ('ACTIVE','INACTIVE'))),
+        type varchar(255) not null check ((type in ('CHECKING','SAVINGS'))),
+        primary key (id)
+    )
+Hibernate: 
+    create table categories (
+        id uuid not null,
+        name varchar(255) not null unique,
+        primary key (id)
+    )
+Hibernate: 
+    create table transactions (
+        amount numeric(19,2) not null,
+        currency varchar(3) not null,
+        timestamp timestamp(6) with time zone not null,
+        account_id uuid not null,
+        category_id uuid,
+        destination_account_id uuid,
+        id uuid not null,
+        description varchar(255),
+        source varchar(255) not null check ((source in ('MANUAL','OPEN_FINANCE'))),
+        status varchar(255) not null check ((status in ('ACTIVE','REVERSED'))),
+        type varchar(255) not null check ((type in ('INCOME','EXPENSE','TRANSFER'))),
+        primary key (id)
+    )
+Hibernate: 
+    alter table if exists transactions 
+       add constraint FK20w7wsg13u9srbq3bd7chfxdh 
+       foreign key (account_id) 
+       references accounts
+Hibernate: 
+    alter table if exists transactions 
+       add constraint FK5598b948ilps8u4o3qvfo4j52 
+       foreign key (destination_account_id) 
+       references accounts
+2026-10-15T21:42:17.519-03:00  INFO 92452 --- [ledger] [           main] j.LocalContainerEntityManagerFactoryBean : Initialized JPA EntityManagerFactory for persistence unit 'default'
+2026-10-15T21:42:17.647-03:00  INFO 92452 --- [ledger] [           main] o.s.d.j.r.query.QueryEnhancerFactories   : Hibernate is in classpath; If applicable, HQL parser will be used.
+2026-10-15T21:42:19.049-03:00  INFO 92452 --- [ledger] [           main] tionPersistenceRepositoryTest$DeleteById : Started TransactionPersistenceRepositoryTest.DeleteById in 5.934 seconds (process running for 15.394)
+Hibernate: 
+    insert 
+    into
+        accounts
+        (balance, currency, name, status, type, id) 
+    values
+        (?, ?, ?, ?, ?, ?)
+Hibernate: 
+    select
+        te1_0.id,
+        te1_0.account_id,
+        te1_0.amount,
+        te1_0.category_id,
+        te1_0.currency,
+        te1_0.description,
+        te1_0.destination_account_id,
+        te1_0.source,
+        te1_0.status,
+        te1_0.timestamp,
+        te1_0.type 
+    from
+        transactions te1_0 
+    where
+        te1_0.id=?
 ]]></system-out>
   </testcase>
-  <testcase name="shouldReturnEmptyListWhenThereAreNoTransactions" classname="com.pedro.ledger.infrastructure.persistence.transaction.TransactionPersistenceRepositoryTest$FindAll" time="0.217">
-    <system-out><![CDATA[2026-10-15T21:17:58.161-03:00  INFO 85060 --- [           main] t.c.s.AnnotationConfigContextLoaderUtils : Could not detect default configuration classes for test class [com.pedro.ledger.infrastructure.persistence.transaction.TransactionPersistenceRepositoryTest$FindAll]: FindAll does not declare any static, non-private, non-final, nested classes annotated with @Configuration.
-2026-10-15T21:17:58.173-03:00  INFO 85060 --- [           main] .b.t.c.SpringBootTestContextBootstrapper : Found @SpringBootConfiguration com.pedro.ledger.LedgerApplication for test class com.pedro.ledger.infrastructure.persistence.transaction.TransactionPersistenceRepositoryTest$FindAll
-2026-10-15T21:17:58.178-03:00  INFO 85060 --- [           main] t.c.s.AnnotationConfigContextLoaderUtils : Could not detect default configuration classes for test class [com.pedro.ledger.infrastructure.persistence.transaction.TransactionPersistenceRepositoryTest$FindAll]: FindAll does not declare any static, non-private, non-final, nested classes annotated with @Configuration.
-2026-10-15T21:17:58.180-03:00  INFO 85060 --- [           main] t.c.s.AnnotationConfigContextLoaderUtils : Could not detect default configuration classes for test class [com.pedro.ledger.infrastructure.persistence.transaction.TransactionPersistenceRepositoryTest]: TransactionPersistenceRepositoryTest does not declare any static, non-private, non-final, nested classes annotated with @Configuration.
-2026-10-15T21:17:58.190-03:00  INFO 85060 --- [           main] .b.t.c.SpringBootTestContextBootstrapper : Found @SpringBootConfiguration com.pedro.ledger.LedgerApplication for test class com.pedro.ledger.infrastructure.persistence.transaction.TransactionPersistenceRepositoryTest$FindAll
+  <testcase name="shouldReturnEmptyListWhenThereAreNoTransactions" classname="com.pedro.ledger.infrastructure.persistence.transaction.TransactionPersistenceRepositoryTest$FindAll" time="0.196">
+    <system-out><![CDATA[2026-10-15T21:42:19.338-03:00  INFO 92452 --- [ledger] [           main] t.c.s.AnnotationConfigContextLoaderUtils : Could not detect default configuration classes for test class [com.pedro.ledger.infrastructure.persistence.transaction.TransactionPersistenceRepositoryTest$FindAll]: FindAll does not declare any static, non-private, non-final, nested classes annotated with @Configuration.
+2026-10-15T21:42:19.350-03:00  INFO 92452 --- [ledger] [           main] .b.t.c.SpringBootTestContextBootstrapper : Found @SpringBootConfiguration com.pedro.ledger.LedgerApplication for test class com.pedro.ledger.infrastructure.persistence.transaction.TransactionPersistenceRepositoryTest$FindAll
+2026-10-15T21:42:19.353-03:00  INFO 92452 --- [ledger] [           main] t.c.s.AnnotationConfigContextLoaderUtils : Could not detect default configuration classes for test class [com.pedro.ledger.infrastructure.persistence.transaction.TransactionPersistenceRepositoryTest$FindAll]: FindAll does not declare any static, non-private, non-final, nested classes annotated with @Configuration.
+2026-10-15T21:42:19.354-03:00  INFO 92452 --- [ledger] [           main] t.c.s.AnnotationConfigContextLoaderUtils : Could not detect default configuration classes for test class [com.pedro.ledger.infrastructure.persistence.transaction.TransactionPersistenceRepositoryTest]: TransactionPersistenceRepositoryTest does not declare any static, non-private, non-final, nested classes annotated with @Configuration.
+2026-10-15T21:42:19.359-03:00  INFO 92452 --- [ledger] [           main] .b.t.c.SpringBootTestContextBootstrapper : Found @SpringBootConfiguration com.pedro.ledger.LedgerApplication for test class com.pedro.ledger.infrastructure.persistence.transaction.TransactionPersistenceRepositoryTest$FindAll
+Hibernate: 
+    insert 
+    into
+        accounts
+        (balance, currency, name, status, type, id) 
+    values
+        (?, ?, ?, ?, ?, ?)
+Hibernate: 
+    select
+        te1_0.id,
+        te1_0.account_id,
+        te1_0.amount,
+        te1_0.category_id,
+        te1_0.currency,
+        te1_0.description,
+        te1_0.destination_account_id,
+        te1_0.source,
+        te1_0.status,
+        te1_0.timestamp,
+        te1_0.type 
+    from
+        transactions te1_0
 ]]></system-out>
   </testcase>
-  <testcase name="shouldFindAllTransactions" classname="com.pedro.ledger.infrastructure.persistence.transaction.TransactionPersistenceRepositoryTest$FindAll" time="0.04"/>
+  <testcase name="shouldFindAllTransactions" classname="com.pedro.ledger.infrastructure.persistence.transaction.TransactionPersistenceRepositoryTest$FindAll" time="0.039">
+    <system-out><![CDATA[Hibernate: 
+    insert 
+    into
+        accounts
+        (balance, currency, name, status, type, id) 
+    values
+        (?, ?, ?, ?, ?, ?)
+Hibernate: 
+    select
+        te1_0.id,
+        te1_0.account_id,
+        te1_0.amount,
+        te1_0.category_id,
+        te1_0.currency,
+        te1_0.description,
+        te1_0.destination_account_id,
+        te1_0.source,
+        te1_0.status,
+        te1_0.timestamp,
+        te1_0.type 
+    from
+        transactions te1_0 
+    where
+        te1_0.id=?
+Hibernate: 
+    select
+        te1_0.id,
+        te1_0.account_id,
+        te1_0.amount,
+        te1_0.category_id,
+        te1_0.currency,
+        te1_0.description,
+        te1_0.destination_account_id,
+        te1_0.source,
+        te1_0.status,
+        te1_0.timestamp,
+        te1_0.type 
+    from
+        transactions te1_0 
+    where
+        te1_0.id=?
+Hibernate: 
+    insert 
+    into
+        transactions
+        (account_id, amount, category_id, currency, description, destination_account_id, source, status, timestamp, type, id) 
+    values
+        (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+Hibernate: 
+    insert 
+    into
+        transactions
+        (account_id, amount, category_id, currency, description, destination_account_id, source, status, timestamp, type, id) 
+    values
+        (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+Hibernate: 
+    select
+        te1_0.id,
+        te1_0.account_id,
+        te1_0.amount,
+        te1_0.category_id,
+        te1_0.currency,
+        te1_0.description,
+        te1_0.destination_account_id,
+        te1_0.source,
+        te1_0.status,
+        te1_0.timestamp,
+        te1_0.type 
+    from
+        transactions te1_0
+]]></system-out>
+  </testcase>
   <testcase name="shouldReturnEmptyWhenTransactionDoesNotExist" classname="com.pedro.ledger.infrastructure.persistence.transaction.TransactionPersistenceRepositoryTest$FindById" time="0.022">
-    <system-out><![CDATA[2026-10-15T21:17:58.479-03:00  INFO 85060 --- [           main] t.c.s.AnnotationConfigContextLoaderUtils : Could not detect default configuration classes for test class [com.pedro.ledger.infrastructure.persistence.transaction.TransactionPersistenceRepositoryTest$FindById]: FindById does not declare any static, non-private, non-final, nested classes annotated with @Configuration.
-2026-10-15T21:17:58.493-03:00  INFO 85060 --- [           main] .b.t.c.SpringBootTestContextBootstrapper : Found @SpringBootConfiguration com.pedro.ledger.LedgerApplication for test class com.pedro.ledger.infrastructure.persistence.transaction.TransactionPersistenceRepositoryTest$FindById
-2026-10-15T21:17:58.496-03:00  INFO 85060 --- [           main] t.c.s.AnnotationConfigContextLoaderUtils : Could not detect default configuration classes for test class [com.pedro.ledger.infrastructure.persistence.transaction.TransactionPersistenceRepositoryTest$FindById]: FindById does not declare any static, non-private, non-final, nested classes annotated with @Configuration.
-2026-10-15T21:17:58.496-03:00  INFO 85060 --- [           main] t.c.s.AnnotationConfigContextLoaderUtils : Could not detect default configuration classes for test class [com.pedro.ledger.infrastructure.persistence.transaction.TransactionPersistenceRepositoryTest]: TransactionPersistenceRepositoryTest does not declare any static, non-private, non-final, nested classes annotated with @Configuration.
-2026-10-15T21:17:58.510-03:00  INFO 85060 --- [           main] .b.t.c.SpringBootTestContextBootstrapper : Found @SpringBootConfiguration com.pedro.ledger.LedgerApplication for test class com.pedro.ledger.infrastructure.persistence.transaction.TransactionPersistenceRepositoryTest$FindById
+    <system-out><![CDATA[2026-10-15T21:42:19.619-03:00  INFO 92452 --- [ledger] [           main] t.c.s.AnnotationConfigContextLoaderUtils : Could not detect default configuration classes for test class [com.pedro.ledger.infrastructure.persistence.transaction.TransactionPersistenceRepositoryTest$FindById]: FindById does not declare any static, non-private, non-final, nested classes annotated with @Configuration.
+2026-10-15T21:42:19.627-03:00  INFO 92452 --- [ledger] [           main] .b.t.c.SpringBootTestContextBootstrapper : Found @SpringBootConfiguration com.pedro.ledger.LedgerApplication for test class com.pedro.ledger.infrastructure.persistence.transaction.TransactionPersistenceRepositoryTest$FindById
+2026-10-15T21:42:19.629-03:00  INFO 92452 --- [ledger] [           main] t.c.s.AnnotationConfigContextLoaderUtils : Could not detect default configuration classes for test class [com.pedro.ledger.infrastructure.persistence.transaction.TransactionPersistenceRepositoryTest$FindById]: FindById does not declare any static, non-private, non-final, nested classes annotated with @Configuration.
+2026-10-15T21:42:19.630-03:00  INFO 92452 --- [ledger] [           main] t.c.s.AnnotationConfigContextLoaderUtils : Could not detect default configuration classes for test class [com.pedro.ledger.infrastructure.persistence.transaction.TransactionPersistenceRepositoryTest]: TransactionPersistenceRepositoryTest does not declare any static, non-private, non-final, nested classes annotated with @Configuration.
+2026-10-15T21:42:19.643-03:00  INFO 92452 --- [ledger] [           main] .b.t.c.SpringBootTestContextBootstrapper : Found @SpringBootConfiguration com.pedro.ledger.LedgerApplication for test class com.pedro.ledger.infrastructure.persistence.transaction.TransactionPersistenceRepositoryTest$FindById
+Hibernate: 
+    insert 
+    into
+        accounts
+        (balance, currency, name, status, type, id) 
+    values
+        (?, ?, ?, ?, ?, ?)
+Hibernate: 
+    select
+        te1_0.id,
+        te1_0.account_id,
+        te1_0.amount,
+        te1_0.category_id,
+        te1_0.currency,
+        te1_0.description,
+        te1_0.destination_account_id,
+        te1_0.source,
+        te1_0.status,
+        te1_0.timestamp,
+        te1_0.type 
+    from
+        transactions te1_0 
+    where
+        te1_0.id=?
 ]]></system-out>
   </testcase>
-  <testcase name="shouldFindTransactionById" classname="com.pedro.ledger.infrastructure.persistence.transaction.TransactionPersistenceRepositoryTest$FindById" time="0.025"/>
-  <testcase name="shouldSaveTransaction" classname="com.pedro.ledger.infrastructure.persistence.transaction.TransactionPersistenceRepositoryTest$Save" time="0.018">
-    <system-out><![CDATA[2026-10-15T21:17:58.593-03:00  INFO 85060 --- [           main] t.c.s.AnnotationConfigContextLoaderUtils : Could not detect default configuration classes for test class [com.pedro.ledger.infrastructure.persistence.transaction.TransactionPersistenceRepositoryTest$Save]: Save does not declare any static, non-private, non-final, nested classes annotated with @Configuration.
-2026-10-15T21:17:58.607-03:00  INFO 85060 --- [           main] .b.t.c.SpringBootTestContextBootstrapper : Found @SpringBootConfiguration com.pedro.ledger.LedgerApplication for test class com.pedro.ledger.infrastructure.persistence.transaction.TransactionPersistenceRepositoryTest$Save
-2026-10-15T21:17:58.610-03:00  INFO 85060 --- [           main] t.c.s.AnnotationConfigContextLoaderUtils : Could not detect default configuration classes for test class [com.pedro.ledger.infrastructure.persistence.transaction.TransactionPersistenceRepositoryTest$Save]: Save does not declare any static, non-private, non-final, nested classes annotated with @Configuration.
-2026-10-15T21:17:58.611-03:00  INFO 85060 --- [           main] t.c.s.AnnotationConfigContextLoaderUtils : Could not detect default configuration classes for test class [com.pedro.ledger.infrastructure.persistence.transaction.TransactionPersistenceRepositoryTest]: TransactionPersistenceRepositoryTest does not declare any static, non-private, non-final, nested classes annotated with @Configuration.
-2026-10-15T21:17:58.622-03:00  INFO 85060 --- [           main] .b.t.c.SpringBootTestContextBootstrapper : Found @SpringBootConfiguration com.pedro.ledger.LedgerApplication for test class com.pedro.ledger.infrastructure.persistence.transaction.TransactionPersistenceRepositoryTest$Save
+  <testcase name="shouldFindTransactionById" classname="com.pedro.ledger.infrastructure.persistence.transaction.TransactionPersistenceRepositoryTest$FindById" time="0.025">
+    <system-out><![CDATA[Hibernate: 
+    insert 
+    into
+        accounts
+        (balance, currency, name, status, type, id) 
+    values
+        (?, ?, ?, ?, ?, ?)
+Hibernate: 
+    select
+        te1_0.id,
+        te1_0.account_id,
+        te1_0.amount,
+        te1_0.category_id,
+        te1_0.currency,
+        te1_0.description,
+        te1_0.destination_account_id,
+        te1_0.source,
+        te1_0.status,
+        te1_0.timestamp,
+        te1_0.type 
+    from
+        transactions te1_0 
+    where
+        te1_0.id=?
+]]></system-out>
+  </testcase>
+  <testcase name="shouldSaveTransaction" classname="com.pedro.ledger.infrastructure.persistence.transaction.TransactionPersistenceRepositoryTest$Save" time="0.033">
+    <system-out><![CDATA[2026-10-15T21:42:19.722-03:00  INFO 92452 --- [ledger] [           main] t.c.s.AnnotationConfigContextLoaderUtils : Could not detect default configuration classes for test class [com.pedro.ledger.infrastructure.persistence.transaction.TransactionPersistenceRepositoryTest$Save]: Save does not declare any static, non-private, non-final, nested classes annotated with @Configuration.
+2026-10-15T21:42:19.735-03:00  INFO 92452 --- [ledger] [           main] .b.t.c.SpringBootTestContextBootstrapper : Found @SpringBootConfiguration com.pedro.ledger.LedgerApplication for test class com.pedro.ledger.infrastructure.persistence.transaction.TransactionPersistenceRepositoryTest$Save
+2026-10-15T21:42:19.739-03:00  INFO 92452 --- [ledger] [           main] t.c.s.AnnotationConfigContextLoaderUtils : Could not detect default configuration classes for test class [com.pedro.ledger.infrastructure.persistence.transaction.TransactionPersistenceRepositoryTest$Save]: Save does not declare any static, non-private, non-final, nested classes annotated with @Configuration.
+2026-10-15T21:42:19.739-03:00  INFO 92452 --- [ledger] [           main] t.c.s.AnnotationConfigContextLoaderUtils : Could not detect default configuration classes for test class [com.pedro.ledger.infrastructure.persistence.transaction.TransactionPersistenceRepositoryTest]: TransactionPersistenceRepositoryTest does not declare any static, non-private, non-final, nested classes annotated with @Configuration.
+2026-10-15T21:42:19.748-03:00  INFO 92452 --- [ledger] [           main] .b.t.c.SpringBootTestContextBootstrapper : Found @SpringBootConfiguration com.pedro.ledger.LedgerApplication for test class com.pedro.ledger.infrastructure.persistence.transaction.TransactionPersistenceRepositoryTest$Save
+Hibernate: 
+    insert 
+    into
+        accounts
+        (balance, currency, name, status, type, id) 
+    values
+        (?, ?, ?, ?, ?, ?)
+Hibernate: 
+    select
+        te1_0.id,
+        te1_0.account_id,
+        te1_0.amount,
+        te1_0.category_id,
+        te1_0.currency,
+        te1_0.description,
+        te1_0.destination_account_id,
+        te1_0.source,
+        te1_0.status,
+        te1_0.timestamp,
+        te1_0.type 
+    from
+        transactions te1_0 
+    where
+        te1_0.id=?
 ]]></system-out>
   </testcase>
 </testsuite>
