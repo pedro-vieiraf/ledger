@@ -16,6 +16,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import com.pedro.ledger.application.transaction.TransactionApplicationService;
 import com.pedro.ledger.domain.money.Money;
 import com.pedro.ledger.domain.transaction.Transaction;
+import com.pedro.ledger.domain.transaction.TransactionNotFoundException;
 import com.pedro.ledger.domain.transaction.TransactionSource;
 import com.pedro.ledger.domain.transaction.TransactionType;
 import java.math.BigDecimal;
@@ -473,7 +474,7 @@ class TransactionControllerTest {
           eq("Updated description"),
           eq(null)
       )).thenThrow(
-          new IllegalArgumentException("Transaction not found")
+          new TransactionNotFoundException()
       );
 
       mockMvc.perform(
@@ -557,7 +558,7 @@ class TransactionControllerTest {
       UUID transactionId = UUID.randomUUID();
 
       doThrow(
-          new IllegalArgumentException("Transaction not found")
+          new TransactionNotFoundException()
       ).when(service).delete(transactionId);
 
       mockMvc.perform(

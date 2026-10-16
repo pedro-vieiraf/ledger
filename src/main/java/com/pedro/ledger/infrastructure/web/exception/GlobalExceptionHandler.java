@@ -47,4 +47,11 @@ public class GlobalExceptionHandler {
   ) {
     return ResponseEntity.badRequest().build();
   }
+
+  @ExceptionHandler(IllegalArgumentException.class)
+  public ResponseEntity<Void> handleIllegalArgument(
+      IllegalArgumentException exception
+  ) {
+    return ResponseEntity.badRequest().build();
+  }
 }

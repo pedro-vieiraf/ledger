@@ -7,6 +7,7 @@ import static org.mockito.Mockito.when;
 import com.pedro.ledger.domain.money.Money;
 import com.pedro.ledger.domain.transaction.Transaction;
 import com.pedro.ledger.domain.transaction.TransactionSource;
+import com.pedro.ledger.domain.transaction.TransactionStatus;
 import com.pedro.ledger.domain.transaction.TransactionType;
 import com.pedro.ledger.infrastructure.persistence.account.AccountEntity;
 import jakarta.persistence.EntityManager;
@@ -150,6 +151,7 @@ class TransactionMapperTest {
         id,
         Money.of("100.00", currency).amount(),
         currency,
+        TransactionStatus.ACTIVE,
         TransactionType.EXPENSE,
         "Supermarket",
         timestamp,
@@ -210,6 +212,7 @@ class TransactionMapperTest {
         id,
         Money.of("500.00", currency).amount(),
         currency,
+        TransactionStatus.ACTIVE,
         TransactionType.TRANSFER,
         "Transfer",
         timestamp,
@@ -265,6 +268,7 @@ class TransactionMapperTest {
         id,
         Money.of("250.00", currency).amount(),
         currency,
+        TransactionStatus.ACTIVE,
         TransactionType.EXPENSE,
         "Purchase",
         timestamp,

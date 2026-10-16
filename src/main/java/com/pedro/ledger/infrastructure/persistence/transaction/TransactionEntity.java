@@ -1,6 +1,7 @@
 package com.pedro.ledger.infrastructure.persistence.transaction;
 
 import com.pedro.ledger.domain.transaction.TransactionSource;
+import com.pedro.ledger.domain.transaction.TransactionStatus;
 import com.pedro.ledger.domain.transaction.TransactionType;
 import com.pedro.ledger.infrastructure.persistence.account.AccountEntity;
 import jakarta.persistence.Column;
@@ -32,6 +33,10 @@ public class TransactionEntity {
 
   @Column(nullable = false, length = 3)
   private String currency;
+
+  @Enumerated(EnumType.STRING)
+  @Column(nullable = false)
+  private TransactionStatus status;
 
   @Enumerated(EnumType.STRING)
   @Column(nullable = false)
@@ -70,6 +75,7 @@ public class TransactionEntity {
    * @param id transaction identifier
    * @param amount transaction amount
    * @param currency transaction currency
+   * @param status transaction status
    * @param type transaction type
    * @param description transaction description
    * @param timestamp transaction timestamp
@@ -82,6 +88,7 @@ public class TransactionEntity {
       UUID id,
       BigDecimal amount,
       Currency currency,
+      TransactionStatus status,
       TransactionType type,
       String description,
       Instant timestamp,
@@ -93,6 +100,7 @@ public class TransactionEntity {
     this.id = id;
     this.amount = amount;
     this.currency = currency.getCurrencyCode();
+    this.status = status;
     this.type = type;
     this.description = description;
     this.timestamp = timestamp;
@@ -128,6 +136,16 @@ public class TransactionEntity {
   public Currency getCurrency() {
     return Currency.getInstance(currency);
   }
+
+  /**
+   * Returns the transaction status.
+   *
+   * @return transaction status
+   */
+  public TransactionStatus getStatus() {
+    return status;
+  }
+
 
   /**
    * Returns the transaction type.

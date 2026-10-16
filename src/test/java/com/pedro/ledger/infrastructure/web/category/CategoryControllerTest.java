@@ -15,6 +15,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import com.pedro.ledger.application.category.CategoryApplicationService;
 import com.pedro.ledger.domain.category.Category;
+import com.pedro.ledger.domain.category.CategoryNotFoundException;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -251,8 +252,7 @@ class CategoryControllerTest {
     }
 
     @Test
-    void shouldReturnNotFoundWhenCategoryDoesNotExist()
-        throws Exception {
+    void shouldReturnNotFoundWhenCategoryDoesNotExist() throws Exception {
 
       UUID categoryId = UUID.randomUUID();
 
@@ -260,17 +260,17 @@ class CategoryControllerTest {
           eq(categoryId),
           eq("Groceries")
       )).thenThrow(
-          new IllegalArgumentException("Category not found")
+          new CategoryNotFoundException()
       );
 
       mockMvc.perform(
               patch("/categories/{id}", categoryId)
                   .contentType(MediaType.APPLICATION_JSON)
                   .content("""
-                  {
-                    "name": "Groceries"
-                  }
-                  """)
+                {
+                  "name": "Groceries"
+                }
+                """)
           )
           .andExpect(status().isNotFound());
 
@@ -302,13 +302,12 @@ class CategoryControllerTest {
     }
 
     @Test
-    void shouldReturnNotFoundWhenCategoryDoesNotExist()
-        throws Exception {
+    void shouldReturnNotFoundWhenCategoryDoesNotExist() throws Exception {
 
       UUID categoryId = UUID.randomUUID();
 
       doThrow(
-          new IllegalArgumentException("Category not found")
+          new CategoryNotFoundException()
       ).when(service).delete(categoryId);
 
       mockMvc.perform(
@@ -316,8 +315,7 @@ class CategoryControllerTest {
           )
           .andExpect(status().isNotFound());
 
-      verify(service)
-          .delete(categoryId);
+      verify(service).delete(categoryId);
     }
   }
 }

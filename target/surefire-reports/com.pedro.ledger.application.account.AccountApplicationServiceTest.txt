@@ -1,0 +1,4 @@
+-------------------------------------------------------------------------------
+Test set: com.pedro.ledger.application.account.AccountApplicationServiceTest
+-------------------------------------------------------------------------------
+Tests run: 0, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.109 s -- in com.pedro.ledger.application.account.AccountApplicationServiceTest

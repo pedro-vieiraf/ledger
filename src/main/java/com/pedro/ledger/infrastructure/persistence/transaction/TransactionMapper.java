@@ -4,6 +4,7 @@ import com.pedro.ledger.domain.money.Money;
 import com.pedro.ledger.domain.transaction.Transaction;
 import com.pedro.ledger.infrastructure.persistence.account.AccountEntity;
 import jakarta.persistence.EntityManager;
+import java.util.Currency;
 import org.springframework.stereotype.Component;
 
 /**
@@ -48,6 +49,7 @@ public class TransactionMapper {
         transaction.getId(),
         transaction.getAmount().amount(),
         transaction.getAmount().currency(),
+        transaction.getStatus(),
         transaction.getType(),
         transaction.getDescription(),
         transaction.getTimestamp(),
@@ -67,11 +69,9 @@ public class TransactionMapper {
   public Transaction toDomain(TransactionEntity entity) {
     return Transaction.restore(
         entity.getId(),
-        Money.of(
-            entity.getAmount(),
-            entity.getCurrency()
-        ),
+        Money.of(entity.getAmount(), entity.getCurrency()),
         entity.getType(),
+        entity.getStatus(),
         entity.getDescription(),
         entity.getTimestamp(),
         entity.getSource(),

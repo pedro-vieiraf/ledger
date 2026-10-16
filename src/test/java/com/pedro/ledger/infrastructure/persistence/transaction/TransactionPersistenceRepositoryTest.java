@@ -9,6 +9,7 @@ import com.pedro.ledger.domain.transaction.TransactionSource;
 import com.pedro.ledger.domain.transaction.TransactionType;
 import com.pedro.ledger.infrastructure.persistence.account.AccountEntity;
 import jakarta.persistence.EntityManager;
+import jakarta.transaction.Transactional;
 import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
@@ -28,6 +29,7 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 })
 @Testcontainers
 @SpringBootTest
+@Transactional
 class TransactionPersistenceRepositoryTest {
 
   @Container

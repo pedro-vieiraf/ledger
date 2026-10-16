@@ -52,7 +52,8 @@ class AccountApplicationServiceTest {
       Account result = accountApplicationService.create(
           "Checking Account",
           AccountType.CHECKING,
-          new BigDecimal("1000.00")
+          new BigDecimal("1000.00"),
+          null
       );
 
       assertThat(result)
@@ -70,7 +71,8 @@ class AccountApplicationServiceTest {
       Account result = accountApplicationService.create(
           "Savings Account",
           AccountType.SAVINGS,
-          new BigDecimal("2500.00")
+          new BigDecimal("2500.00"),
+          null
       );
 
       assertThat(result.getId())
@@ -98,7 +100,8 @@ class AccountApplicationServiceTest {
           accountApplicationService.create(
               "   ",
               AccountType.CHECKING,
-              new BigDecimal("1000.00")
+              new BigDecimal("1000.00"),
+              null
           )
       )
           .isInstanceOf(IllegalArgumentException.class)
@@ -380,7 +383,7 @@ class AccountApplicationServiceTest {
               null
           )
       )
-          .isInstanceOf(AccountNotFoundException.class)
+          .isInstanceOf(IllegalArgumentException.class)
           .hasMessage("Account name cannot be null or blank");
 
       verify(accountRepository)

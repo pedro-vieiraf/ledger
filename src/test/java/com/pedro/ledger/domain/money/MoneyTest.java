@@ -337,12 +337,12 @@ class MoneyTest {
 
   @Test
   void shouldRoundDivisionUpWhenHalfIsReachedAndRetainedDigitIsOdd() {
-    Money money = Money.of("1.00");
+    Money money = Money.of("1.40");
 
     Money result = money.divide(40);
 
     assertThat(result.amount())
-        .isEqualByComparingTo("0.03");
+        .isEqualByComparingTo("0.04");
   }
 
   @Test

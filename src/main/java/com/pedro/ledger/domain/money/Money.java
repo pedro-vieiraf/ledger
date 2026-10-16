@@ -126,10 +126,10 @@ public record Money(BigDecimal amount, Currency currency) {
       throw new IllegalArgumentException("Multiplier cannot be null");
     }
 
-    return new Money(
-        amount.multiply(multiplier),
-        currency
-    );
+    BigDecimal result = amount.multiply(multiplier)
+        .setScale(SCALE, RoundingMode.HALF_EVEN);
+
+    return new Money(result, currency);
   }
 
   /**

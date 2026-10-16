@@ -1,0 +1,4 @@
+-------------------------------------------------------------------------------
+Test set: com.pedro.ledger.infrastructure.persistence.account.AccountPersistenceRepositoryTest
+-------------------------------------------------------------------------------
+Tests run: 4, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 3.804 s -- in com.pedro.ledger.infrastructure.persistence.account.AccountPersistenceRepositoryTest
