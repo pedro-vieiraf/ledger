@@ -6,15 +6,21 @@
         <sourceOutputDir name="target/generated-sources/annotations" />
         <sourceTestOutputDir name="target/generated-test-sources/test-annotations" />
         <outputRelativeToContentRoot value="true" />
-        <module name="ledger" />
         <module name="ledger (1)" />
       </profile>
     </annotationProcessing>
+    <bytecodeTargetLevel>
+      <module name="backend" target="1.5" />
+      <module name="ledger" target="1.5" />
+      <module name="ledger (2)" target="21" />
+    </bytecodeTargetLevel>
   </component>
   <component name="JavacSettings">
     <option name="ADDITIONAL_OPTIONS_OVERRIDE">
+      <module name="backend (1)" options="-parameters" />
       <module name="ledger" options="" />
       <module name="ledger (1)" options="-parameters" />
+      <module name="ledger (2)" options="-parameters" />
     </option>
   </component>
 </project>
