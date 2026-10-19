@@ -1,34 +1,98 @@
-import { NativeTabs } from 'expo-router/unstable-native-tabs';
-import { useColorScheme } from 'react-native';
-
-import { Colors } from '@/constants/theme';
+import { Tabs, TabList, TabSlot, TabTrigger } from 'expo-router/ui';
+import { Text } from 'react-native';
 
 export default function AppTabs() {
-  const scheme = useColorScheme();
-  const colors = Colors[scheme === 'dark' ? 'dark' : 'light'];
-
   return (
-    <NativeTabs
-      backgroundColor={colors.background}
-      indicatorColor={colors.backgroundElement}
-      labelStyle={{
-        selected: { color: colors.text },
+    <Tabs
+      style={{
+        flex: 1,
+        backgroundColor: '#F7F7F2',
       }}
     >
-      <NativeTabs.Trigger name="index">
-        <NativeTabs.Trigger.Label>Início</NativeTabs.Trigger.Label>
-        <NativeTabs.Trigger.Icon md="home" />
-      </NativeTabs.Trigger>
+      <TabSlot
+        style={{
+          flex: 1,
+        }}
+      />
 
-      <NativeTabs.Trigger name="transactions">
-        <NativeTabs.Trigger.Label>Transações</NativeTabs.Trigger.Label>
-        <NativeTabs.Trigger.Icon md="receipt_long" />
-      </NativeTabs.Trigger>
+      <TabList
+        style={{
+          flexDirection: 'row',
+          justifyContent: 'space-around',
+          alignItems: 'center',
+          paddingHorizontal: 16,
+          paddingVertical: 12,
+          backgroundColor: '#FFFFFF',
+          borderTopWidth: 1,
+          borderTopColor: '#E5E7E1',
+        }}
+      >
+        <TabTrigger
+          name="index"
+          href="/"
+          style={({ pressed }) => ({
+            flex: 1,
+            alignItems: 'center',
+            justifyContent: 'center',
+            paddingVertical: 10,
+            opacity: pressed ? 0.7 : 1,
+          })}
+        >
+          <Text
+            style={{
+              fontSize: 14,
+              fontWeight: '600',
+              color: '#1F5B45',
+            }}
+          >
+            Início
+          </Text>
+        </TabTrigger>
 
-      <NativeTabs.Trigger name="accounts">
-        <NativeTabs.Trigger.Label>Contas</NativeTabs.Trigger.Label>
-        <NativeTabs.Trigger.Icon md="account_balance_wallet" />
-      </NativeTabs.Trigger>
-    </NativeTabs>
+        <TabTrigger
+          name="transactions"
+          href="/transactions"
+          style={({ pressed }) => ({
+            flex: 1,
+            alignItems: 'center',
+            justifyContent: 'center',
+            paddingVertical: 10,
+            opacity: pressed ? 0.7 : 1,
+          })}
+        >
+          <Text
+            style={{
+              fontSize: 14,
+              fontWeight: '600',
+              color: '#1F5B45',
+            }}
+          >
+            Transações
+          </Text>
+        </TabTrigger>
+
+        <TabTrigger
+          name="accounts"
+          href="/accounts"
+          style={({ pressed }) => ({
+            flex: 1,
+            alignItems: 'center',
+            justifyContent: 'center',
+            paddingVertical: 10,
+            opacity: pressed ? 0.7 : 1,
+          })}
+        >
+          <Text
+            style={{
+              fontSize: 14,
+              fontWeight: '600',
+              color: '#1F5B45',
+            }}
+          >
+            Contas
+          </Text>
+        </TabTrigger>
+      </TabList>
+    </Tabs>
   );
 }

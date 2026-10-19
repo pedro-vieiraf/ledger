@@ -1,6 +1,6 @@
-import { useMemo, useState } from 'react';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { useEffect, useMemo, useState } from 'react';
 import {
+  ActivityIndicator,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -8,8 +8,24 @@ import {
   TextInput,
   View,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+
+import {
+  getTransactions,
+  type Transaction as ApiTransaction,
+  type TransactionType as ApiTransactionType,
+} from '../../services/transactions-api';
+import {
+  getAccounts,
+  type Account,
+} from '../../services/accounts-api';
+import {
+  getCategories,
+  type Category,
+} from '../../services/categories-api';
 
 type TransactionType = 'income' | 'expense' | 'transfer';
+type FilterType = 'all' | TransactionType;
 
 type Transaction = {
   id: string;
@@ -18,11 +34,10 @@ type Transaction = {
   account: string;
   date: string;
   amount: number;
+  currency: string;
   type: TransactionType;
   icon: string;
 };
-
-type FilterType = 'all' | TransactionType;
 
 const COLORS = {
   background: '#F7F7F2',
@@ -40,149 +55,6 @@ const COLORS = {
   transferBackground: '#EDF1F8',
 };
 
-const MOCK_TRANSACTIONS: Transaction[] = [
-  {
-    id: 't01',
-    description: 'Salário',
-    category: 'Salário',
-    account: 'Conta principal',
-    date: '2026-10-18',
-    amount: 4200,
-    type: 'income',
-    icon: '💼',
-  },
-  {
-    id: 't02',
-    description: 'Supermercado',
-    category: 'Alimentação',
-    account: 'Conta principal',
-    date: '2026-10-17',
-    amount: 186.45,
-    type: 'expense',
-    icon: '🛒',
-  },
-  {
-    id: 't03',
-    description: 'Transferência para reserva',
-    category: 'Transferência',
-    account: 'Conta principal',
-    date: '2026-10-16',
-    amount: 500,
-    type: 'transfer',
-    icon: '↗',
-  },
-  {
-    id: 't04',
-    description: 'Internet',
-    category: 'Moradia',
-    account: 'Conta principal',
-    date: '2026-10-15',
-    amount: 99.9,
-    type: 'expense',
-    icon: '📶',
-  },
-  {
-    id: 't05',
-    description: 'Freelance',
-    category: 'Trabalho',
-    account: 'Conta principal',
-    date: '2026-10-13',
-    amount: 650,
-    type: 'income',
-    icon: '💻',
-  },
-  {
-    id: 't06',
-    description: 'Restaurante',
-    category: 'Alimentação',
-    account: 'Dinheiro',
-    date: '2026-10-10',
-    amount: 72.5,
-    type: 'expense',
-    icon: '🍽',
-  },
-  {
-    id: 't07',
-    description: 'Transporte',
-    category: 'Transporte',
-    account: 'Conta principal',
-    date: '2026-10-08',
-    amount: 45,
-    type: 'expense',
-    icon: '🚌',
-  },
-  {
-    id: 't08',
-    description: 'Transferência recebida',
-    category: 'Transferência',
-    account: 'Conta principal',
-    date: '2026-10-05',
-    amount: 120,
-    type: 'transfer',
-    icon: '↙',
-  },
-  {
-    id: 't09',
-    description: 'Streaming',
-    category: 'Assinaturas',
-    account: 'Cartão de crédito',
-    date: '2026-10-02',
-    amount: 39.9,
-    type: 'expense',
-    icon: '▶',
-  },
-  {
-    id: 't10',
-    description: 'Salário',
-    category: 'Salário',
-    account: 'Conta principal',
-    date: '2026-09-18',
-    amount: 4200,
-    type: 'income',
-    icon: '💼',
-  },
-  {
-    id: 't11',
-    description: 'Aluguel',
-    category: 'Moradia',
-    account: 'Conta principal',
-    date: '2026-09-15',
-    amount: 1200,
-    type: 'expense',
-    icon: '🏠',
-  },
-  {
-    id: 't12',
-    description: 'Transferência para reserva',
-    category: 'Transferência',
-    account: 'Conta principal',
-    date: '2026-09-12',
-    amount: 300,
-    type: 'transfer',
-    icon: '↗',
-  },
-  {
-    id: 't13',
-    description: 'Freelance',
-    category: 'Trabalho',
-    account: 'Conta principal',
-    date: '2026-09-10',
-    amount: 400,
-    type: 'income',
-    icon: '💻',
-  },
-  {
-    id: 't14',
-    description: 'Farmácia',
-    category: 'Saúde',
-    account: 'Dinheiro',
-    date: '2026-09-06',
-    amount: 64.8,
-    type: 'expense',
-    icon: '💊',
-  },
-];
-
 const FILTERS: { label: string; value: FilterType }[] = [
   { label: 'Todas', value: 'all' },
   { label: 'Receitas', value: 'income' },
@@ -190,13 +62,15 @@ const FILTERS: { label: string; value: FilterType }[] = [
   { label: 'Transferências', value: 'transfer' },
 ];
 
-const currencyFormatter = new Intl.NumberFormat('pt-BR', {
-  style: 'currency',
-  currency: 'BRL',
-});
-
-function formatCurrency(value: number) {
-  return currencyFormatter.format(value);
+function formatCurrency(value: number, currency: string) {
+  try {
+    return new Intl.NumberFormat('pt-BR', {
+      style: 'currency',
+      currency,
+    }).format(value);
+  } catch {
+    return `${currency} ${value.toFixed(2)}`;
+  }
 }
 
 function formatMonth(date: Date) {
@@ -209,7 +83,8 @@ function formatMonth(date: Date) {
 }
 
 function formatDateHeading(dateString: string) {
-  const date = new Date(`${dateString}T12:00:00`);
+  const [year, month, day] = dateString.split('-').map(Number);
+  const date = new Date(year, month - 1, day, 12);
 
   return new Intl.DateTimeFormat('pt-BR', {
     day: '2-digit',
@@ -235,14 +110,79 @@ function getAmountPrefix(type: TransactionType) {
   return '';
 }
 
-function TransactionRow({ transaction }: { transaction: Transaction }) {
+function mapTransactionType(type: ApiTransactionType): TransactionType {
+  switch (type) {
+    case 'INCOME':
+      return 'income';
+    case 'EXPENSE':
+      return 'expense';
+    case 'TRANSFER':
+      return 'transfer';
+  }
+}
+
+function getTransactionIcon(type: TransactionType) {
+  if (type === 'income') return '↙';
+  if (type === 'transfer') return '↔';
+  return '↗';
+}
+
+function mapApiTransaction(
+    transaction: ApiTransaction,
+    accountsById: Map<string, Account>,
+    categoriesById: Map<string, Category>,
+): Transaction {
+  const type = mapTransactionType(transaction.type);
+  const sourceAccount = accountsById.get(transaction.accountId);
+  const destinationAccount = transaction.destinationAccountId
+      ? accountsById.get(transaction.destinationAccountId)
+      : undefined;
+
+  const category = transaction.categoryId
+      ? categoriesById.get(transaction.categoryId)
+      : undefined;
+
+  let accountLabel = sourceAccount?.name ?? 'Conta desconhecida';
+
+  if (type === 'transfer' && destinationAccount) {
+    accountLabel = `${accountLabel} → ${destinationAccount.name}`;
+  }
+
+  return {
+    id: transaction.id,
+    description: transaction.description?.trim() || (
+        type === 'income'
+            ? 'Receita'
+            : type === 'expense'
+                ? 'Despesa'
+                : 'Transferência'
+    ),
+    category: type === 'transfer'
+        ? 'Transferência'
+        : category?.name ?? 'Sem categoria',
+    account: accountLabel,
+    date: transaction.timestamp.slice(0, 10),
+    amount: transaction.amount,
+    currency: transaction.currency,
+    type,
+    icon: getTransactionIcon(type),
+  };
+}
+
+function TransactionRow({
+                          transaction,
+                        }: {
+  transaction: Transaction;
+}) {
   const color = getTransactionColor(transaction.type);
   const backgroundColor = getTransactionBackground(transaction.type);
 
   return (
       <View style={styles.transactionRow}>
         <View style={[styles.transactionIcon, { backgroundColor }]}>
-          <Text style={styles.transactionIconText}>{transaction.icon}</Text>
+          <Text style={styles.transactionIconText}>
+            {transaction.icon}
+          </Text>
         </View>
 
         <View style={styles.transactionDetails}>
@@ -259,7 +199,7 @@ function TransactionRow({ transaction }: { transaction: Transaction }) {
             numberOfLines={1}
         >
           {getAmountPrefix(transaction.type)}
-          {formatCurrency(transaction.amount)}
+          {formatCurrency(transaction.amount, transaction.currency)}
         </Text>
       </View>
   );
@@ -271,10 +211,72 @@ export default function TransactionsScreen() {
       useState<FilterType>('all');
   const [searchQuery, setSearchQuery] = useState('');
 
-  const selectedMonth = useMemo(
-      () => new Date(2026, 9 + monthOffset, 1),
-      [monthOffset],
-  );
+  const [transactions, setTransactions] = useState<Transaction[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    let ignore = false;
+
+    async function loadTransactions() {
+      setLoading(true);
+      setError(null);
+
+      try {
+        const [apiTransactions, accounts, categories] = await Promise.all([
+          getTransactions(),
+          getAccounts(),
+          getCategories(),
+        ]);
+
+        if (ignore) return;
+
+        const accountsById = new Map(
+            accounts.map((account) => [account.id, account]),
+        );
+        const categoriesById = new Map(
+            categories.map((category) => [category.id, category]),
+        );
+
+        const mappedTransactions = apiTransactions
+        .map((transaction) =>
+            mapApiTransaction(transaction, accountsById, categoriesById),
+        )
+        .sort((a, b) =>
+            b.date.localeCompare(a.date) || b.id.localeCompare(a.id),
+        );
+
+        setTransactions(mappedTransactions);
+      } catch (cause) {
+        if (!ignore) {
+          setError(
+              cause instanceof Error
+                  ? cause.message
+                  : 'Não foi possível carregar as transações.',
+          );
+        }
+      } finally {
+        if (!ignore) {
+          setLoading(false);
+        }
+      }
+    }
+
+    void loadTransactions();
+
+    return () => {
+      ignore = true;
+    };
+  }, []);
+
+  const selectedMonth = useMemo(() => {
+    const now = new Date();
+    return new Date(
+        now.getFullYear(),
+        now.getMonth() + monthOffset,
+        1,
+    );
+  }, [monthOffset]);
 
   const monthKey = [
     selectedMonth.getFullYear(),
@@ -283,15 +285,24 @@ export default function TransactionsScreen() {
 
   const monthTransactions = useMemo(
       () =>
-          MOCK_TRANSACTIONS.filter((transaction) =>
-              transaction.date.startsWith(monthKey),
-          ).sort((a, b) => b.date.localeCompare(a.date)),
-      [monthKey],
+          transactions
+          .filter((transaction) => transaction.date.startsWith(monthKey))
+          .sort((a, b) =>
+              b.date.localeCompare(a.date) || b.id.localeCompare(a.id),
+          ),
+      [transactions, monthKey],
   );
 
   const summary = useMemo(() => {
     return monthTransactions.reduce(
         (totals, transaction) => {
+          // Os resumos atuais representam valores em uma única moeda.
+          // Transações de outras moedas não devem ser somadas como se
+          // fossem BRL sem uma conversão cambial explícita.
+          if (transaction.currency !== 'BRL') {
+            return totals;
+          }
+
           if (transaction.type === 'income') {
             totals.income += transaction.amount;
           } else if (transaction.type === 'expense') {
@@ -377,7 +388,9 @@ export default function TransactionsScreen() {
               <Text style={styles.monthArrowText}>‹</Text>
             </Pressable>
 
-            <Text style={styles.monthTitle}>{formatMonth(selectedMonth)}</Text>
+            <Text style={styles.monthTitle}>
+              {formatMonth(selectedMonth)}
+            </Text>
 
             <Pressable
                 accessibilityRole="button"
@@ -404,7 +417,7 @@ export default function TransactionsScreen() {
                   styles.negativeBalance,
                 ]}
             >
-              {formatCurrency(summary.income - summary.expense)}
+              {formatCurrency(summary.income - summary.expense, 'BRL')}
             </Text>
             <Text style={styles.summaryHint}>
               Receitas menos despesas, sem transferências
@@ -424,7 +437,7 @@ export default function TransactionsScreen() {
                   <Text style={styles.metricLabel}>Receitas</Text>
                 </View>
                 <Text style={[styles.metricValue, { color: COLORS.income }]}>
-                  {formatCurrency(summary.income)}
+                  {formatCurrency(summary.income, 'BRL')}
                 </Text>
               </View>
 
@@ -441,7 +454,7 @@ export default function TransactionsScreen() {
                   <Text style={styles.metricLabel}>Despesas</Text>
                 </View>
                 <Text style={[styles.metricValue, { color: COLORS.expense }]}>
-                  {formatCurrency(summary.expense)}
+                  {formatCurrency(summary.expense, 'BRL')}
                 </Text>
               </View>
             </View>
@@ -458,7 +471,7 @@ export default function TransactionsScreen() {
               </Text>
             </View>
             <Text style={styles.transferAmount}>
-              {formatCurrency(summary.transfer)}
+              {formatCurrency(summary.transfer, 'BRL')}
             </Text>
           </View>
 
@@ -466,7 +479,9 @@ export default function TransactionsScreen() {
             <Text style={styles.sectionTitle}>Histórico</Text>
             <Text style={styles.transactionCount}>
               {filteredTransactions.length}{' '}
-              {filteredTransactions.length === 1 ? 'movimentação' : 'movimentações'}
+              {filteredTransactions.length === 1
+                  ? 'movimentação'
+                  : 'movimentações'}
             </Text>
           </View>
 
@@ -525,7 +540,34 @@ export default function TransactionsScreen() {
             })}
           </ScrollView>
 
-          {groupedTransactions.length === 0 ? (
+          {loading ? (
+              <View style={styles.statusState}>
+                <ActivityIndicator size="large" color={COLORS.primary} />
+                <Text style={styles.emptyDescription}>
+                  Carregando transações...
+                </Text>
+              </View>
+          ) : error ? (
+              <View style={styles.emptyState}>
+                <Text style={styles.emptyTitle}>
+                  Não foi possível carregar as transações
+                </Text>
+                <Text style={styles.emptyDescription}>{error}</Text>
+                <Pressable
+                    accessibilityRole="button"
+                    onPress={() => {
+                      // A tela será recarregada ao voltar a ser montada.
+                      // Para evitar depender desse comportamento de navegação,
+                      // use o botão de recarregar abaixo.
+                    }}
+                    style={styles.retryButton}
+                >
+                  <Text style={styles.retryButtonText}>
+                    Verifique a conexão com a API
+                  </Text>
+                </Pressable>
+              </View>
+          ) : groupedTransactions.length === 0 ? (
               <View style={styles.emptyState}>
                 <Text style={styles.emptyIcon}>⌕</Text>
                 <Text style={styles.emptyTitle}>
@@ -556,7 +598,8 @@ export default function TransactionsScreen() {
           )}
 
           <Text style={styles.disclaimer}>
-            Dados demonstrativos. Nenhuma conta está conectada ao Ledger.
+            Dados carregados da API do Ledger. As contas não estão conectadas
+            automaticamente a instituições financeiras.
           </Text>
         </ScrollView>
       </SafeAreaView>
@@ -607,24 +650,19 @@ const styles = StyleSheet.create({
   },
   headerBadgeText: {
     color: COLORS.primary,
-    fontSize: 16,
-    fontWeight: '700',
+    fontSize: 14,
+    fontWeight: '800',
   },
   monthSelector: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 16,
-  },
-  monthTitle: {
-    color: COLORS.text,
-    fontSize: 17,
-    fontWeight: '700',
+    marginBottom: 18,
   },
   monthArrow: {
     width: 38,
     height: 38,
-    borderRadius: 12,
+    borderRadius: 13,
     backgroundColor: COLORS.surface,
     borderWidth: 1,
     borderColor: COLORS.border,
@@ -632,42 +670,49 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   monthArrowText: {
-    color: COLORS.primary,
-    fontSize: 27,
-    lineHeight: 30,
+    color: COLORS.text,
+    fontSize: 25,
+    lineHeight: 28,
   },
   disabledArrow: {
-    opacity: 0.3,
+    opacity: 0.35,
+  },
+  monthTitle: {
+    color: COLORS.text,
+    fontSize: 15,
+    fontWeight: '700',
   },
   summaryCard: {
+    backgroundColor: COLORS.surface,
+    borderRadius: 20,
     padding: 20,
-    borderRadius: 22,
-    backgroundColor: COLORS.primary,
+    borderWidth: 1,
+    borderColor: COLORS.border,
     marginBottom: 12,
   },
   summaryLabel: {
-    color: '#D7E7DC',
-    fontSize: 13,
-    fontWeight: '500',
+    color: COLORS.secondary,
+    fontSize: 12,
+    fontWeight: '600',
   },
   summaryBalance: {
-    color: '#FFFFFF',
+    color: COLORS.primary,
     fontSize: 30,
-    fontWeight: '700',
+    fontWeight: '800',
     marginTop: 8,
     fontVariant: ['tabular-nums'],
   },
   negativeBalance: {
-    color: '#FFD0C8',
+    color: COLORS.expense,
   },
   summaryHint: {
-    color: '#D7E7DC',
+    color: COLORS.secondary,
     fontSize: 11,
     marginTop: 5,
   },
   summaryDivider: {
     height: 1,
-    backgroundColor: '#527B68',
+    backgroundColor: COLORS.border,
     marginVertical: 18,
   },
   summaryMetrics: {
@@ -676,7 +721,6 @@ const styles = StyleSheet.create({
   },
   summaryMetric: {
     flex: 1,
-    gap: 8,
   },
   metricHeading: {
     flexDirection: 'row',
@@ -689,76 +733,77 @@ const styles = StyleSheet.create({
     borderRadius: 4,
   },
   metricLabel: {
-    color: '#D7E7DC',
-    fontSize: 12,
+    color: COLORS.secondary,
+    fontSize: 11,
   },
   metricValue: {
-    fontSize: 15,
+    fontSize: 14,
     fontWeight: '700',
+    marginTop: 8,
     fontVariant: ['tabular-nums'],
   },
   metricSeparator: {
     width: 1,
     height: 38,
-    backgroundColor: '#527B68',
-    marginHorizontal: 14,
+    backgroundColor: COLORS.border,
+    marginHorizontal: 18,
   },
   transferSummary: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: COLORS.surface,
+    backgroundColor: COLORS.transferBackground,
     borderRadius: 16,
-    padding: 15,
-    borderWidth: 1,
-    borderColor: COLORS.border,
-    marginBottom: 28,
+    padding: 14,
+    marginBottom: 26,
   },
   transferIcon: {
-    width: 40,
-    height: 40,
+    width: 38,
+    height: 38,
     borderRadius: 13,
-    backgroundColor: COLORS.transferBackground,
+    backgroundColor: COLORS.surface,
     alignItems: 'center',
     justifyContent: 'center',
-    marginRight: 12,
+    marginRight: 11,
   },
   transferIconText: {
     color: COLORS.transfer,
-    fontSize: 21,
+    fontSize: 20,
+    fontWeight: '700',
   },
   transferDetails: {
     flex: 1,
   },
   transferTitle: {
     color: COLORS.text,
-    fontSize: 14,
-    fontWeight: '600',
+    fontSize: 12,
+    fontWeight: '700',
   },
   transferHint: {
     color: COLORS.secondary,
-    fontSize: 11,
+    fontSize: 10,
     marginTop: 4,
   },
   transferAmount: {
     color: COLORS.transfer,
     fontSize: 13,
-    fontWeight: '700',
+    fontWeight: '800',
     fontVariant: ['tabular-nums'],
   },
   sectionHeader: {
     flexDirection: 'row',
-    alignItems: 'baseline',
     justifyContent: 'space-between',
+    alignItems: 'center',
     marginBottom: 14,
   },
   sectionTitle: {
     color: COLORS.text,
-    fontSize: 20,
-    fontWeight: '700',
+    fontSize: 18,
+    fontWeight: '800',
   },
   transactionCount: {
     color: COLORS.secondary,
     fontSize: 11,
+    fontWeight: '600',
   },
   searchContainer: {
     flexDirection: 'row',
@@ -768,38 +813,35 @@ const styles = StyleSheet.create({
     borderColor: COLORS.border,
     borderRadius: 14,
     paddingHorizontal: 13,
-    minHeight: 48,
-    marginBottom: 14,
+    marginBottom: 13,
   },
   searchIcon: {
     color: COLORS.secondary,
-    fontSize: 24,
-    marginRight: 9,
+    fontSize: 23,
+    marginRight: 8,
   },
   searchInput: {
     flex: 1,
-    minWidth: 0,
     color: COLORS.text,
-    fontSize: 13,
-    paddingVertical: 12,
+    fontSize: 12,
+    paddingVertical: 13,
   },
   clearSearch: {
     color: COLORS.secondary,
-    fontSize: 23,
+    fontSize: 22,
     paddingLeft: 8,
   },
   filters: {
     gap: 8,
-    paddingBottom: 6,
-    marginBottom: 18,
+    paddingBottom: 20,
   },
   filterChip: {
+    paddingHorizontal: 14,
+    paddingVertical: 9,
     borderRadius: 20,
     borderWidth: 1,
     borderColor: COLORS.border,
     backgroundColor: COLORS.surface,
-    paddingHorizontal: 15,
-    paddingVertical: 9,
   },
   filterChipSelected: {
     backgroundColor: COLORS.primary,
@@ -868,6 +910,15 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     fontVariant: ['tabular-nums'],
   },
+  statusState: {
+    alignItems: 'center',
+    backgroundColor: COLORS.surface,
+    borderRadius: 18,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    paddingHorizontal: 24,
+    paddingVertical: 36,
+  },
   emptyState: {
     alignItems: 'center',
     backgroundColor: COLORS.surface,
@@ -894,6 +945,19 @@ const styles = StyleSheet.create({
     lineHeight: 19,
     textAlign: 'center',
     marginTop: 8,
+  },
+  retryButton: {
+    marginTop: 16,
+    backgroundColor: COLORS.primaryLight,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    borderRadius: 12,
+  },
+  retryButtonText: {
+    color: COLORS.primary,
+    fontSize: 12,
+    fontWeight: '700',
+    textAlign: 'center',
   },
   disclaimer: {
     color: COLORS.secondary,
