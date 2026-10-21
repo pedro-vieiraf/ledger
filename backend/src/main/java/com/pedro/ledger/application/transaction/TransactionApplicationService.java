@@ -1,9 +1,9 @@
+
 package com.pedro.ledger.application.transaction;
 
 import com.pedro.ledger.domain.account.Account;
 import com.pedro.ledger.domain.account.AccountNotFoundException;
 import com.pedro.ledger.domain.account.AccountRepository;
-import com.pedro.ledger.domain.category.Category;
 import com.pedro.ledger.domain.category.CategoryNotFoundException;
 import com.pedro.ledger.domain.category.CategoryRepository;
 import com.pedro.ledger.domain.money.Money;
@@ -14,12 +14,12 @@ import com.pedro.ledger.domain.transaction.TransactionRepository;
 import com.pedro.ledger.domain.transaction.TransactionSource;
 import com.pedro.ledger.domain.transaction.TransactionType;
 import java.math.BigDecimal;
-import org.springframework.transaction.annotation.Transactional;
 import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
 public class TransactionApplicationService {
@@ -112,7 +112,8 @@ public class TransactionApplicationService {
       UUID id,
       BigDecimal amount,
       String description,
-      UUID categoryId
+      UUID categoryId,
+      Instant timestamp
   ) {
     Transaction transaction = getByIdOrThrow(id);
 
@@ -144,6 +145,16 @@ public class TransactionApplicationService {
       transaction.changeCategory(categoryId);
     }
 
+    if (timestamp != null) {
+      if (transaction.getSource() != TransactionSource.MANUAL) {
+        throw new IllegalStateException(
+            "Only manual transactions can change their timestamp"
+        );
+      }
+
+      transaction.changeTimestamp(timestamp);
+    }
+
     return transactionRepository.save(transaction);
   }
 
@@ -155,7 +166,6 @@ public class TransactionApplicationService {
         );
 
     if (transaction.getType().equals(TransactionType.TRANSFER)) {
-
       Account sourceAccount = accountRepository
           .findById(transaction.getAccountId())
           .orElseThrow(() ->

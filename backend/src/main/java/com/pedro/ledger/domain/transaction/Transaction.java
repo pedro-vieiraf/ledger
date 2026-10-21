@@ -14,7 +14,7 @@ public class Transaction {
   private final TransactionType type;
   private TransactionStatus status;
   private String description;
-  private final Instant timestamp;
+  private Instant timestamp;
   private final TransactionSource source;
   private final UUID accountId;
   private final UUID destinationAccountId;
@@ -383,6 +383,22 @@ public class Transaction {
     }
 
     this.categoryId = newCategoryId;
+  }
+
+  /**
+   * Changes the transaction timestamp.
+   *
+   * @param newTimestamp the new transaction timestamp
+   * @throws IllegalArgumentException if the timestamp is null
+   */
+  public void changeTimestamp(Instant newTimestamp) {
+    if (newTimestamp == null) {
+      throw new IllegalArgumentException(
+          "Transaction timestamp cannot be null"
+      );
+    }
+
+    this.timestamp = newTimestamp;
   }
 
   /**
