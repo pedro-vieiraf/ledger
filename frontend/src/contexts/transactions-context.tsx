@@ -1,143 +1,141 @@
 import {
   createContext,
+  useCallback,
   useContext,
+  useEffect,
   useMemo,
   useState,
   type ReactNode,
 } from 'react';
 
 import { useAccounts } from '@/contexts/accounts-context';
+import {
+  createTransaction as createTransactionRequest,
+  deleteTransaction as deleteTransactionRequest,
+  getTransactions,
+  updateTransaction as updateTransactionRequest,
+  type Transaction as ApiTransaction,
+  type CreateTransactionInput,
+  type UpdateTransactionInput,
+} from '@/services/transactions-api';
 
 export type TransactionType = 'INCOME' | 'EXPENSE' | 'TRANSFER';
 
-export type Transaction = {
-  id: string;
-  description: string;
-  category: string;
-  accountId: string;
-  destinationAccountId?: string;
-  date: string;
-  amount: number;
-  type: TransactionType;
-};
-
-type CreateTransactionInput = Omit<Transaction, 'id'>;
+export type Transaction = ApiTransaction;
 
 type TransactionsContextValue = {
   transactions: Transaction[];
-  createTransaction: (input: CreateTransactionInput) => void;
+  loading: boolean;
+  error: string | null;
+  refreshTransactions: () => Promise<void>;
+  createTransaction: (
+      input: CreateTransactionInput,
+  ) => Promise<Transaction>;
+  updateTransaction: (
+      id: string,
+      input: UpdateTransactionInput,
+  ) => Promise<Transaction>;
+  deleteTransaction: (id: string) => Promise<void>;
 };
 
 const TransactionsContext =
-  createContext<TransactionsContextValue | null>(null);
+    createContext<TransactionsContextValue | null>(null);
 
 export function TransactionsProvider({
-  children,
-}: {
+                                       children,
+                                     }: {
   children: ReactNode;
 }) {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
-  const { accounts, adjustAccountBalance } = useAccounts();
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  const { refreshAccounts } = useAccounts();
+
+  const refreshTransactions = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+
+    try {
+      const data = await getTransactions();
+
+      const sorted = [...data].sort(
+          (a, b) =>
+              new Date(b.timestamp).getTime() -
+              new Date(a.timestamp).getTime(),
+      );
+
+      setTransactions(sorted);
+    } catch (err) {
+      const message =
+          err instanceof Error
+              ? err.message
+              : 'Não foi possível carregar as transações.';
+
+      setError(message);
+      throw err;
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    void refreshTransactions().catch(() => {
+      // O erro já está disponível no estado para a interface.
+    });
+  }, [refreshTransactions]);
 
   const value = useMemo<TransactionsContextValue>(
-    () => ({
-      transactions,
+      () => ({
+        transactions,
+        loading,
+        error,
+        refreshTransactions,
 
-      createTransaction(input) {
-        const description = input.description.trim();
-        const category = input.category.trim();
+        async createTransaction(input) {
+          const created = await createTransactionRequest(input);
 
-        if (!description) {
-          throw new Error('Informe a descrição da transação.');
-        }
+          await Promise.all([
+            refreshTransactions(),
+            refreshAccounts(),
+          ]);
 
-        if (!category) {
-          throw new Error('Informe a categoria da transação.');
-        }
+          return created;
+        },
 
-        if (!Number.isFinite(input.amount) || input.amount <= 0) {
-          throw new Error('O valor deve ser maior que zero.');
-        }
+        async updateTransaction(id, input) {
+          const updated = await updateTransactionRequest(id, input);
 
-        if (!/^\d{4}-\d{2}-\d{2}$/.test(input.date)) {
-          throw new Error('Informe uma data válida no formato AAAA-MM-DD.');
-        }
+          await Promise.all([
+            refreshTransactions(),
+            refreshAccounts(),
+          ]);
 
-        const sourceAccount = accounts.find(
-          (account) => account.id === input.accountId,
-        );
+          return updated;
+        },
 
-        if (!sourceAccount) {
-          throw new Error('A conta de origem não foi encontrada.');
-        }
+        async deleteTransaction(id) {
+          await deleteTransactionRequest(id);
 
-        if (sourceAccount.status !== 'ACTIVE') {
-          throw new Error('A conta de origem está inativa.');
-        }
-
-        let destinationAccountId: string | undefined;
-
-        if (input.type === 'TRANSFER') {
-          if (!input.destinationAccountId) {
-            throw new Error('Selecione a conta de destino.');
-          }
-
-          if (input.destinationAccountId === input.accountId) {
-            throw new Error('A conta de origem e destino devem ser diferentes.');
-          }
-
-          const destinationAccount = accounts.find(
-            (account) => account.id === input.destinationAccountId,
-          );
-
-          if (!destinationAccount) {
-            throw new Error('A conta de destino não foi encontrada.');
-          }
-
-          if (destinationAccount.status !== 'ACTIVE') {
-            throw new Error('A conta de destino está inativa.');
-          }
-
-          destinationAccountId = destinationAccount.id;
-        } else if (input.destinationAccountId) {
-          throw new Error(
-            'Somente transferências podem ter uma conta de destino.',
-          );
-        }
-
-        const normalizedAmount = Math.round(input.amount * 100) / 100;
-
-        const transaction: Transaction = {
-          ...input,
-          id: `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`,
-          description,
-          category,
-          amount: normalizedAmount,
-          destinationAccountId,
-        };
-
-        if (input.type === 'INCOME') {
-          adjustAccountBalance(input.accountId, normalizedAmount);
-        } else if (input.type === 'EXPENSE') {
-          adjustAccountBalance(input.accountId, -normalizedAmount);
-        } else {
-          adjustAccountBalance(input.accountId, -normalizedAmount);
-          adjustAccountBalance(
-            destinationAccountId!,
-            normalizedAmount,
-          );
-        }
-
-        setTransactions((current) => [transaction, ...current]);
-      },
-    }),
-    [accounts, adjustAccountBalance, transactions],
+          await Promise.all([
+            refreshTransactions(),
+            refreshAccounts(),
+          ]);
+        },
+      }),
+      [
+        transactions,
+        loading,
+        error,
+        refreshTransactions,
+        refreshAccounts,
+      ],
   );
 
   return (
-    <TransactionsContext value={value}>
-      {children}
-    </TransactionsContext>
+      <TransactionsContext value={value}>
+        {children}
+      </TransactionsContext>
   );
 }
 
@@ -146,7 +144,7 @@ export function useTransactions() {
 
   if (!context) {
     throw new Error(
-      'useTransactions must be used within a TransactionsProvider.',
+        'useTransactions must be used within a TransactionsProvider.',
     );
   }
 

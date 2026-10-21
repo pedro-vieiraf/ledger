@@ -1,4 +1,5 @@
 const API_URL = process.env.EXPO_PUBLIC_API_URL;
+const REQUEST_TIMEOUT_MS = 10_000;
 
 if (!API_URL) {
   throw new Error(
@@ -20,20 +21,37 @@ export async function apiRequest<T>(
     path: string,
     options: RequestInit = {},
 ): Promise<T> {
+  const controller = new AbortController();
+  let timedOut = false;
+
+  const timeoutId = setTimeout(() => {
+    timedOut = true;
+    controller.abort();
+  }, REQUEST_TIMEOUT_MS);
+
   let response: Response;
 
   try {
     response = await fetch(`${API_URL}${path}`, {
       ...options,
+      signal: controller.signal,
       headers: {
         Accept: 'application/json',
         ...options.headers,
       },
     });
   } catch {
+    if (timedOut) {
+      throw new Error(
+          'Não foi possível conectar ao servidor. Tente novamente.',
+      );
+    }
+
     throw new Error(
-        `Não foi possível conectar à API em ${API_URL}. Verifique se o backend está em execução e se o endereço está correto.`,
+        'Não foi possível conectar ao servidor. Tente novamente.',
     );
+  } finally {
+    clearTimeout(timeoutId);
   }
 
   if (!response.ok) {

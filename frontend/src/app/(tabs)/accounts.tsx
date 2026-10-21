@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter } from 'expo-router';
 import {
   Alert,
@@ -18,6 +18,7 @@ import {
   createAccount as createAccountRequest,
   deactivateAccount as deactivateAccountRequest,
   getAccounts,
+  reactivateAccount as reactivateAccountRequest,
   updateAccount as updateAccountRequest,
   type Account,
   type AccountType,
@@ -99,6 +100,8 @@ export default function AccountsScreen() {
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState('');
   const [saving, setSaving] = useState(false);
+  const [deactivating, setDeactivating] = useState(false);
+  const mutationInProgressRef = useRef(false);
 
   const [search, setSearch] = useState('');
   const [filter, setFilter] = useState<AccountFilter>('ALL');
@@ -113,6 +116,8 @@ export default function AccountsScreen() {
   const [reactivatingAccountId, setReactivatingAccountId] = useState<
       string | null
   >(null);
+  const [reactivating, setReactivating] = useState(false);
+
   const [deactivatingAccountId, setDeactivatingAccountId] = useState<
       string | null
   >(null);
@@ -136,39 +141,11 @@ export default function AccountsScreen() {
   }, []);
 
   useEffect(() => {
-    let active = true;
+    void loadAccounts();
+  }, [loadAccounts]);
 
-    async function fetchAccounts() {
-      setLoading(true);
-      setLoadError('');
-
-      try {
-        const data = await getAccounts();
-
-        if (active) {
-          setAccounts(data);
-        }
-      } catch (error) {
-        if (active) {
-          setLoadError(
-              error instanceof Error
-                  ? error.message
-                  : 'Não foi possível carregar as contas.',
-          );
-        }
-      } finally {
-        if (active) {
-          setLoading(false);
-        }
-      }
-    }
-
-    void fetchAccounts();
-
-    return () => {
-      active = false;
-    };
-  }, []);
+  const actionsDisabled =
+      loading || saving || deactivating || reactivating;
 
   const activeAccounts = useMemo(
       () => accounts.filter((account) => account.status === 'ACTIVE'),
@@ -249,6 +226,10 @@ export default function AccountsScreen() {
   }
 
   async function saveAccount() {
+    if (mutationInProgressRef.current) {
+      return;
+    }
+
     const name = form.name.trim();
 
     if (!name) {
@@ -272,6 +253,7 @@ export default function AccountsScreen() {
       }
     }
 
+    mutationInProgressRef.current = true;
     setSaving(true);
     setFormError('');
 
@@ -304,38 +286,79 @@ export default function AccountsScreen() {
               : 'Não foi possível salvar a conta.',
       );
     } finally {
+      mutationInProgressRef.current = false;
       setSaving(false);
     }
   }
 
   async function confirmDeactivation() {
-    if (!deactivatingAccountId) {
+    if (!deactivatingAccountId || mutationInProgressRef.current) {
       return;
     }
 
     const accountId = deactivatingAccountId;
-    setDeactivatingAccountId(null);
+
+    mutationInProgressRef.current = true;
+    setDeactivating(true);
 
     try {
       await deactivateAccountRequest(accountId);
+
+      // Fecha o modal apenas se ele ainda estiver aberto para esta conta.
+      setDeactivatingAccountId((currentId) =>
+          currentId === accountId ? null : currentId,
+      );
+
       await loadAccounts();
     } catch (error) {
       showError(
-          'Erro ao desativar conta',
+          'Não foi possível desativar a conta',
           error instanceof Error
               ? error.message
-              : 'Não foi possível desativar a conta.',
+              : 'Ocorreu um erro. Tente novamente.',
       );
+    } finally {
+      mutationInProgressRef.current = false;
+      setDeactivating(false);
     }
   }
 
-  function confirmReactivation() {
-    setReactivatingAccountId(null);
+  async function confirmReactivation() {
+    if (!reactivatingAccountId || mutationInProgressRef.current) {
+      return;
+    }
 
-    showError(
-        'Reativação indisponível',
-        'O backend ainda não possui um endpoint para reativar contas. Nenhuma alteração foi feita.',
-    );
+    const accountId = reactivatingAccountId;
+
+    mutationInProgressRef.current = true;
+    setReactivating(true);
+
+    try {
+      await reactivateAccountRequest(accountId);
+      setReactivatingAccountId(null);
+
+      await loadAccounts();
+
+      Alert.alert('Conta reativada', 'A conta foi reativada com sucesso.');
+    } catch (error) {
+      showError(
+          'Não foi possível reativar a conta',
+          error instanceof Error
+              ? error.message
+              : 'Ocorreu um erro. Tente novamente.',
+      );
+    } finally {
+      mutationInProgressRef.current = false;
+      setReactivating(false);
+    }
+  }
+
+  function closeReactivationModal() {
+    if (reactivating) {
+      return;
+    }
+
+    setReactivatingAccountId(null);
   }
 
   function openAccountDetails(account: Account) {
@@ -368,8 +391,10 @@ export default function AccountsScreen() {
                 style={({ pressed }) => [
                   styles.addButton,
                   pressed && styles.pressed,
+                  actionsDisabled && styles.disabledButton,
                 ]}
                 onPress={openCreateForm}
+                disabled={actionsDisabled}
             >
               <Text style={styles.addButtonIcon}>＋</Text>
               <Text style={styles.addButtonText}>Nova</Text>
@@ -466,8 +491,12 @@ export default function AccountsScreen() {
                 <Text style={styles.emptyDescription}>{loadError}</Text>
                 <Pressable
                     accessibilityRole="button"
-                    style={styles.emptyAction}
+                    style={[
+                      styles.emptyAction,
+                      loading && styles.disabledButton,
+                    ]}
                     onPress={() => void loadAccounts()}
+                    disabled={loading}
                 >
                   <Text style={styles.emptyActionText}>Tentar novamente</Text>
                 </Pressable>
@@ -562,8 +591,12 @@ export default function AccountsScreen() {
                                   <Pressable
                                       accessibilityRole="button"
                                       accessibilityLabel={`Editar ${account.name}`}
-                                      style={styles.secondaryButton}
+                                      style={[
+                                        styles.secondaryButton,
+                                        actionsDisabled && styles.disabledButton,
+                                      ]}
                                       onPress={() => openEditForm(account)}
+                                      disabled={actionsDisabled}
                                   >
                                     <Text style={styles.secondaryButtonText}>
                                       Editar
@@ -573,10 +606,14 @@ export default function AccountsScreen() {
                                   <Pressable
                                       accessibilityRole="button"
                                       accessibilityLabel={`Desativar ${account.name}`}
-                                      style={styles.deactivateButton}
+                                      style={[
+                                        styles.deactivateButton,
+                                        actionsDisabled && styles.disabledButton,
+                                      ]}
                                       onPress={() =>
                                           setDeactivatingAccountId(account.id)
                                       }
+                                      disabled={actionsDisabled}
                                   >
                                     <Text style={styles.deactivateButtonText}>
                                       Desativar
@@ -587,10 +624,14 @@ export default function AccountsScreen() {
                                 <Pressable
                                     accessibilityRole="button"
                                     accessibilityLabel={`Reativar ${account.name}`}
-                                    style={styles.secondaryButton}
+                                    style={[
+                                      styles.secondaryButton,
+                                      actionsDisabled && styles.disabledButton,
+                                    ]}
                                     onPress={() =>
                                         setReactivatingAccountId(account.id)
                                     }
+                                    disabled={actionsDisabled}
                                 >
                                   <Text style={styles.secondaryButtonText}>
                                     Reativar
@@ -771,7 +812,8 @@ export default function AccountsScreen() {
 
                 <Pressable
                     accessibilityRole="button"
-                    style={[styles.saveButton, saving && { opacity: 0.6 }]}
+                    accessibilityState={{ disabled: saving, busy: saving }}
+                    style={[styles.saveButton, saving && styles.disabledButton]}
                     onPress={() => void saveAccount()}
                     disabled={saving}
                 >
@@ -804,7 +846,7 @@ export default function AccountsScreen() {
 
               <Text style={styles.confirmDescription}>
                 {deactivatingAccount
-                    ? `A conta "${deactivatingAccount.name}" deixará de aparecer entre as contas ativas. Essa ação pode ser revertida quando o backend oferecer reativação.`
+                    ? `A conta "${deactivatingAccount.name}" deixará de aparecer entre as contas ativas. Você poderá reativá-la posteriormente.`
                     : ''}
               </Text>
 
@@ -819,10 +861,20 @@ export default function AccountsScreen() {
 
                 <Pressable
                     accessibilityRole="button"
-                    style={styles.dangerConfirmButton}
+                    accessibilityState={{
+                      disabled: deactivating,
+                      busy: deactivating,
+                    }}
+                    style={[
+                      styles.dangerConfirmButton,
+                      deactivating && styles.disabledButton,
+                    ]}
                     onPress={() => void confirmDeactivation()}
+                    disabled={deactivating}
                 >
-                  <Text style={styles.dangerConfirmButtonText}>Desativar</Text>
+                  <Text style={styles.dangerConfirmButtonText}>
+                    {deactivating ? 'Desativando...' : 'Desativar'}
+                  </Text>
                 </Pressable>
               </View>
             </View>
@@ -833,7 +885,7 @@ export default function AccountsScreen() {
             visible={Boolean(reactivatingAccount)}
             transparent
             animationType="fade"
-            onRequestClose={() => setReactivatingAccountId(null)}
+            onRequestClose={closeReactivationModal}
         >
           <View style={styles.modalOverlay}>
             <View style={styles.confirmCard}>
@@ -845,25 +897,40 @@ export default function AccountsScreen() {
 
               <Text style={styles.confirmDescription}>
                 {reactivatingAccount
-                    ? `Deseja reativar "${reactivatingAccount.name}"?`
+                    ? `Deseja reativar "${reactivatingAccount.name}"? A conta voltará a aparecer entre as contas ativas.`
                     : ''}
               </Text>
 
               <View style={styles.modalActions}>
                 <Pressable
                     accessibilityRole="button"
-                    style={styles.cancelButton}
-                    onPress={() => setReactivatingAccountId(null)}
+                    accessibilityState={{ disabled: reactivating }}
+                    style={[
+                      styles.cancelButton,
+                      reactivating && styles.disabledButton,
+                    ]}
+                    onPress={closeReactivationModal}
+                    disabled={reactivating}
                 >
                   <Text style={styles.cancelButtonText}>Cancelar</Text>
                 </Pressable>
 
                 <Pressable
                     accessibilityRole="button"
-                    style={styles.saveButton}
-                    onPress={confirmReactivation}
+                    accessibilityState={{
+                      disabled: reactivating,
+                      busy: reactivating,
+                    }}
+                    style={[
+                      styles.saveButton,
+                      reactivating && styles.disabledButton,
+                    ]}
+                    onPress={() => void confirmReactivation()}
+                    disabled={reactivating}
                 >
-                  <Text style={styles.saveButtonText}>Continuar</Text>
+                  <Text style={styles.saveButtonText}>
+                    {reactivating ? 'Reativando...' : 'Reativar'}
+                  </Text>
                 </Pressable>
               </View>
             </View>
@@ -1363,6 +1430,9 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     fontSize: 12,
     fontWeight: '700',
+  },
+  disabledButton: {
+    opacity: 0.6,
   },
   confirmCard: {
     width: '100%',

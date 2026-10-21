@@ -9,6 +9,8 @@ export interface CreateCategoryInput {
   name: string;
 }
 
+export type UpdateCategoryInput = CreateCategoryInput;
+
 export function getCategories(): Promise<Category[]> {
   return apiRequest<Category[]>('/categories');
 }
@@ -18,7 +20,7 @@ export function getCategory(id: string): Promise<Category> {
 }
 
 export function createCategory(
-  input: CreateCategoryInput,
+    input: CreateCategoryInput,
 ): Promise<Category> {
   return apiRequest<Category>('/categories', {
     method: 'POST',
@@ -30,8 +32,8 @@ export function createCategory(
 }
 
 export function updateCategory(
-  id: string,
-  input: CreateCategoryInput,
+    id: string,
+    input: UpdateCategoryInput,
 ): Promise<Category> {
   return apiRequest<Category>(`/categories/${id}`, {
     method: 'PATCH',

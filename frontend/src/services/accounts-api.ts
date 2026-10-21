@@ -61,3 +61,9 @@ export function deactivateAccount(id: string): Promise<void> {
     method: 'DELETE',
   });
 }
+
+export async function reactivateAccount(id: string): Promise<Account> {
+  return apiRequest<Account>(`/accounts/${id}/activation`, {
+    method: 'POST',
+  });
+}

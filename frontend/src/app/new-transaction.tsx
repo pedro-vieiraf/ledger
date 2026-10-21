@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
@@ -72,6 +72,9 @@ function formatMoney(value: number): string {
 
 export default function NewTransactionScreen() {
   const router = useRouter();
+
+  // Impede envios duplicados antes mesmo de o estado React ser atualizado.
+  const submitLock = useRef(false);
 
   const [type, setType] = useState<FormType>('EXPENSE');
   const [amount, setAmount] = useState('');
@@ -194,7 +197,8 @@ export default function NewTransactionScreen() {
   }
 
   async function handleSubmit() {
-    if (submitting || loadingOptions) {
+    // O ref bloqueia chamadas simultâneas sem depender do próximo render.
+    if (submitLock.current || submitting || loadingOptions) {
       return;
     }
 
@@ -240,21 +244,16 @@ export default function NewTransactionScreen() {
             categoryId: categoryId || null,
           };
 
+    // Definido sincronamente, antes da primeira operação assíncrona.
+    submitLock.current = true;
     setSubmitting(true);
 
     try {
       await createTransaction(input);
 
-      Alert.alert(
-        'Transação criada',
-        'A transação foi salva com sucesso.',
-        [
-          {
-            text: 'OK',
-            onPress: () => router.back(),
-          },
-        ],
-      );
+      // O sucesso só é considerado após a API responder sem erro.
+      // Volta imediatamente, sem esperar pelo botão OK de um alerta.
+      router.back();
     } catch (error) {
       Alert.alert(
         'Não foi possível salvar',
@@ -263,6 +262,7 @@ export default function NewTransactionScreen() {
           : 'Ocorreu um erro ao criar a transação.',
       );
     } finally {
+      submitLock.current = false;
       setSubmitting(false);
     }
   }
@@ -286,7 +286,10 @@ export default function NewTransactionScreen() {
         </Text>
         <Text style={styles.errorText}>{loadError}</Text>
 
-        <Pressable style={styles.primaryButton} onPress={loadOptions}>
+        <Pressable
+          style={styles.primaryButton}
+          onPress={() => void loadOptions()}
+        >
           <Text style={styles.primaryButtonText}>Tentar novamente</Text>
         </Pressable>
 
@@ -315,6 +318,7 @@ export default function NewTransactionScreen() {
             accessibilityLabel="Voltar"
             onPress={() => router.back()}
             style={styles.backButton}
+            disabled={submitting}
           >
             <Text style={styles.backButtonText}>‹</Text>
           </Pressable>
@@ -336,16 +340,19 @@ export default function NewTransactionScreen() {
               label="Despesa"
               selected={type === 'EXPENSE'}
               onPress={() => changeType('EXPENSE')}
+              disabled={submitting}
             />
             <TypeButton
               label="Receita"
               selected={type === 'INCOME'}
               onPress={() => changeType('INCOME')}
+              disabled={submitting}
             />
             <TypeButton
               label="Transferência"
               selected={type === 'TRANSFER'}
               onPress={() => changeType('TRANSFER')}
+              disabled={submitting}
             />
           </View>
 
@@ -482,6 +489,7 @@ export default function NewTransactionScreen() {
 
           <Pressable
             accessibilityRole="button"
+            accessibilityState={{ disabled: submitting }}
             onPress={handleSubmit}
             disabled={
               submitting ||
@@ -525,17 +533,24 @@ function TypeButton({
   label,
   selected,
   onPress,
+  disabled,
 }: {
   label: string;
   selected: boolean;
   onPress: () => void;
+  disabled: boolean;
 }) {
   return (
     <Pressable
       accessibilityRole="button"
-      accessibilityState={{ selected }}
+      accessibilityState={{ selected, disabled }}
       onPress={onPress}
-      style={[styles.typeButton, selected && styles.typeButtonSelected]}
+      disabled={disabled}
+      style={[
+        styles.typeButton,
+        selected && styles.typeButtonSelected,
+        disabled && styles.buttonDisabled,
+      ]}
     >
       <Text
         style={[

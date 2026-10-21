@@ -2,6 +2,8 @@ import { apiRequest } from './api';
 
 export type TransactionType = 'INCOME' | 'EXPENSE' | 'TRANSFER';
 
+export type TransactionSource = 'MANUAL' | 'OPEN_FINANCE';
+
 export interface Transaction {
   id: string;
   amount: number;
@@ -9,30 +11,21 @@ export interface Transaction {
   type: TransactionType;
   description: string | null;
   timestamp: string;
-  source: string;
+  source: TransactionSource;
   accountId: string;
   destinationAccountId: string | null;
   categoryId: string | null;
 }
 
-type CreateTransactionBase = {
+export interface CreateTransactionInput {
   amount: number;
   currency: string;
+  type: TransactionType;
   description?: string | null;
   accountId: string;
-};
-
-export type CreateTransactionInput =
-  | (CreateTransactionBase & {
-      type: 'INCOME' | 'EXPENSE';
-      destinationAccountId?: never;
-      categoryId?: string | null;
-    })
-  | (CreateTransactionBase & {
-      type: 'TRANSFER';
-      destinationAccountId: string;
-      categoryId?: never;
-    });
+  destinationAccountId?: string | null;
+  categoryId?: string | null;
+}
 
 export interface UpdateTransactionInput {
   amount?: number;
