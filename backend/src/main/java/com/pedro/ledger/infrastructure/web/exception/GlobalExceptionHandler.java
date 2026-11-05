@@ -1,5 +1,7 @@
 package com.pedro.ledger.infrastructure.web.exception;
 
+import com.pedro.ledger.domain.account.AccountAlreadyActiveException;
+import com.pedro.ledger.domain.account.AccountAlreadyInactiveException;
 import com.pedro.ledger.domain.account.AccountInactiveException;
 import com.pedro.ledger.domain.account.AccountNotFoundException;
 import com.pedro.ledger.domain.category.CategoryNotFoundException;
@@ -18,6 +20,20 @@ public class GlobalExceptionHandler {
       AccountNotFoundException exception
   ) {
     return ResponseEntity.notFound().build();
+  }
+
+  @ExceptionHandler(AccountAlreadyActiveException.class)
+  public ResponseEntity<Void> handleAccountAlreadyActive(
+      AccountAlreadyActiveException exception
+  ) {
+    return ResponseEntity.status(HttpStatus.CONFLICT).build();
+  }
+
+  @ExceptionHandler(AccountAlreadyInactiveException.class)
+  public ResponseEntity<Void> handleAccountAlreadyInactive(
+      AccountAlreadyInactiveException exception
+  ) {
+    return ResponseEntity.status(HttpStatus.CONFLICT).build();
   }
 
   @ExceptionHandler(AccountInactiveException.class)

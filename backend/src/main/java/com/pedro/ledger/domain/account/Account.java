@@ -125,7 +125,7 @@ public class Account {
    */
   public void deactivate() {
     if (status == AccountStatus.INACTIVE) {
-      throw new IllegalStateException(
+      throw new AccountAlreadyInactiveException(
           "Account is already inactive"
       );
     }
@@ -138,7 +138,7 @@ public class Account {
    */
   public void activate() {
     if (status == AccountStatus.ACTIVE) {
-      throw new IllegalStateException(
+      throw new AccountAlreadyActiveException(
           "Account is already active"
       );
     }

@@ -35,6 +35,7 @@ public class AccountApplicationService {
    * @param name account name
    * @param type account type
    * @param openingBalance initial account balance
+   * @param currency account currency code
    * @return the created account
    */
   public Account create(
@@ -65,7 +66,7 @@ public class AccountApplicationService {
    * Finds an account by its identifier.
    *
    * @param id account identifier
-   * @return the account if found, otherwise an empty Optional
+   * @return an Optional containing the account if found
    */
   public Optional<Account> findById(UUID id) {
     return accountRepository.findById(id);
@@ -87,7 +88,6 @@ public class AccountApplicationService {
    * @param name new account name, or null to keep the current name
    * @param type new account type, or null to keep the current type
    * @return the updated account
-   * @throws IllegalArgumentException if the account does not exist
    */
   public Account update(UUID id, String name, AccountType type) {
     Account account = accountRepository.findById(id)
@@ -120,5 +120,22 @@ public class AccountApplicationService {
     account.deactivate();
 
     accountRepository.save(account);
+  }
+
+  /**
+   * Activates an inactive account.
+   *
+   * @param id account identifier
+   * @return the activated account
+   */
+  public Account activate(UUID id) {
+    Account account = accountRepository.findById(id)
+        .orElseThrow(() ->
+            new AccountNotFoundException("Account not found")
+        );
+
+    account.activate();
+
+    return accountRepository.save(account);
   }
 }

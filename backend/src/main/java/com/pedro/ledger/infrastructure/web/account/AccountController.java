@@ -125,4 +125,19 @@ public class AccountController {
 
     return ResponseEntity.noContent().build();
   }
+
+  /**
+   * Reactivates an inactive account.
+   *
+   * @param id account identifier
+   * @return the reactivated account with HTTP status 200
+   */
+  @PostMapping("/{id}/activation")
+  public ResponseEntity<AccountResponse> activate(
+      @PathVariable UUID id
+  ) {
+    Account activatedAccount = accountApplicationService.activate(id);
+
+    return ResponseEntity.ok(AccountResponse.from(activatedAccount));
+  }
 }

@@ -249,7 +249,8 @@ class AccountTest {
     account.deactivate();
 
     assertThatThrownBy(account::deactivate)
-        .isInstanceOf(IllegalStateException.class);
+        .isInstanceOf(AccountAlreadyInactiveException.class)
+        .hasMessage("Account is already inactive");
   }
 
   @Test
@@ -311,7 +312,7 @@ class AccountTest {
     );
 
     assertThatThrownBy(account::activate)
-        .isInstanceOf(IllegalStateException.class)
+        .isInstanceOf(AccountAlreadyActiveException.class)
         .hasMessage("Account is already active");
   }
 
