@@ -29,3 +29,6 @@ replay_pid*
 
 ### Zone Identifier for Windows Development ###
 *:Zone.Identifier
+
+### Maven build output ###
+target/
