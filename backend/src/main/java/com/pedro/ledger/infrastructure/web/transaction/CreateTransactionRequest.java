@@ -25,7 +25,13 @@ public record CreateTransactionRequest(
 
     UUID destinationAccountId,
 
-    UUID categoryId
+    UUID categoryId,
+
+    /**
+     * Optional caller-provided identifier used to make creation idempotent.
+     * Retrying with the same identifier returns the existing transaction.
+     */
+    UUID id
 
 ) {
 

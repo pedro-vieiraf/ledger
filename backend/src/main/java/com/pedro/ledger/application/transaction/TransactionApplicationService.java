@@ -49,18 +49,69 @@ public class TransactionApplicationService {
       UUID destinationAccountId,
       UUID categoryId
   ) {
-    validateCategory(categoryId);
-
-    Transaction transaction = Transaction.create(
+    return create(
+        null,
         amount,
         type,
         description,
-        Instant.now(),
-        TransactionSource.MANUAL,
         accountId,
         destinationAccountId,
         categoryId
     );
+  }
+
+  /**
+   * Creates a transaction, optionally using a caller-provided identifier.
+   *
+   * <p>When the identifier already belongs to an existing transaction, that
+   * transaction is returned without processing the account balance again.
+   * This makes client retries idempotent.
+   */
+  @Transactional
+  public Transaction create(
+      UUID transactionId,
+      Money amount,
+      TransactionType type,
+      String description,
+      UUID accountId,
+      UUID destinationAccountId,
+      UUID categoryId
+  ) {
+    if (transactionId != null) {
+      Optional<Transaction> existing =
+          transactionRepository.findById(transactionId);
+
+      if (existing.isPresent()) {
+        return existing.get();
+      }
+    }
+
+    validateCategory(categoryId);
+
+    Instant timestamp = Instant.now();
+
+    Transaction transaction = transactionId == null
+        ? Transaction.create(
+            amount,
+            type,
+            description,
+            timestamp,
+            TransactionSource.MANUAL,
+            accountId,
+            destinationAccountId,
+            categoryId
+        )
+        : Transaction.createWithId(
+            transactionId,
+            amount,
+            type,
+            description,
+            timestamp,
+            TransactionSource.MANUAL,
+            accountId,
+            destinationAccountId,
+            categoryId
+        );
 
     if (type == TransactionType.TRANSFER) {
       Account sourceAccount = accountRepository.findById(accountId)

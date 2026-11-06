@@ -70,6 +70,52 @@ public class Transaction {
       UUID destinationAccountId,
       UUID categoryId
   ) {
+    return createWithId(
+        UUID.randomUUID(),
+        amount,
+        type,
+        description,
+        timestamp,
+        source,
+        accountId,
+        destinationAccountId,
+        categoryId
+    );
+  }
+
+  /**
+   * Creates a new financial transaction with a caller-provided identifier.
+   *
+   * <p>The identifier allows clients to retry a creation request safely: a
+   * retry with the same identifier must return the existing transaction
+   * instead of creating a duplicate.
+   *
+   * @param id transaction identifier
+   * @param amount transaction amount
+   * @param type transaction type
+   * @param description optional transaction description
+   * @param timestamp transaction timestamp
+   * @param source transaction source
+   * @param accountId identifier of the source account
+   * @param destinationAccountId identifier of the destination account for
+   *     transfers
+   * @param categoryId identifier of the transaction category
+   * @return a new transaction
+   * @throws IllegalArgumentException if any required value is invalid or if
+   *     the transaction violates its type-specific rules
+   */
+  public static Transaction createWithId(
+      UUID id,
+      Money amount,
+      TransactionType type,
+      String description,
+      Instant timestamp,
+      TransactionSource source,
+      UUID accountId,
+      UUID destinationAccountId,
+      UUID categoryId
+  ) {
+    validateId(id);
     validateAmount(amount);
     validateType(type);
     validateTimestamp(timestamp);
@@ -80,7 +126,7 @@ public class Transaction {
     validateCategory(type, categoryId);
 
     return new Transaction(
-        UUID.randomUUID(),
+        id,
         amount,
         type,
         TransactionStatus.ACTIVE,

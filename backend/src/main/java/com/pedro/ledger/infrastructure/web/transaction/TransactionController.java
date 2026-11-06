@@ -35,6 +35,7 @@ public class TransactionController {
       @RequestBody CreateTransactionRequest request
   ) {
     Transaction transaction = service.create(
+        request.id(),
         Money.of(
             request.amount(),
             Currency.getInstance(request.currency())

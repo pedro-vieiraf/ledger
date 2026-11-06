@@ -61,6 +61,7 @@ class TransactionControllerTest {
       );
 
       when(service.create(
+          eq(null),
           eq(Money.of("100.00")),
           eq(TransactionType.EXPENSE),
           eq("Groceries"),
@@ -105,12 +106,69 @@ class TransactionControllerTest {
               .value(categoryId.toString()));
 
       verify(service).create(
+          eq(null),
           eq(Money.of("100.00")),
           eq(TransactionType.EXPENSE),
           eq("Groceries"),
           eq(accountId),
           eq(null),
           eq(categoryId)
+      );
+    }
+
+    @Test
+    void shouldCreateTransactionWithClientProvidedId() throws Exception {
+      UUID accountId = UUID.randomUUID();
+      UUID transactionId = UUID.randomUUID();
+
+      Transaction transaction = Transaction.createWithId(
+          transactionId,
+          Money.of("100.00"),
+          TransactionType.EXPENSE,
+          "Groceries",
+          Instant.now(),
+          TransactionSource.MANUAL,
+          accountId,
+          null,
+          null
+      );
+
+      when(service.create(
+          eq(transactionId),
+          eq(Money.of("100.00")),
+          eq(TransactionType.EXPENSE),
+          eq("Groceries"),
+          eq(accountId),
+          eq(null),
+          eq(null)
+      )).thenReturn(transaction);
+
+      mockMvc.perform(
+              post("/transactions")
+                  .contentType(MediaType.APPLICATION_JSON)
+                  .content("""
+                  {
+                    "id": "%s",
+                    "amount": 100.00,
+                    "currency": "BRL",
+                    "type": "EXPENSE",
+                    "description": "Groceries",
+                    "accountId": "%s"
+                  }
+                  """.formatted(transactionId, accountId))
+          )
+          .andExpect(status().isCreated())
+          .andExpect(jsonPath("$.id")
+              .value(transactionId.toString()));
+
+      verify(service).create(
+          eq(transactionId),
+          eq(Money.of("100.00")),
+          eq(TransactionType.EXPENSE),
+          eq("Groceries"),
+          eq(accountId),
+          eq(null),
+          eq(null)
       );
     }
 
@@ -423,7 +481,8 @@ class TransactionControllerTest {
           eq(transactionId),
           eq(new BigDecimal("150.00")),
           eq("Groceries and household items"),
-          eq(newCategoryId)
+          eq(newCategoryId),
+          eq(null)
       )).thenReturn(updatedTransaction);
 
       mockMvc.perform(
@@ -459,7 +518,8 @@ class TransactionControllerTest {
           eq(transactionId),
           eq(new BigDecimal("150.00")),
           eq("Groceries and household items"),
-          eq(newCategoryId)
+          eq(newCategoryId),
+          eq(null)
       );
     }
 
@@ -472,6 +532,7 @@ class TransactionControllerTest {
           eq(transactionId),
           eq(new BigDecimal("150.00")),
           eq("Updated description"),
+          eq(null),
           eq(null)
       )).thenThrow(
           new TransactionNotFoundException()
@@ -494,6 +555,7 @@ class TransactionControllerTest {
           eq(transactionId),
           eq(new BigDecimal("150.00")),
           eq("Updated description"),
+          eq(null),
           eq(null)
       );
     }
