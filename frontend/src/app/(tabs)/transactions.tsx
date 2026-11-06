@@ -2,7 +2,6 @@
 import { useCallback, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
-  Alert,
   KeyboardAvoidingView,
   Modal,
   Platform,
@@ -31,6 +30,13 @@ import type {
   Transaction as ApiTransaction,
   TransactionType as ApiTransactionType,
 } from '../../services/transactions-api';
+import DateTimePickerFields from '../../components/date-time-picker-fields';
+import { confirmAction, showAlert } from '../../utils/confirm-action';
+import {
+  getLocalDateTimeParts,
+  isSameLocalMinute,
+  parseLocalDateTime,
+} from '../../utils/date-time';
 
 type TransactionType = 'income' | 'expense' | 'transfer';
 type FilterType = 'all' | TransactionType;
@@ -55,6 +61,8 @@ type TransactionForm = {
   accountId: string;
   destinationAccountId: string;
   categoryId: string;
+  date: string;
+  time: string;
 };
 
 const COLORS = {
@@ -96,6 +104,8 @@ const INITIAL_FORM: TransactionForm = {
   accountId: '',
   destinationAccountId: '',
   categoryId: '',
+  date: '',
+  time: '',
 };
 
 function formatCurrency(value: number, currency: string) {
@@ -321,6 +331,10 @@ export default function TransactionsScreen() {
   const [formError, setFormError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
 
+  const editingTransaction = editingTransactionId
+    ? apiTransactions.find((item) => item.id === editingTransactionId)
+    : undefined;
+
   const loadScreenData = useCallback(async () => {
     setReferencesLoading(true);
     setScreenError(null);
@@ -483,7 +497,7 @@ export default function TransactionsScreen() {
 
   const openCreateModal = () => {
     if (activeAccounts.length === 0) {
-      Alert.alert(
+      showAlert(
           'Nenhuma conta ativa',
           'Crie ou reative uma conta antes de registrar uma transação.',
       );
@@ -510,7 +524,7 @@ export default function TransactionsScreen() {
     );
 
     if (!transaction) {
-      Alert.alert(
+      showAlert(
           'Transação indisponível',
           'Não foi possível encontrar essa transação nos dados atuais. Atualize a tela e tente novamente.',
       );
@@ -526,6 +540,7 @@ export default function TransactionsScreen() {
       accountId: transaction.accountId,
       destinationAccountId: transaction.destinationAccountId ?? '',
       categoryId: transaction.categoryId ?? '',
+      ...getLocalDateTimeParts(transaction.timestamp),
     });
     setFormError(null);
     setModalVisible(true);
@@ -546,6 +561,34 @@ export default function TransactionsScreen() {
     if (!Number.isFinite(amount) || amount <= 0) {
       setFormError('Informe um valor maior que zero. Exemplo: 125,90.');
       return;
+    }
+
+    // A data só pode ser editada em transações manuais; as importadas do
+    // Open Finance mantêm o horário original. Só enviamos o timestamp quando
+    // a data/hora realmente muda, para não zerar os segundos à toa.
+    let editedTimestamp: string | undefined;
+
+    if (
+      formMode === 'edit' &&
+      editingTransaction?.source === 'MANUAL'
+    ) {
+      const parsedDateTime = parseLocalDateTime(form.date, form.time);
+
+      if (!parsedDateTime) {
+        setFormError(
+            'Informe uma data válida (DD/MM/AAAA) e um horário válido (HH:mm).',
+        );
+        return;
+      }
+
+      const originalDateTime = new Date(editingTransaction.timestamp);
+
+      if (
+          Number.isNaN(originalDateTime.getTime()) ||
+          !isSameLocalMinute(originalDateTime, parsedDateTime)
+      ) {
+        editedTimestamp = parsedDateTime.toISOString();
+      }
     }
 
     if (formMode === 'create') {
@@ -611,6 +654,7 @@ export default function TransactionsScreen() {
           ...(originalTransaction.type !== 'TRANSFER' && form.categoryId
               ? { categoryId: form.categoryId }
               : {}),
+          ...(editedTimestamp ? { timestamp: editedTimestamp } : {}),
         });
       }
 
@@ -633,7 +677,7 @@ export default function TransactionsScreen() {
     );
 
     if (!transaction) {
-      Alert.alert(
+      showAlert(
           'Transação indisponível',
           'Atualize a lista antes de tentar excluir essa transação.',
       );
@@ -644,35 +688,29 @@ export default function TransactionsScreen() {
         transaction.description?.trim() ||
         getDefaultDescription(mapTransactionType(transaction.type));
 
-    Alert.alert(
-        'Excluir transação?',
-        `Deseja excluir "${description}"? Essa operação também reverterá o efeito da transação no saldo da conta.`,
-        [
-          {
-            text: 'Cancelar',
-            style: 'cancel',
-          },
-          {
-            text: 'Excluir',
-            style: 'destructive',
-            onPress: () => {
-              void (async () => {
-                try {
-                  await deleteTransaction(transactionId);
-                  setModalVisible(false);
-                } catch (cause) {
-                  Alert.alert(
-                      'Não foi possível excluir',
-                      cause instanceof Error
-                          ? cause.message
-                          : 'Tente novamente.',
-                  );
-                }
-              })();
-            },
-          },
-        ],
-    );
+    confirmAction({
+      title: 'Excluir transação?',
+      message:
+          `Deseja excluir "${description}"? Essa operação também ` +
+          'reverterá o efeito da transação no saldo da conta.',
+      confirmLabel: 'Excluir',
+      destructive: true,
+      onConfirm: () => {
+        void (async () => {
+          try {
+            await deleteTransaction(transactionId);
+            setModalVisible(false);
+          } catch (cause) {
+            showAlert(
+                'Não foi possível excluir',
+                cause instanceof Error
+                    ? cause.message
+                    : 'Tente novamente.',
+            );
+          }
+        })();
+      },
+    });
   };
 
   const loading = referencesLoading || transactionsLoading;
@@ -1038,6 +1076,34 @@ export default function TransactionsScreen() {
                     maxLength={160}
                     accessibilityLabel="Descrição da transação"
                 />
+
+                {formMode === 'edit' &&
+                    (editingTransaction?.source === 'MANUAL' ? (
+                        <>
+                          <Text style={styles.fieldLabel}>Data e hora</Text>
+                          <DateTimePickerFields
+                              date={form.date}
+                              time={form.time}
+                              onDateChange={(value) =>
+                                  updateForm('date', value)
+                              }
+                              onTimeChange={(value) =>
+                                  updateForm('time', value)
+                              }
+                          />
+                          <Text style={styles.fieldHint}>
+                            Alterar a data e o horário não muda o valor da
+                            transação, apenas quando ela aconteceu.
+                          </Text>
+                        </>
+                    ) : (
+                        <View style={styles.readOnlyNotice}>
+                          <Text style={styles.readOnlyNoticeText}>
+                            A data desta transação foi definida pelo Open
+                            Finance e não pode ser alterada.
+                          </Text>
+                        </View>
+                    ))}
 
                 {formMode === 'create' && (
                     <>

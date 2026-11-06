@@ -17,6 +17,18 @@ export class ApiError extends Error {
   }
 }
 
+/**
+ * Erro para falhas em que não dá para saber se o servidor processou a
+ * requisição (timeout ou queda de conexão). Repetir só é seguro quando a
+ * operação é idempotente.
+ */
+export class AmbiguousRequestError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = 'AmbiguousRequestError';
+  }
+}
+
 export async function apiRequest<T>(
     path: string,
     options: RequestInit = {},
@@ -42,13 +54,15 @@ export async function apiRequest<T>(
     });
   } catch {
     if (timedOut) {
-      throw new Error(
-          'Não foi possível conectar ao servidor. Tente novamente.',
+      throw new AmbiguousRequestError(
+          'A solicitação demorou demais e não foi possível confirmar ' +
+          'se ela foi concluída.',
       );
     }
 
-    throw new Error(
-        'Não foi possível conectar ao servidor. Tente novamente.',
+    throw new AmbiguousRequestError(
+        'Não foi possível conectar ao servidor. Verifique sua conexão ' +
+        'e tente novamente.',
     );
   } finally {
     clearTimeout(timeoutId);

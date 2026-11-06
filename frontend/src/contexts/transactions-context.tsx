@@ -85,6 +85,15 @@ export function TransactionsProvider({
     });
   }, [refreshTransactions]);
 
+  // A mutação já foi confirmada pelo backend; uma falha ao recarregar as
+  // listas não deve fazer a tela achar que a mutação falhou.
+  const refreshAfterMutation = useCallback(async () => {
+    await Promise.allSettled([
+      refreshTransactions(),
+      refreshAccounts(),
+    ]);
+  }, [refreshTransactions, refreshAccounts]);
+
   const value = useMemo<TransactionsContextValue>(
       () => ({
         transactions,
@@ -95,10 +104,7 @@ export function TransactionsProvider({
         async createTransaction(input) {
           const created = await createTransactionRequest(input);
 
-          await Promise.all([
-            refreshTransactions(),
-            refreshAccounts(),
-          ]);
+          await refreshAfterMutation();
 
           return created;
         },
@@ -106,10 +112,7 @@ export function TransactionsProvider({
         async updateTransaction(id, input) {
           const updated = await updateTransactionRequest(id, input);
 
-          await Promise.all([
-            refreshTransactions(),
-            refreshAccounts(),
-          ]);
+          await refreshAfterMutation();
 
           return updated;
         },
@@ -117,10 +120,7 @@ export function TransactionsProvider({
         async deleteTransaction(id) {
           await deleteTransactionRequest(id);
 
-          await Promise.all([
-            refreshTransactions(),
-            refreshAccounts(),
-          ]);
+          await refreshAfterMutation();
         },
       }),
       [
@@ -128,7 +128,7 @@ export function TransactionsProvider({
         loading,
         error,
         refreshTransactions,
-        refreshAccounts,
+        refreshAfterMutation,
       ],
   );
 

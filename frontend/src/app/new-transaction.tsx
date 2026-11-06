@@ -1,7 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   ActivityIndicator,
-  Alert,
   KeyboardAvoidingView,
   Platform,
   Pressable,
@@ -17,8 +16,9 @@ import {
   getAccounts,
   type Account,
 } from '@/services/accounts-api';
+import { AmbiguousRequestError, ApiError } from '@/services/api';
 import {
-  createTransaction,
+  getTransaction,
   type CreateTransactionInput,
   type TransactionType,
 } from '@/services/transactions-api';
@@ -26,6 +26,10 @@ import {
   getCategories,
   type Category,
 } from '@/services/categories-api';
+import { useAccounts } from '@/contexts/accounts-context';
+import { useTransactions } from '@/contexts/transactions-context';
+import { showAlert } from '@/utils/confirm-action';
+import { createUuid } from '@/utils/uuid';
 
 type FormType = TransactionType;
 
@@ -72,9 +76,16 @@ function formatMoney(value: number): string {
 
 export default function NewTransactionScreen() {
   const router = useRouter();
+  const { createTransaction, refreshTransactions } = useTransactions();
+  const { refreshAccounts } = useAccounts();
 
   // Impede envios duplicados antes mesmo de o estado React ser atualizado.
   const submitLock = useRef(false);
+
+  // Mantém os ids das tentativas por payload para que um reenvio após erro
+  // ambíguo seja idempotente, mesmo que o usuário edite e volte ao valor
+  // original.
+  const submissionsRef = useRef<Map<string, string>>(new Map());
 
   const [type, setType] = useState<FormType>('EXPENSE');
   const [amount, setAmount] = useState('');
@@ -196,6 +207,28 @@ export default function NewTransactionScreen() {
     return null;
   }
 
+  async function wasTransactionCreated(
+      id: string,
+  ): Promise<boolean | null> {
+    try {
+      await getTransaction(id);
+      return true;
+    } catch (error) {
+      if (error instanceof ApiError && error.status === 404) {
+        return false;
+      }
+
+      return null;
+    }
+  }
+
+  async function refreshAfterRecovery() {
+    await Promise.allSettled([
+      refreshTransactions(),
+      refreshAccounts(),
+    ]);
+  }
+
   async function handleSubmit() {
     // O ref bloqueia chamadas simultâneas sem depender do próximo render.
     if (submitLock.current || submitting || loadingOptions) {
@@ -203,7 +236,7 @@ export default function NewTransactionScreen() {
     }
 
     if (loadError) {
-      Alert.alert(
+      showAlert(
         'Dados indisponíveis',
         'Tente carregar as contas e categorias novamente.',
       );
@@ -213,7 +246,7 @@ export default function NewTransactionScreen() {
     const validationError = validateForm();
 
     if (validationError) {
-      Alert.alert('Confira os dados', validationError);
+      showAlert('Confira os dados', validationError);
       return;
     }
 
@@ -244,18 +277,68 @@ export default function NewTransactionScreen() {
             categoryId: categoryId || null,
           };
 
+    // O mesmo payload reutiliza o mesmo id. Assim, repetir o envio depois de
+    // um timeout não cria uma segunda transação no backend.
+    const payload = JSON.stringify(input);
+    let submissionId = submissionsRef.current.get(payload);
+
+    if (!submissionId) {
+      submissionId = createUuid();
+      submissionsRef.current.set(payload, submissionId);
+    }
+
     // Definido sincronamente, antes da primeira operação assíncrona.
     submitLock.current = true;
     setSubmitting(true);
 
     try {
-      await createTransaction(input);
+      await createTransaction({
+        ...input,
+        id: submissionId,
+      });
+
+      submissionsRef.current.delete(payload);
 
       // O sucesso só é considerado após a API responder sem erro.
       // Volta imediatamente, sem esperar pelo botão OK de um alerta.
       router.back();
     } catch (error) {
-      Alert.alert(
+      if (error instanceof ApiError && error.status < 500) {
+        // O servidor recusou a requisição; não houve criação.
+        submissionsRef.current.delete(payload);
+
+        showAlert('Não foi possível salvar', error.message);
+
+        return;
+      }
+
+      if (error instanceof AmbiguousRequestError) {
+        const created = await wasTransactionCreated(submissionId);
+
+        if (created === true) {
+          submissionsRef.current.delete(payload);
+          await refreshAfterRecovery();
+          router.back();
+
+          return;
+        }
+
+        showAlert(
+          'Envio não confirmado',
+          created === false
+            ? 'A transação ainda não aparece no histórico. Tente ' +
+              'novamente; o reenvio é seguro e não vai duplicar o ' +
+              'lançamento.'
+            : 'Não foi possível confirmar se a transação foi registrada. ' +
+              'Verifique o histórico antes de tentar novamente. ' +
+              'Se tentar de novo, o reenvio é seguro e não vai duplicar.',
+        );
+
+        return;
+      }
+
+      // Erros inesperados mantêm o id para que a nova tentativa seja segura.
+      showAlert(
         'Não foi possível salvar',
         error instanceof Error
           ? error.message

@@ -18,6 +18,12 @@ export interface Transaction {
 }
 
 export interface CreateTransactionInput {
+  /**
+   * Identificador gerado pelo cliente para tornar a criação idempotente.
+   * Reutilize o mesmo valor ao repetir uma tentativa que falhou de forma
+   * ambígua (timeout ou queda de conexão).
+   */
+  id?: string;
   amount: number;
   currency: string;
   type: TransactionType;
@@ -31,6 +37,7 @@ export interface UpdateTransactionInput {
   amount?: number;
   description?: string | null;
   categoryId?: string;
+  timestamp?: string;
 }
 
 export function getTransactions(): Promise<Transaction[]> {

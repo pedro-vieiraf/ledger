@@ -1,7 +1,6 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useMemo, useRef, useState } from 'react';
 import { useRouter } from 'expo-router';
 import {
-  Alert,
   KeyboardAvoidingView,
   Modal,
   Platform,
@@ -14,15 +13,16 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { useAccounts } from '@/contexts/accounts-context';
 import {
   createAccount as createAccountRequest,
   deactivateAccount as deactivateAccountRequest,
-  getAccounts,
   reactivateAccount as reactivateAccountRequest,
   updateAccount as updateAccountRequest,
   type Account,
   type AccountType,
 } from '@/services/accounts-api';
+import { showAlert } from '@/utils/confirm-action';
 
 type AccountFilter = 'ALL' | 'ACTIVE' | 'INACTIVE';
 
@@ -95,10 +95,13 @@ const emptyForm: AccountForm = {
 
 export default function AccountsScreen() {
   const router = useRouter();
+  const {
+    accounts,
+    loading,
+    error: loadError,
+    refreshAccounts,
+  } = useAccounts();
 
-  const [accounts, setAccounts] = useState<Account[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [loadError, setLoadError] = useState('');
   const [saving, setSaving] = useState(false);
   const [deactivating, setDeactivating] = useState(false);
   const mutationInProgressRef = useRef(false);
@@ -122,27 +125,11 @@ export default function AccountsScreen() {
       string | null
   >(null);
 
-  const loadAccounts = useCallback(async () => {
-    setLoading(true);
-    setLoadError('');
-
-    try {
-      const data = await getAccounts();
-      setAccounts(data);
-    } catch (error) {
-      setLoadError(
-          error instanceof Error
-              ? error.message
-              : 'Não foi possível carregar as contas.',
-      );
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
-  useEffect(() => {
-    void loadAccounts();
-  }, [loadAccounts]);
+  async function reloadAccounts() {
+    await refreshAccounts().catch(() => {
+      // O erro já fica disponível no estado do contexto.
+    });
+  }
 
   const actionsDisabled =
       loading || saving || deactivating || reactivating;
@@ -187,7 +174,7 @@ export default function AccountsScreen() {
       : undefined;
 
   function showError(title: string, message: string) {
-    Alert.alert(title, message);
+    showAlert(title, message);
   }
 
   function openCreateForm() {
@@ -278,7 +265,7 @@ export default function AccountsScreen() {
       setSearch('');
       setFilter('ALL');
 
-      await loadAccounts();
+      await reloadAccounts();
     } catch (error) {
       setFormError(
           error instanceof Error
@@ -309,7 +296,7 @@ export default function AccountsScreen() {
           currentId === accountId ? null : currentId,
       );
 
-      await loadAccounts();
+      await reloadAccounts();
     } catch (error) {
       showError(
           'Não foi possível desativar a conta',
@@ -337,9 +324,9 @@ export default function AccountsScreen() {
       await reactivateAccountRequest(accountId);
       setReactivatingAccountId(null);
 
-      await loadAccounts();
+      await reloadAccounts();
 
-      Alert.alert('Conta reativada', 'A conta foi reativada com sucesso.');
+      showAlert('Conta reativada', 'A conta foi reativada com sucesso.');
     } catch (error) {
       showError(
           'Não foi possível reativar a conta',
@@ -495,7 +482,7 @@ export default function AccountsScreen() {
                       styles.emptyAction,
                       loading && styles.disabledButton,
                     ]}
-                    onPress={() => void loadAccounts()}
+                    onPress={() => void reloadAccounts()}
                     disabled={loading}
                 >
                   <Text style={styles.emptyActionText}>Tentar novamente</Text>
