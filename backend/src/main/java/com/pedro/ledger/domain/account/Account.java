@@ -124,7 +124,7 @@ public class Account {
    * Deactivates the account.
    */
   public void deactivate() {
-    if (status == AccountStatus.INACTIVE) {
+    if (status != AccountStatus.ACTIVE) {
       throw new AccountAlreadyInactiveException(
           "Account is already inactive"
       );
@@ -134,12 +134,37 @@ public class Account {
   }
 
   /**
+   * Deletes the account.
+   *
+   * <p>Deletion is only allowed for inactive accounts. A deleted account is
+   * kept only so historical transactions can still reference it, and it is
+   * no longer listed.
+   *
+   * @throws AccountNotInactiveException if the account is not inactive
+   */
+  public void delete() {
+    if (status != AccountStatus.INACTIVE) {
+      throw new AccountNotInactiveException(
+          "Only inactive accounts can be deleted"
+      );
+    }
+
+    status = AccountStatus.DELETED;
+  }
+
+  /**
    * Activate the account.
    */
   public void activate() {
     if (status == AccountStatus.ACTIVE) {
       throw new AccountAlreadyActiveException(
           "Account is already active"
+      );
+    }
+
+    if (status == AccountStatus.DELETED) {
+      throw new AccountInactiveException(
+          "Deleted accounts cannot be reactivated"
       );
     }
 
@@ -225,12 +250,24 @@ public class Account {
   }
 
   /**
+   * Checks whether the account was deleted.
+   *
+   * <p>Deleted accounts are kept only so historical transactions can still
+   * reference them. Their balance is no longer meaningful.
+   *
+   * @return true if the account was deleted
+   */
+  public boolean isDeleted() {
+    return status == AccountStatus.DELETED;
+  }
+
+  /**
    * Ensures that the account is active.
    */
   private void ensureActive() {
-    if (status == AccountStatus.INACTIVE) {
+    if (status != AccountStatus.ACTIVE) {
       throw new AccountInactiveException(
-          "Account is inactive"
+          "Account is not active"
       );
     }
   }

@@ -157,7 +157,7 @@ public final class TransactionProcessor {
     validateAccount(account);
     ensureAccountMatchesTransaction(transaction, account);
 
-    if (!account.isActive()) {
+    if (!account.isActive() && !account.isDeleted()) {
       throw new AccountInactiveException("Account is inactive");
     }
 
@@ -178,6 +178,12 @@ public final class TransactionProcessor {
     Money difference = newAmount.subtract(oldAmount);
 
     transaction.changeAmount(newAmount);
+
+    // Deleted accounts are hidden and their balance is no longer meaningful,
+    // so the historical transaction can change without adjusting it.
+    if (account.isDeleted()) {
+      return;
+    }
 
     if (transaction.getType() == TransactionType.EXPENSE) {
       adjustExpenseAmount(account, difference);
@@ -218,7 +224,7 @@ public final class TransactionProcessor {
 
     ensureAccountMatchesTransaction(transaction, account);
 
-    if (!account.isActive()) {
+    if (!account.isActive() && !account.isDeleted()) {
       throw new AccountInactiveException(
           "Account is inactive"
       );
@@ -241,12 +247,16 @@ public final class TransactionProcessor {
         account.getBalance()
     );
 
-    switch (transaction.getType()) {
-      case EXPENSE -> account.credit(transaction.getAmount());
-      case INCOME -> account.debit(transaction.getAmount());
-      default -> throw new IllegalArgumentException(
-          "Unsupported transaction type"
-      );
+    // Deleted accounts are hidden and their balance is no longer meaningful,
+    // so the historical transaction is reversed without touching it.
+    if (!account.isDeleted()) {
+      switch (transaction.getType()) {
+        case EXPENSE -> account.credit(transaction.getAmount());
+        case INCOME -> account.debit(transaction.getAmount());
+        default -> throw new IllegalArgumentException(
+            "Unsupported transaction type"
+        );
+      }
     }
 
     transaction.reverse();
@@ -297,13 +307,13 @@ public final class TransactionProcessor {
       );
     }
 
-    if (!source.isActive()) {
+    if (!source.isActive() && !source.isDeleted()) {
       throw new AccountInactiveException(
           "Account is inactive"
       );
     }
 
-    if (!destination.isActive()) {
+    if (!destination.isActive() && !destination.isDeleted()) {
       throw new AccountInactiveException(
           "Destination account is inactive"
       );
@@ -325,8 +335,15 @@ public final class TransactionProcessor {
         destination.getBalance()
     );
 
-    source.credit(transaction.getAmount());
-    destination.debit(transaction.getAmount());
+    // Deleted accounts are hidden and their balance is no longer meaningful,
+    // so only the accounts that still exist have their balances restored.
+    if (!source.isDeleted()) {
+      source.credit(transaction.getAmount());
+    }
+
+    if (!destination.isDeleted()) {
+      destination.debit(transaction.getAmount());
+    }
 
     transaction.reverse();
   }

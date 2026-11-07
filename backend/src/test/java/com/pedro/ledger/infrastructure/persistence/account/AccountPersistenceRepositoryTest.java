@@ -138,4 +138,56 @@ class AccountPersistenceRepositoryTest {
     assertThat(foundAccount.get().getStatus())
         .isEqualTo(AccountStatus.INACTIVE);
   }
+
+  @Test
+  void shouldPersistDeletedAccount() {
+    Account account = Account.open(
+        "Deleted Account",
+        AccountType.CHECKING,
+        Money.of("1000.00")
+    );
+
+    account.deactivate();
+    account.delete();
+
+    Account savedAccount =
+        accountRepository.save(account);
+
+    Optional<Account> foundAccount =
+        accountRepository.findById(savedAccount.getId());
+
+    assertThat(foundAccount)
+        .isPresent();
+
+    assertThat(foundAccount.get().getStatus())
+        .isEqualTo(AccountStatus.DELETED);
+  }
+
+  @Test
+  void shouldHideDeletedAccountsFromFindAll() {
+    Account activeAccount = accountRepository.save(
+        Account.open(
+            "Active Account",
+            AccountType.CHECKING,
+            Money.zero()
+        )
+    );
+
+    Account deletedAccount = Account.open(
+        "Deleted Account",
+        AccountType.SAVINGS,
+        Money.zero()
+    );
+
+    deletedAccount.deactivate();
+    deletedAccount.delete();
+
+    Account savedDeletedAccount =
+        accountRepository.save(deletedAccount);
+
+    assertThat(accountRepository.findAll())
+        .extracting(Account::getId)
+        .contains(activeAccount.getId())
+        .doesNotContain(savedDeletedAccount.getId());
+  }
 }

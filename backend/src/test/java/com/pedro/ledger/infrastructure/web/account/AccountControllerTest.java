@@ -19,6 +19,7 @@ import com.pedro.ledger.domain.account.Account;
 import com.pedro.ledger.domain.account.AccountAlreadyActiveException;
 import com.pedro.ledger.domain.account.AccountAlreadyInactiveException;
 import com.pedro.ledger.domain.account.AccountNotFoundException;
+import com.pedro.ledger.domain.account.AccountNotInactiveException;
 import com.pedro.ledger.domain.account.AccountStatus;
 import com.pedro.ledger.domain.account.AccountType;
 import com.pedro.ledger.domain.money.Money;
@@ -582,6 +583,58 @@ class AccountControllerTest {
           .andExpect(status().isConflict());
 
       verify(accountApplicationService).deactivate(id);
+    }
+  }
+
+  @Nested
+  class DeletePermanently {
+
+    @Test
+    void shouldDeleteAccount() throws Exception {
+      UUID id = UUID.randomUUID();
+
+      doNothing()
+          .when(accountApplicationService)
+          .delete(id);
+
+      mockMvc.perform(delete("/accounts/{id}/permanent", id))
+          .andExpect(status().isNoContent());
+
+      verify(accountApplicationService).delete(id);
+    }
+
+    @Test
+    void shouldReturnNotFoundWhenAccountDoesNotExist()
+        throws Exception {
+
+      UUID id = UUID.randomUUID();
+
+      doThrow(new AccountNotFoundException("Account not found"))
+          .when(accountApplicationService)
+          .delete(id);
+
+      mockMvc.perform(delete("/accounts/{id}/permanent", id))
+          .andExpect(status().isNotFound());
+
+      verify(accountApplicationService).delete(id);
+    }
+
+    @Test
+    void shouldReturnConflictWhenAccountIsNotInactive()
+        throws Exception {
+
+      UUID id = UUID.randomUUID();
+
+      doThrow(new AccountNotInactiveException(
+          "Only inactive accounts can be deleted"
+      ))
+          .when(accountApplicationService)
+          .delete(id);
+
+      mockMvc.perform(delete("/accounts/{id}/permanent", id))
+          .andExpect(status().isConflict());
+
+      verify(accountApplicationService).delete(id);
     }
   }
 

@@ -123,6 +123,26 @@ public class AccountApplicationService {
   }
 
   /**
+   * Deletes an inactive account.
+   *
+   * <p>The account is kept in storage only so historical transactions can
+   * reference it; it is hidden from listings and can no longer be used or
+   * reactivated.
+   *
+   * @param id account identifier
+   */
+  public void delete(UUID id) {
+    Account account = accountRepository.findById(id)
+        .orElseThrow(() ->
+            new AccountNotFoundException("Account not found")
+        );
+
+    account.delete();
+
+    accountRepository.save(account);
+  }
+
+  /**
    * Activates an inactive account.
    *
    * @param id account identifier

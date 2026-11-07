@@ -127,6 +127,24 @@ public class AccountController {
   }
 
   /**
+   * Deletes an inactive account.
+   *
+   * <p>Deleted accounts are hidden from listings, but are kept in storage so
+   * historical transactions can still reference them.
+   *
+   * @param id account identifier
+   * @return HTTP status 204 with no content
+   */
+  @DeleteMapping("/{id}/permanent")
+  public ResponseEntity<Void> deletePermanently(
+      @PathVariable UUID id
+  ) {
+    accountApplicationService.delete(id);
+
+    return ResponseEntity.noContent().build();
+  }
+
+  /**
    * Reactivates an inactive account.
    *
    * @param id account identifier

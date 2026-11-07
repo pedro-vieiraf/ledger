@@ -4,6 +4,7 @@ import com.pedro.ledger.domain.account.AccountAlreadyActiveException;
 import com.pedro.ledger.domain.account.AccountAlreadyInactiveException;
 import com.pedro.ledger.domain.account.AccountInactiveException;
 import com.pedro.ledger.domain.account.AccountNotFoundException;
+import com.pedro.ledger.domain.account.AccountNotInactiveException;
 import com.pedro.ledger.domain.category.CategoryNotFoundException;
 import com.pedro.ledger.domain.transaction.TransactionNotFoundException;
 import org.springframework.http.HttpStatus;
@@ -41,6 +42,13 @@ public class GlobalExceptionHandler {
       AccountInactiveException exception
   ) {
     return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+  }
+
+  @ExceptionHandler(AccountNotInactiveException.class)
+  public ResponseEntity<Void> handleAccountNotInactive(
+      AccountNotInactiveException exception
+  ) {
+    return ResponseEntity.status(HttpStatus.CONFLICT).build();
   }
 
   @ExceptionHandler(CategoryNotFoundException.class)

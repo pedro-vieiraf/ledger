@@ -629,4 +629,127 @@ class AccountTest {
     assertThat(account.isActive())
         .isTrue();
   }
+
+  @Test
+  void shouldDeleteInactiveAccount() {
+    Account account = Account.open(
+        "Nubank",
+        AccountType.CHECKING,
+        Money.zero()
+    );
+
+    account.deactivate();
+    account.delete();
+
+    assertThat(account.getStatus())
+        .isEqualTo(AccountStatus.DELETED);
+    assertThat(account.isActive())
+        .isFalse();
+  }
+
+  @Test
+  void shouldNotDeleteActiveAccount() {
+    Account account = Account.open(
+        "Nubank",
+        AccountType.CHECKING,
+        Money.zero()
+    );
+
+    assertThatThrownBy(account::delete)
+        .isInstanceOf(AccountNotInactiveException.class)
+        .hasMessage("Only inactive accounts can be deleted");
+
+    assertThat(account.getStatus())
+        .isEqualTo(AccountStatus.ACTIVE);
+  }
+
+  @Test
+  void shouldNotDeleteAlreadyDeletedAccount() {
+    Account account = Account.restore(
+        UUID.randomUUID(),
+        "Nubank",
+        AccountType.CHECKING,
+        AccountStatus.DELETED,
+        Money.zero()
+    );
+
+    assertThatThrownBy(account::delete)
+        .isInstanceOf(AccountNotInactiveException.class);
+
+    assertThat(account.getStatus())
+        .isEqualTo(AccountStatus.DELETED);
+  }
+
+  @Test
+  void shouldNotActivateDeletedAccount() {
+    Account account = Account.restore(
+        UUID.randomUUID(),
+        "Nubank",
+        AccountType.CHECKING,
+        AccountStatus.DELETED,
+        Money.zero()
+    );
+
+    assertThatThrownBy(account::activate)
+        .isInstanceOf(AccountInactiveException.class)
+        .hasMessage("Deleted accounts cannot be reactivated");
+
+    assertThat(account.getStatus())
+        .isEqualTo(AccountStatus.DELETED);
+  }
+
+  @Test
+  void shouldNotDeactivateDeletedAccount() {
+    Account account = Account.restore(
+        UUID.randomUUID(),
+        "Nubank",
+        AccountType.CHECKING,
+        AccountStatus.DELETED,
+        Money.zero()
+    );
+
+    assertThatThrownBy(account::deactivate)
+        .isInstanceOf(AccountAlreadyInactiveException.class);
+
+    assertThat(account.getStatus())
+        .isEqualTo(AccountStatus.DELETED);
+  }
+
+  @Test
+  void shouldNotAllowOperationsOnDeletedAccount() {
+    Account account = Account.restore(
+        UUID.randomUUID(),
+        "Nubank",
+        AccountType.CHECKING,
+        AccountStatus.DELETED,
+        Money.of("100.00")
+    );
+
+    assertThatThrownBy(() ->
+        account.credit(Money.of("10.00"))
+    )
+        .isInstanceOf(AccountInactiveException.class);
+
+    assertThatThrownBy(() ->
+        account.debit(Money.of("10.00"))
+    )
+        .isInstanceOf(AccountInactiveException.class);
+
+    assertThatThrownBy(() ->
+        account.rename("Inter")
+    )
+        .isInstanceOf(AccountInactiveException.class);
+
+    assertThatThrownBy(() ->
+        account.changeType(AccountType.SAVINGS)
+    )
+        .isInstanceOf(AccountInactiveException.class);
+
+    assertThat(account.getBalance())
+        .isEqualTo(Money.of("100.00"));
+    assertThat(account.getName())
+        .isEqualTo("Nubank");
+    assertThat(account.getType())
+        .isEqualTo(AccountType.CHECKING);
+  }
 }

@@ -2,6 +2,7 @@ package com.pedro.ledger.infrastructure.persistence.account;
 
 import com.pedro.ledger.domain.account.Account;
 import com.pedro.ledger.domain.account.AccountRepository;
+import com.pedro.ledger.domain.account.AccountStatus;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -60,11 +61,14 @@ public class AccountPersistenceRepository implements AccountRepository {
   /**
    * Finds all accounts.
    *
-   * @return a list containing all accounts
+   * <p>Deleted accounts are kept so historical transactions can reference
+   * them, but they are hidden from listings.
+   *
+   * @return all non-deleted accounts
    */
   @Override
   public List<Account> findAll() {
-    return jpaRepository.findAll()
+    return jpaRepository.findAllByStatusNot(AccountStatus.DELETED)
         .stream()
         .map(mapper::toDomain)
         .toList();

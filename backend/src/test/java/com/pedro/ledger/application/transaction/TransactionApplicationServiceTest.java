@@ -1224,6 +1224,105 @@ class TransactionApplicationServiceTest {
     }
 
     @Test
+    void shouldDeleteExpenseFromDeletedAccountWithoutRestoringBalance() {
+      Account account = Account.open(
+          "Checking Account",
+          AccountType.CHECKING,
+          Money.of("1000.00")
+      );
+
+      UUID accountId = account.getId();
+
+      Transaction transaction = Transaction.create(
+          Money.of("100.00"),
+          TransactionType.EXPENSE,
+          "Groceries",
+          Instant.now(),
+          TransactionSource.MANUAL,
+          accountId,
+          null,
+          null
+      );
+
+      account.debit(transaction.getAmount());
+      account.deactivate();
+      account.delete();
+
+      UUID transactionId = transaction.getId();
+
+      when(transactionRepository.findById(transactionId))
+          .thenReturn(Optional.of(transaction));
+
+      when(accountRepository.findById(accountId))
+          .thenReturn(Optional.of(account));
+
+      transactionApplicationService.delete(transactionId);
+
+      assertThat(account.getBalance())
+          .isEqualTo(Money.of("900.00"));
+
+      verify(transactionRepository)
+          .delete(transactionId);
+    }
+
+    @Test
+    void shouldDeleteTransferWhenDestinationAccountIsDeleted() {
+      Account sourceAccount = Account.open(
+          "Checking Account",
+          AccountType.CHECKING,
+          Money.of("1000.00")
+      );
+
+      Account destinationAccount = Account.open(
+          "Savings Account",
+          AccountType.SAVINGS,
+          Money.of("500.00")
+      );
+
+      UUID sourceAccountId = sourceAccount.getId();
+      UUID destinationAccountId = destinationAccount.getId();
+
+      Transaction transaction = Transaction.create(
+          Money.of("200.00"),
+          TransactionType.TRANSFER,
+          "Transfer to savings",
+          Instant.now(),
+          TransactionSource.MANUAL,
+          sourceAccountId,
+          destinationAccountId,
+          null
+      );
+
+      sourceAccount.debit(transaction.getAmount());
+      destinationAccount.credit(transaction.getAmount());
+
+      destinationAccount.deactivate();
+      destinationAccount.delete();
+
+      UUID transactionId = transaction.getId();
+
+      when(transactionRepository.findById(transactionId))
+          .thenReturn(Optional.of(transaction));
+
+      when(accountRepository.findById(sourceAccountId))
+          .thenReturn(Optional.of(sourceAccount));
+
+      when(accountRepository.findById(destinationAccountId))
+          .thenReturn(Optional.of(destinationAccount));
+
+      transactionApplicationService.delete(transactionId);
+
+      assertThat(sourceAccount.getBalance())
+          .isEqualTo(Money.of("1000.00"));
+
+      assertThat(destinationAccount.getBalance())
+          .isEqualTo(Money.of("700.00"));
+
+      verify(transactionRepository)
+          .delete(transactionId);
+    }
+
+    @Test
     void shouldThrowExceptionWhenTransactionDoesNotExist() {
       UUID transactionId = UUID.randomUUID();
 
