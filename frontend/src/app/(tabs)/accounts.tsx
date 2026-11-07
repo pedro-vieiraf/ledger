@@ -13,23 +13,27 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { CurrencyInput } from '@/components/currency-input';
+import { ConfirmDialog } from '@/components/feedback/confirm-dialog';
+import { InlineFeedback } from '@/components/feedback/inline-feedback';
 import { useAccounts } from '@/contexts/accounts-context';
+import { useFeedback } from '@/contexts/feedback-context';
 import {
   createAccount as createAccountRequest,
   deactivateAccount as deactivateAccountRequest,
+  deleteAccount as deleteAccountRequest,
   reactivateAccount as reactivateAccountRequest,
   updateAccount as updateAccountRequest,
   type Account,
   type AccountType,
 } from '@/services/accounts-api';
-import { showAlert } from '@/utils/confirm-action';
 
 type AccountFilter = 'ALL' | 'ACTIVE' | 'INACTIVE';
 
 type AccountForm = {
   name: string;
   type: AccountType;
-  openingBalance: string;
+  openingBalance: number;
 };
 
 const colors = {
@@ -59,42 +63,15 @@ function formatAccountType(type: AccountType) {
   return type === 'CHECKING' ? 'Conta corrente' : 'Poupança';
 }
 
-function parseAmount(value: string): number | null {
-  const normalized = value.trim().replace(/\s/g, '');
-
-  if (!normalized) {
-    return null;
-  }
-
-  let standardized: string;
-
-  if (normalized.includes(',')) {
-    standardized = normalized.replace(/\./g, '').replace(',', '.');
-  } else {
-    standardized = normalized;
-  }
-
-  if (!/^\d+(\.\d{1,2})?$/.test(standardized)) {
-    return null;
-  }
-
-  const amount = Number(standardized);
-
-  if (!Number.isFinite(amount) || amount < 0) {
-    return null;
-  }
-
-  return Math.round(amount * 100) / 100;
-}
-
 const emptyForm: AccountForm = {
   name: '',
   type: 'CHECKING',
-  openingBalance: '',
+  openingBalance: 0,
 };
 
 export default function AccountsScreen() {
   const router = useRouter();
+  const { showToast } = useFeedback();
   const {
     accounts,
     loading,
@@ -120,10 +97,18 @@ export default function AccountsScreen() {
       string | null
   >(null);
   const [reactivating, setReactivating] = useState(false);
+  const [reactivationError, setReactivationError] = useState('');
 
   const [deactivatingAccountId, setDeactivatingAccountId] = useState<
       string | null
   >(null);
+  const [deactivationError, setDeactivationError] = useState('');
+
+  const [deletingAccountId, setDeletingAccountId] = useState<string | null>(
+      null,
+  );
+  const [deleting, setDeleting] = useState(false);
+  const [deletionError, setDeletionError] = useState('');
 
   async function reloadAccounts() {
     await refreshAccounts().catch(() => {
@@ -132,7 +117,7 @@ export default function AccountsScreen() {
   }
 
   const actionsDisabled =
-      loading || saving || deactivating || reactivating;
+      loading || saving || deactivating || reactivating || deleting;
 
   const activeAccounts = useMemo(
       () => accounts.filter((account) => account.status === 'ACTIVE'),
@@ -161,10 +146,6 @@ export default function AccountsScreen() {
     });
   }, [accounts, filter, search]);
 
-  const editingAccount = editingAccountId
-      ? accounts.find((account) => account.id === editingAccountId)
-      : undefined;
-
   const deactivatingAccount = deactivatingAccountId
       ? accounts.find((account) => account.id === deactivatingAccountId)
       : undefined;
@@ -173,9 +154,9 @@ export default function AccountsScreen() {
       ? accounts.find((account) => account.id === reactivatingAccountId)
       : undefined;
 
-  function showError(title: string, message: string) {
-    showAlert(title, message);
-  }
+  const deletingAccount = deletingAccountId
+      ? accounts.find((account) => account.id === deletingAccountId)
+      : undefined;
 
   function openCreateForm() {
     setEditingAccountId(null);
@@ -186,10 +167,11 @@ export default function AccountsScreen() {
 
   function openEditForm(account: Account) {
     if (account.status !== 'ACTIVE') {
-      showError(
-          'Conta inativa',
-          'Não é possível editar uma conta inativa nesta versão.',
-      );
+      showToast({
+        variant: 'warning',
+        title: 'Conta inativa',
+        message: 'Não é possível editar uma conta inativa nesta versão.',
+      });
       return;
     }
 
@@ -197,7 +179,7 @@ export default function AccountsScreen() {
     setForm({
       name: account.name,
       type: account.type,
-      openingBalance: '',
+      openingBalance: 0,
     });
     setFormError('');
     setFormVisible(true);
@@ -224,21 +206,18 @@ export default function AccountsScreen() {
       return;
     }
 
-    let openingBalance: number | null = null;
+    let openingBalance = 0;
 
     if (!editingAccountId) {
-      openingBalance =
-          form.openingBalance.trim() === ''
-              ? 0
-              : parseAmount(form.openingBalance);
+      openingBalance = form.openingBalance;
 
-      if (openingBalance === null) {
-        setFormError(
-            'Informe um saldo inicial válido, usando no máximo duas casas decimais.',
-        );
+      if (!Number.isFinite(openingBalance) || openingBalance < 0) {
+        setFormError('Informe um saldo inicial válido.');
         return;
       }
     }
+
+    const isEditing = Boolean(editingAccountId);
 
     mutationInProgressRef.current = true;
     setSaving(true);
@@ -254,7 +233,7 @@ export default function AccountsScreen() {
         await createAccountRequest({
           name,
           type: form.type,
-          openingBalance: openingBalance!,
+          openingBalance,
           currency: 'BRL',
         });
       }
@@ -266,6 +245,14 @@ export default function AccountsScreen() {
       setFilter('ALL');
 
       await reloadAccounts();
+
+      showToast({
+        variant: 'success',
+        title: isEditing ? 'Conta atualizada' : 'Conta criada',
+        message: isEditing
+            ? 'As alterações foram salvas.'
+            : 'A conta já está disponível para uso.',
+      });
     } catch (error) {
       setFormError(
           error instanceof Error
@@ -278,6 +265,15 @@ export default function AccountsScreen() {
     }
   }
 
+  function openDeactivationModal(account: Account) {
+    if (actionsDisabled || mutationInProgressRef.current) {
+      return;
+    }
+
+    setDeactivationError('');
+    setDeactivatingAccountId(account.id);
+  }
+
   async function confirmDeactivation() {
     if (!deactivatingAccountId || mutationInProgressRef.current) {
       return;
@@ -287,6 +283,7 @@ export default function AccountsScreen() {
 
     mutationInProgressRef.current = true;
     setDeactivating(true);
+    setDeactivationError('');
 
     try {
       await deactivateAccountRequest(accountId);
@@ -297,17 +294,40 @@ export default function AccountsScreen() {
       );
 
       await reloadAccounts();
+
+      showToast({
+        variant: 'success',
+        title: 'Conta desativada',
+        message: 'A conta foi movida para as contas inativas.',
+      });
     } catch (error) {
-      showError(
-          'Não foi possível desativar a conta',
+      setDeactivationError(
           error instanceof Error
               ? error.message
-              : 'Ocorreu um erro. Tente novamente.',
+              : 'Não foi possível desativar a conta. Tente novamente.',
       );
     } finally {
       mutationInProgressRef.current = false;
       setDeactivating(false);
     }
+  }
+
+  function closeDeactivationModal() {
+    if (deactivating) {
+      return;
+    }
+
+    setDeactivatingAccountId(null);
+    setDeactivationError('');
+  }
+
+  function openReactivationModal(account: Account) {
+    if (actionsDisabled || mutationInProgressRef.current) {
+      return;
+    }
+
+    setReactivationError('');
+    setReactivatingAccountId(account.id);
   }
 
   async function confirmReactivation() {
@@ -319,6 +339,7 @@ export default function AccountsScreen() {
 
     mutationInProgressRef.current = true;
     setReactivating(true);
+    setReactivationError('');
 
     try {
       await reactivateAccountRequest(accountId);
@@ -326,13 +347,16 @@ export default function AccountsScreen() {
 
       await reloadAccounts();
 
-      showAlert('Conta reativada', 'A conta foi reativada com sucesso.');
+      showToast({
+        variant: 'success',
+        title: 'Conta reativada',
+        message: 'A conta voltou a aparecer entre as contas ativas.',
+      });
     } catch (error) {
-      showError(
-          'Não foi possível reativar a conta',
+      setReactivationError(
           error instanceof Error
               ? error.message
-              : 'Ocorreu um erro. Tente novamente.',
+              : 'Não foi possível reativar a conta. Tente novamente.',
       );
     } finally {
       mutationInProgressRef.current = false;
@@ -346,6 +370,59 @@ export default function AccountsScreen() {
     }
 
     setReactivatingAccountId(null);
+    setReactivationError('');
+  }
+
+  function openDeletionModal(account: Account) {
+    if (actionsDisabled || mutationInProgressRef.current) {
+      return;
+    }
+
+    setDeletionError('');
+    setDeletingAccountId(account.id);
+  }
+
+  async function confirmDeletion() {
+    if (!deletingAccountId || mutationInProgressRef.current) {
+      return;
+    }
+
+    const accountId = deletingAccountId;
+
+    mutationInProgressRef.current = true;
+    setDeleting(true);
+    setDeletionError('');
+
+    try {
+      await deleteAccountRequest(accountId);
+      setDeletingAccountId(null);
+
+      await reloadAccounts();
+
+      showToast({
+        variant: 'success',
+        title: 'Conta excluída',
+        message: 'As transações continuam no histórico.',
+      });
+    } catch (error) {
+      setDeletionError(
+          error instanceof Error
+              ? error.message
+              : 'Não foi possível excluir a conta. Tente novamente.',
+      );
+    } finally {
+      mutationInProgressRef.current = false;
+      setDeleting(false);
+    }
+  }
+
+  function closeDeletionModal() {
+    if (deleting) {
+      return;
+    }
+
+    setDeletingAccountId(null);
+    setDeletionError('');
   }
 
   function openAccountDetails(account: Account) {
@@ -362,7 +439,7 @@ export default function AccountsScreen() {
             showsVerticalScrollIndicator={false}
             keyboardShouldPersistTaps="handled"
         >
-          <Text style={styles.eyebrow}>LEDGER</Text>
+          <Text style={styles.eyebrow}>finora</Text>
 
           <View style={styles.titleRow}>
             <View style={styles.titleContainer}>
@@ -598,7 +675,7 @@ export default function AccountsScreen() {
                                         actionsDisabled && styles.disabledButton,
                                       ]}
                                       onPress={() =>
-                                          setDeactivatingAccountId(account.id)
+                                          openDeactivationModal(account)
                                       }
                                       disabled={actionsDisabled}
                                   >
@@ -608,22 +685,41 @@ export default function AccountsScreen() {
                                   </Pressable>
                                 </>
                             ) : (
-                                <Pressable
-                                    accessibilityRole="button"
-                                    accessibilityLabel={`Reativar ${account.name}`}
-                                    style={[
-                                      styles.secondaryButton,
-                                      actionsDisabled && styles.disabledButton,
-                                    ]}
-                                    onPress={() =>
-                                        setReactivatingAccountId(account.id)
-                                    }
-                                    disabled={actionsDisabled}
-                                >
-                                  <Text style={styles.secondaryButtonText}>
-                                    Reativar
-                                  </Text>
-                                </Pressable>
+                                <>
+                                  <Pressable
+                                      accessibilityRole="button"
+                                      accessibilityLabel={`Reativar ${account.name}`}
+                                      style={[
+                                        styles.secondaryButton,
+                                        actionsDisabled && styles.disabledButton,
+                                      ]}
+                                      onPress={() =>
+                                          openReactivationModal(account)
+                                      }
+                                      disabled={actionsDisabled}
+                                  >
+                                    <Text style={styles.secondaryButtonText}>
+                                      Reativar
+                                    </Text>
+                                  </Pressable>
+
+                                  <Pressable
+                                      accessibilityRole="button"
+                                      accessibilityLabel={`Excluir ${account.name}`}
+                                      style={[
+                                        styles.deactivateButton,
+                                        actionsDisabled && styles.disabledButton,
+                                      ]}
+                                      onPress={() =>
+                                          openDeletionModal(account)
+                                      }
+                                      disabled={actionsDisabled}
+                                  >
+                                    <Text style={styles.deactivateButtonText}>
+                                      Excluir
+                                    </Text>
+                                  </Pressable>
+                                </>
                             )}
                           </View>
                         </View>
@@ -666,7 +762,7 @@ export default function AccountsScreen() {
           )}
 
           <Text style={styles.disclaimer}>
-            As contas são carregadas do backend do Ledger.
+            As contas são carregadas do backend da Finora.
           </Text>
         </ScrollView>
 
@@ -758,21 +854,18 @@ export default function AccountsScreen() {
 
               {!editingAccountId && (
                   <>
-                    <Text style={styles.fieldLabel}>Saldo inicial (R$)</Text>
-                    <TextInput
+                    <Text style={styles.fieldLabel}>Saldo inicial</Text>
+                    <CurrencyInput
                         accessibilityLabel="Saldo inicial em reais"
                         style={styles.textInput}
                         value={form.openingBalance}
-                        onChangeText={(openingBalance) => {
+                        onChangeValue={(openingBalance) => {
                           setForm((current) => ({
                             ...current,
                             openingBalance,
                           }));
                           setFormError('');
                         }}
-                        placeholder="0,00"
-                        placeholderTextColor={colors.secondary}
-                        keyboardType="decimal-pad"
                         returnKeyType="done"
                     />
                     <Text style={styles.fieldHint}>
@@ -782,9 +875,11 @@ export default function AccountsScreen() {
               )}
 
               {formError ? (
-                  <Text accessibilityRole="alert" style={styles.formError}>
-                    {formError}
-                  </Text>
+                  <InlineFeedback
+                      message={formError}
+                      variant="error"
+                      style={styles.formFeedback}
+                  />
               ) : null}
 
               <View style={styles.modalActions}>
@@ -817,112 +912,53 @@ export default function AccountsScreen() {
           </KeyboardAvoidingView>
         </Modal>
 
-        <Modal
+        <ConfirmDialog
             visible={Boolean(deactivatingAccount)}
-            transparent
-            animationType="fade"
-            onRequestClose={() => setDeactivatingAccountId(null)}
-        >
-          <View style={styles.modalOverlay}>
-            <View style={styles.confirmCard}>
-              <View style={styles.confirmIcon}>
-                <Text style={styles.confirmIconText}>!</Text>
-              </View>
+            title="Desativar conta?"
+            message={
+              deactivatingAccount
+                  ? `A conta "${deactivatingAccount.name}" deixará de aparecer entre as contas ativas. Você poderá reativá-la posteriormente.`
+                  : ''
+            }
+            confirmLabel="Desativar"
+            tone="warning"
+            loading={deactivating}
+            error={deactivationError}
+            onConfirm={() => void confirmDeactivation()}
+            onCancel={closeDeactivationModal}
+        />
 
-              <Text style={styles.confirmTitle}>Desativar conta?</Text>
-
-              <Text style={styles.confirmDescription}>
-                {deactivatingAccount
-                    ? `A conta "${deactivatingAccount.name}" deixará de aparecer entre as contas ativas. Você poderá reativá-la posteriormente.`
-                    : ''}
-              </Text>
-
-              <View style={styles.modalActions}>
-                <Pressable
-                    accessibilityRole="button"
-                    style={styles.cancelButton}
-                    onPress={() => setDeactivatingAccountId(null)}
-                >
-                  <Text style={styles.cancelButtonText}>Cancelar</Text>
-                </Pressable>
-
-                <Pressable
-                    accessibilityRole="button"
-                    accessibilityState={{
-                      disabled: deactivating,
-                      busy: deactivating,
-                    }}
-                    style={[
-                      styles.dangerConfirmButton,
-                      deactivating && styles.disabledButton,
-                    ]}
-                    onPress={() => void confirmDeactivation()}
-                    disabled={deactivating}
-                >
-                  <Text style={styles.dangerConfirmButtonText}>
-                    {deactivating ? 'Desativando...' : 'Desativar'}
-                  </Text>
-                </Pressable>
-              </View>
-            </View>
-          </View>
-        </Modal>
-
-        <Modal
+        <ConfirmDialog
             visible={Boolean(reactivatingAccount)}
-            transparent
-            animationType="fade"
-            onRequestClose={closeReactivationModal}
-        >
-          <View style={styles.modalOverlay}>
-            <View style={styles.confirmCard}>
-              <View style={styles.confirmIcon}>
-                <Text style={styles.reactivationIconText}>↻</Text>
-              </View>
+            title="Reativar conta?"
+            message={
+              reactivatingAccount
+                  ? `Deseja reativar "${reactivatingAccount.name}"? A conta voltará a aparecer entre as contas ativas.`
+                  : ''
+            }
+            confirmLabel="Reativar"
+            tone="primary"
+            loading={reactivating}
+            error={reactivationError}
+            onConfirm={() => void confirmReactivation()}
+            onCancel={closeReactivationModal}
+        />
 
-              <Text style={styles.confirmTitle}>Reativar conta?</Text>
-
-              <Text style={styles.confirmDescription}>
-                {reactivatingAccount
-                    ? `Deseja reativar "${reactivatingAccount.name}"? A conta voltará a aparecer entre as contas ativas.`
-                    : ''}
-              </Text>
-
-              <View style={styles.modalActions}>
-                <Pressable
-                    accessibilityRole="button"
-                    accessibilityState={{ disabled: reactivating }}
-                    style={[
-                      styles.cancelButton,
-                      reactivating && styles.disabledButton,
-                    ]}
-                    onPress={closeReactivationModal}
-                    disabled={reactivating}
-                >
-                  <Text style={styles.cancelButtonText}>Cancelar</Text>
-                </Pressable>
-
-                <Pressable
-                    accessibilityRole="button"
-                    accessibilityState={{
-                      disabled: reactivating,
-                      busy: reactivating,
-                    }}
-                    style={[
-                      styles.saveButton,
-                      reactivating && styles.disabledButton,
-                    ]}
-                    onPress={() => void confirmReactivation()}
-                    disabled={reactivating}
-                >
-                  <Text style={styles.saveButtonText}>
-                    {reactivating ? 'Reativando...' : 'Reativar'}
-                  </Text>
-                </Pressable>
-              </View>
-            </View>
-          </View>
-        </Modal>
+        <ConfirmDialog
+            visible={Boolean(deletingAccount)}
+            title="Excluir conta?"
+            message={
+              deletingAccount
+                  ? `Deseja excluir "${deletingAccount.name}"? A conta será removida da lista e não poderá ser reativada. As transações do histórico continuam disponíveis, mas aparecerão como "Conta excluída".`
+                  : ''
+            }
+            confirmLabel="Excluir"
+            tone="danger"
+            loading={deleting}
+            error={deletionError}
+            onConfirm={() => void confirmDeletion()}
+            onCancel={closeDeletionModal}
+        />
       </SafeAreaView>
   );
 }
@@ -1379,10 +1415,7 @@ const styles = StyleSheet.create({
     marginTop: -10,
     marginBottom: 16,
   },
-  formError: {
-    color: colors.danger,
-    fontSize: 12,
-    lineHeight: 17,
+  formFeedback: {
     marginBottom: 14,
   },
   modalActions: {
@@ -1420,58 +1453,5 @@ const styles = StyleSheet.create({
   },
   disabledButton: {
     opacity: 0.6,
-  },
-  confirmCard: {
-    width: '100%',
-    maxWidth: 400,
-    alignItems: 'center',
-    backgroundColor: colors.surface,
-    borderRadius: 22,
-    padding: 24,
-  },
-  confirmIcon: {
-    width: 48,
-    height: 48,
-    borderRadius: 16,
-    backgroundColor: colors.dangerLight,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 16,
-  },
-  confirmIconText: {
-    color: colors.danger,
-    fontSize: 24,
-    fontWeight: '700',
-  },
-  reactivationIconText: {
-    color: colors.primary,
-    fontSize: 25,
-    fontWeight: '700',
-  },
-  confirmTitle: {
-    color: colors.text,
-    fontSize: 19,
-    fontWeight: '700',
-    textAlign: 'center',
-  },
-  confirmDescription: {
-    color: colors.secondary,
-    fontSize: 13,
-    lineHeight: 20,
-    textAlign: 'center',
-    marginTop: 10,
-  },
-  dangerConfirmButton: {
-    backgroundColor: colors.danger,
-    borderRadius: 11,
-    paddingHorizontal: 16,
-    paddingVertical: 11,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  dangerConfirmButtonText: {
-    color: '#FFFFFF',
-    fontSize: 12,
-    fontWeight: '700',
   },
 });

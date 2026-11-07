@@ -1,7 +1,7 @@
 import { apiRequest } from './api';
 
 export type AccountType = 'CHECKING' | 'SAVINGS';
-export type AccountStatus = 'ACTIVE' | 'INACTIVE';
+export type AccountStatus = 'ACTIVE' | 'INACTIVE' | 'DELETED';
 
 export interface Account {
   id: string;
@@ -58,6 +58,12 @@ export function updateAccount(
 
 export function deactivateAccount(id: string): Promise<void> {
   return apiRequest<void>(`/accounts/${id}`, {
+    method: 'DELETE',
+  });
+}
+
+export function deleteAccount(id: string): Promise<void> {
+  return apiRequest<void>(`/accounts/${id}/permanent`, {
     method: 'DELETE',
   });
 }

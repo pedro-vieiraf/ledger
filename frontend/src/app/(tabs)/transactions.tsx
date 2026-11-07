@@ -31,7 +31,10 @@ import type {
   TransactionType as ApiTransactionType,
 } from '../../services/transactions-api';
 import DateTimePickerFields from '../../components/date-time-picker-fields';
-import { confirmAction, showAlert } from '../../utils/confirm-action';
+import { CurrencyInput } from '@/components/currency-input';
+import { ConfirmDialog } from '@/components/feedback/confirm-dialog';
+import { InlineFeedback } from '@/components/feedback/inline-feedback';
+import { useFeedback } from '@/contexts/feedback-context';
 import {
   getLocalDateTimeParts,
   isSameLocalMinute,
@@ -56,7 +59,7 @@ type Transaction = {
 
 type TransactionForm = {
   type: TransactionType;
-  amount: string;
+  amount: number;
   description: string;
   accountId: string;
   destinationAccountId: string;
@@ -99,7 +102,7 @@ const TRANSACTION_TYPES: {
 
 const INITIAL_FORM: TransactionForm = {
   type: 'expense',
-  amount: '',
+  amount: 0,
   description: '',
   accountId: '',
   destinationAccountId: '',
@@ -150,20 +153,6 @@ function getLocalDateKey(timestamp: string) {
   const day = String(date.getDate()).padStart(2, '0');
 
   return `${year}-${month}-${day}`;
-}
-
-function parseAmount(value: string): number {
-  const normalized = value.trim().replace(/\s/g, '');
-
-  if (!normalized) {
-    return Number.NaN;
-  }
-
-  const parsed = normalized.includes(',')
-      ? Number(normalized.replace(/\./g, '').replace(',', '.'))
-      : Number(normalized);
-
-  return parsed;
 }
 
 function mapTransactionType(type: ApiTransactionType): TransactionType {
@@ -233,10 +222,11 @@ function mapApiTransaction(
       ? categoriesById.get(transaction.categoryId)
       : undefined;
 
-  let accountLabel = sourceAccount?.name ?? 'Conta desconhecida';
+  let accountLabel = sourceAccount?.name ?? 'Conta excluída';
 
-  if (type === 'transfer' && destinationAccount) {
-    accountLabel = `${accountLabel} → ${destinationAccount.name}`;
+  if (type === 'transfer' && transaction.destinationAccountId) {
+    accountLabel =
+        `${accountLabel} → ${destinationAccount?.name ?? 'Conta excluída'}`;
   }
 
   return {
@@ -303,6 +293,7 @@ function TransactionRow({
 }
 
 export default function TransactionsScreen() {
+  const { showToast } = useFeedback();
   const {
     transactions: apiTransactions,
     loading: transactionsLoading,
@@ -330,10 +321,18 @@ export default function TransactionsScreen() {
   const [form, setForm] = useState<TransactionForm>(INITIAL_FORM);
   const [formError, setFormError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+  const [deleteConfirmVisible, setDeleteConfirmVisible] = useState(false);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
+  const [deletingTransaction, setDeletingTransaction] = useState(false);
 
   const editingTransaction = editingTransactionId
     ? apiTransactions.find((item) => item.id === editingTransactionId)
     : undefined;
+
+  const deletingDescription = editingTransaction
+    ? editingTransaction.description?.trim() ||
+      getDefaultDescription(mapTransactionType(editingTransaction.type))
+    : '';
 
   const loadScreenData = useCallback(async () => {
     setReferencesLoading(true);
@@ -497,10 +496,11 @@ export default function TransactionsScreen() {
 
   const openCreateModal = () => {
     if (activeAccounts.length === 0) {
-      showAlert(
-          'Nenhuma conta ativa',
-          'Crie ou reative uma conta antes de registrar uma transação.',
-      );
+      showToast({
+        variant: 'warning',
+        title: 'Nenhuma conta ativa',
+        message: 'Crie ou reative uma conta antes de registrar uma transação.',
+      });
       return;
     }
 
@@ -515,6 +515,8 @@ export default function TransactionsScreen() {
           )?.id ?? '',
     });
     setFormError(null);
+    setDeleteConfirmVisible(false);
+    setDeleteError(null);
     setModalVisible(true);
   };
 
@@ -524,10 +526,12 @@ export default function TransactionsScreen() {
     );
 
     if (!transaction) {
-      showAlert(
-          'Transação indisponível',
-          'Não foi possível encontrar essa transação nos dados atuais. Atualize a tela e tente novamente.',
-      );
+      showToast({
+        variant: 'error',
+        title: 'Transação indisponível',
+        message:
+            'Não foi possível encontrar essa transação nos dados atuais. Atualize a tela e tente novamente.',
+      });
       return;
     }
 
@@ -535,7 +539,7 @@ export default function TransactionsScreen() {
     setEditingTransactionId(transaction.id);
     setForm({
       type: mapTransactionType(transaction.type),
-      amount: String(transaction.amount),
+      amount: transaction.amount,
       description: transaction.description ?? '',
       accountId: transaction.accountId,
       destinationAccountId: transaction.destinationAccountId ?? '',
@@ -543,23 +547,33 @@ export default function TransactionsScreen() {
       ...getLocalDateTimeParts(transaction.timestamp),
     });
     setFormError(null);
+    setDeleteConfirmVisible(false);
+    setDeleteError(null);
     setModalVisible(true);
   };
 
   const closeModal = () => {
-    if (saving) return;
+    if (saving || deletingTransaction) return;
+
+    if (deleteConfirmVisible) {
+      setDeleteConfirmVisible(false);
+      setDeleteError(null);
+      return;
+    }
 
     setModalVisible(false);
     setFormError(null);
+    setDeleteConfirmVisible(false);
+    setDeleteError(null);
   };
 
   const handleSave = async () => {
     setFormError(null);
 
-    const amount = parseAmount(form.amount);
+    const amount = form.amount;
 
     if (!Number.isFinite(amount) || amount <= 0) {
-      setFormError('Informe um valor maior que zero. Exemplo: 125,90.');
+      setFormError('Informe um valor maior que zero.');
       return;
     }
 
@@ -660,6 +674,16 @@ export default function TransactionsScreen() {
 
       setModalVisible(false);
       setFormError(null);
+      setDeleteConfirmVisible(false);
+      setDeleteError(null);
+
+      showToast({
+        variant: 'success',
+        title: formMode === 'create'
+            ? 'Transação criada'
+            : 'Transação atualizada',
+        message: 'O saldo foi atualizado pelo servidor.',
+      });
     } catch (cause) {
       setFormError(
           cause instanceof Error
@@ -677,40 +701,56 @@ export default function TransactionsScreen() {
     );
 
     if (!transaction) {
-      showAlert(
-          'Transação indisponível',
+      setFormError(
           'Atualize a lista antes de tentar excluir essa transação.',
       );
       return;
     }
 
-    const description =
-        transaction.description?.trim() ||
-        getDefaultDescription(mapTransactionType(transaction.type));
+    setDeleteError(null);
+    setDeleteConfirmVisible(true);
+  };
 
-    confirmAction({
-      title: 'Excluir transação?',
-      message:
-          `Deseja excluir "${description}"? Essa operação também ` +
-          'reverterá o efeito da transação no saldo da conta.',
-      confirmLabel: 'Excluir',
-      destructive: true,
-      onConfirm: () => {
-        void (async () => {
-          try {
-            await deleteTransaction(transactionId);
-            setModalVisible(false);
-          } catch (cause) {
-            showAlert(
-                'Não foi possível excluir',
-                cause instanceof Error
-                    ? cause.message
-                    : 'Tente novamente.',
-            );
-          }
-        })();
-      },
-    });
+  const cancelDelete = () => {
+    if (deletingTransaction) {
+      return;
+    }
+
+    setDeleteConfirmVisible(false);
+    setDeleteError(null);
+  };
+
+  const confirmDelete = async () => {
+    if (!editingTransactionId || deletingTransaction) {
+      return;
+    }
+
+    setDeletingTransaction(true);
+    setDeleteError(null);
+
+    try {
+      await deleteTransaction(editingTransactionId);
+
+      setDeleteConfirmVisible(false);
+      setModalVisible(false);
+      setEditingTransactionId(null);
+      setFormError(null);
+      setDeleteError(null);
+
+      showToast({
+        variant: 'success',
+        title: 'Transação excluída',
+        message: 'O histórico foi atualizado.',
+      });
+    } catch (cause) {
+      setDeleteError(
+          cause instanceof Error
+              ? cause.message
+              : 'Não foi possível excluir a transação. Tente novamente.',
+      );
+    } finally {
+      setDeletingTransaction(false);
+    }
   };
 
   const loading = referencesLoading || transactionsLoading;
@@ -962,7 +1002,7 @@ export default function TransactionsScreen() {
           )}
 
           <Text style={styles.disclaimer}>
-            Dados carregados da API do Ledger. As contas não estão conectadas
+            Dados carregados da API da Finora. As contas não estão conectadas
             automaticamente a instituições financeiras.
           </Text>
         </ScrollView>
@@ -1055,13 +1095,10 @@ export default function TransactionsScreen() {
                     </View>
                 )}
 
-                <Text style={styles.fieldLabel}>Valor (R$)</Text>
-                <TextInput
+                <Text style={styles.fieldLabel}>Valor</Text>
+                <CurrencyInput
                     value={form.amount}
-                    onChangeText={(value) => updateForm('amount', value)}
-                    placeholder="0,00"
-                    placeholderTextColor={COLORS.secondary}
-                    keyboardType="decimal-pad"
+                    onChangeValue={(value) => updateForm('amount', value)}
                     style={styles.formInput}
                     accessibilityLabel="Valor da transação em reais"
                 />
@@ -1325,11 +1362,13 @@ export default function TransactionsScreen() {
                     </>
                 )}
 
-                {formError && (
-                    <View style={styles.formErrorContainer}>
-                      <Text style={styles.formErrorText}>{formError}</Text>
-                    </View>
-                )}
+                {formError ? (
+                    <InlineFeedback
+                      message={formError}
+                      variant="error"
+                      style={styles.formFeedback}
+                    />
+                ) : null}
 
                 <Pressable
                     accessibilityRole="button"
@@ -1355,8 +1394,12 @@ export default function TransactionsScreen() {
                     <Pressable
                         accessibilityRole="button"
                         onPress={() => handleDelete(editingTransactionId)}
-                        disabled={saving}
-                        style={styles.deleteButton}
+                        disabled={saving || deletingTransaction}
+                        style={[
+                          styles.deleteButton,
+                          (saving || deletingTransaction) &&
+                              styles.disabledButton,
+                        ]}
                     >
                       <Text style={styles.deleteButtonText}>
                         Excluir transação
@@ -1370,6 +1413,23 @@ export default function TransactionsScreen() {
                 </Text>
               </ScrollView>
             </KeyboardAvoidingView>
+
+            <ConfirmDialog
+                embedded
+                visible={deleteConfirmVisible}
+                title="Excluir transação?"
+                message={
+                  `Deseja excluir "${deletingDescription}"? Essa operação ` +
+                  'também reverterá o efeito da transação no saldo da conta, ' +
+                  'quando aplicável.'
+                }
+                confirmLabel="Excluir"
+                tone="danger"
+                loading={deletingTransaction}
+                error={deleteError}
+                onConfirm={() => void confirmDelete()}
+                onCancel={cancelDelete}
+            />
           </SafeAreaView>
         </Modal>
       </SafeAreaView>
@@ -1906,16 +1966,8 @@ const styles = StyleSheet.create({
     lineHeight: 17,
     marginTop: 8,
   },
-  formErrorContainer: {
-    backgroundColor: COLORS.expenseBackground,
-    borderRadius: 12,
-    padding: 12,
+  formFeedback: {
     marginTop: 18,
-  },
-  formErrorText: {
-    color: COLORS.expense,
-    fontSize: 12,
-    lineHeight: 18,
   },
   saveButton: {
     backgroundColor: COLORS.primary,

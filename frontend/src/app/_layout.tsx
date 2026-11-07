@@ -9,6 +9,7 @@ import { useColorScheme } from 'react-native';
 
 import { AnimatedSplashOverlay } from '@/components/animated-icon';
 import { AccountsProvider } from '@/contexts/accounts-context';
+import { FeedbackProvider } from '@/contexts/feedback-context';
 import { TransactionsProvider } from '@/contexts/transactions-context';
 
 SplashScreen.preventAutoHideAsync();
@@ -20,15 +21,17 @@ export default function RootLayout() {
     <ThemeProvider
       value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}
     >
-      <AccountsProvider>
-        <TransactionsProvider>
-          <AnimatedSplashOverlay />
+      <FeedbackProvider>
+        <AccountsProvider>
+          <TransactionsProvider>
+            <AnimatedSplashOverlay />
 
-          <Stack screenOptions={{ headerShown: false }}>
-            <Stack.Screen name="(tabs)" />
-          </Stack>
-        </TransactionsProvider>
-      </AccountsProvider>
+            <Stack screenOptions={{ headerShown: false }}>
+              <Stack.Screen name="(tabs)" />
+            </Stack>
+          </TransactionsProvider>
+        </AccountsProvider>
+      </FeedbackProvider>
     </ThemeProvider>
   );
 }

@@ -1,180 +1,823 @@
-import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
+import { useCallback, useMemo, useRef, useState } from 'react';
 import {
+  ActivityIndicator,
   Pressable,
   ScrollView,
   StyleSheet,
   Text,
   View,
 } from 'react-native';
+import {
+  Stack,
+  useFocusEffect,
+  useLocalSearchParams,
+  useRouter,
+} from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { useAccounts } from '@/contexts/accounts-context';
+import { InlineFeedback } from '@/components/feedback/inline-feedback';
+import { useAccounts, type Account } from '@/contexts/accounts-context';
+import {
+  useTransactions,
+  type Transaction,
+} from '@/contexts/transactions-context';
+import { getCategories, type Category } from '@/services/categories-api';
 
 const colors = {
-  background: '#F7F8F5',
+  background: '#F7F7F2',
   surface: '#FFFFFF',
-  primary: '#176B52',
-  primaryLight: '#E8F3ED',
-  text: '#202923',
-  secondary: '#788078',
-  border: '#E9ECE7',
+  primary: '#1F5B45',
+  primaryLight: '#E7F0E9',
+  text: '#202720',
+  secondary: '#747C73',
+  border: '#E7E9E2',
+  income: '#27835B',
+  incomeBackground: '#E8F5EC',
+  expense: '#C6534B',
+  expenseBackground: '#FBECE9',
+  transfer: '#5474A1',
+  transferBackground: '#EDF1F8',
   danger: '#B84D4D',
   dangerLight: '#F9EDEC',
 };
 
-const currencyFormatter = new Intl.NumberFormat('pt-BR', {
-  style: 'currency',
-  currency: 'BRL',
+type TransactionFilter = 'all' | 'income' | 'expense' | 'transfer';
+type TransactionDirection = 'in' | 'out';
+
+type AccountTransaction = {
+  transaction: Transaction;
+  direction: TransactionDirection;
+  dateKey: string;
+};
+
+const FILTERS: { label: string; value: TransactionFilter }[] = [
+  { label: 'Todas', value: 'all' },
+  { label: 'Receitas', value: 'income' },
+  { label: 'Despesas', value: 'expense' },
+  { label: 'Transferências', value: 'transfer' },
+];
+
+const monthFormatter = new Intl.DateTimeFormat('pt-BR', {
+  month: 'long',
+  year: 'numeric',
 });
+
+const dateHeadingFormatter = new Intl.DateTimeFormat('pt-BR', {
+  day: '2-digit',
+  month: 'long',
+});
+
+function formatCurrency(value: number, currency = 'BRL') {
+  try {
+    return new Intl.NumberFormat('pt-BR', {
+      style: 'currency',
+      currency,
+    }).format(value);
+  } catch {
+    return `${currency} ${value.toFixed(2)}`;
+  }
+}
+
+function formatAccountType(type: Account['type']) {
+  return type === 'CHECKING' ? 'Conta corrente' : 'Poupança';
+}
+
+function formatMonth(date: Date) {
+  const formatted = monthFormatter.format(date);
+
+  return formatted.charAt(0).toUpperCase() + formatted.slice(1);
+}
+
+function getLocalDateKey(timestamp: string) {
+  const date = new Date(timestamp);
+
+  if (Number.isNaN(date.getTime())) {
+    return timestamp.slice(0, 10);
+  }
+
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+
+  return `${year}-${month}-${day}`;
+}
+
+function formatDateHeading(dateKey: string) {
+  const [year, month, day] = dateKey.split('-').map(Number);
+  const date = new Date(year, month - 1, day, 12);
+
+  if (Number.isNaN(date.getTime())) {
+    return dateKey;
+  }
+
+  return dateHeadingFormatter.format(date);
+}
+
+function getDefaultDescription(type: Transaction['type']) {
+  if (type === 'INCOME') return 'Receita';
+  if (type === 'TRANSFER') return 'Transferência';
+  return 'Despesa';
+}
+
+function getCategoryLabel(
+  transaction: Transaction,
+  categoriesById: Map<string, string>,
+) {
+  if (transaction.type === 'TRANSFER') {
+    return 'Transferência';
+  }
+
+  const categoryName = transaction.categoryId
+    ? categoriesById.get(transaction.categoryId)
+    : undefined;
+
+  return categoryName ?? 'Sem categoria';
+}
+
+function getTransactionMeta(
+  transaction: Transaction,
+  accountId: string,
+  categoriesById: Map<string, string>,
+  accountsById: Map<string, Account>,
+) {
+  if (transaction.type !== 'TRANSFER') {
+    return getCategoryLabel(transaction, categoriesById);
+  }
+
+  if (transaction.accountId === accountId) {
+    const destinationName = transaction.destinationAccountId
+      ? accountsById.get(transaction.destinationAccountId)?.name ??
+        'Conta excluída'
+      : 'Conta excluída';
+
+    return `Transferência · Enviada para ${destinationName}`;
+  }
+
+  const sourceName =
+    accountsById.get(transaction.accountId)?.name ?? 'Conta excluída';
+
+  return `Transferência · Recebida de ${sourceName}`;
+}
+
+function getTransactionDirection(
+  transaction: Transaction,
+  accountId: string,
+): TransactionDirection {
+  if (transaction.type === 'TRANSFER') {
+    return transaction.accountId === accountId ? 'out' : 'in';
+  }
+
+  return transaction.type === 'INCOME' ? 'in' : 'out';
+}
+
+function getTransactionPalette(
+  type: Transaction['type'],
+  direction: TransactionDirection,
+) {
+  if (type === 'INCOME') {
+    return {
+      color: colors.income,
+      background: colors.incomeBackground,
+      icon: '↙',
+      prefix: '+ ',
+    };
+  }
+
+  if (type === 'TRANSFER') {
+    return {
+      color: colors.transfer,
+      background: colors.transferBackground,
+      icon: '↔',
+      prefix: direction === 'in' ? '+ ' : '− ',
+    };
+  }
+
+  return {
+    color: colors.expense,
+    background: colors.expenseBackground,
+    icon: '↗',
+    prefix: '− ',
+  };
+}
 
 export default function AccountDetailsScreen() {
   const router = useRouter();
   const { id } = useLocalSearchParams<{ id: string }>();
-  const { accounts } = useAccounts();
+  const {
+    accounts,
+    loading: accountsLoading,
+    error: accountsError,
+    refreshAccounts,
+  } = useAccounts();
+  const {
+    transactions,
+    loading: transactionsLoading,
+    error: transactionsError,
+    refreshTransactions,
+  } = useTransactions();
 
-  const account = accounts.find((item) => item.id === id);
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [categoriesLoading, setCategoriesLoading] = useState(true);
+  const [categoriesError, setCategoriesError] = useState<string | null>(null);
+  const [hasLoadedOnce, setHasLoadedOnce] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
+  const refreshInFlightRef = useRef(false);
+
+  const [monthOffset, setMonthOffset] = useState(0);
+  const [filter, setFilter] = useState<TransactionFilter>('all');
+
+  const account = useMemo(
+    () => accounts.find((item) => item.id === id),
+    [accounts, id],
+  );
+
+  const accountsById = useMemo(
+    () => new Map(accounts.map((item) => [item.id, item])),
+    [accounts],
+  );
+
+  const categoriesById = useMemo(
+    () => new Map(categories.map((category) => [category.id, category.name])),
+    [categories],
+  );
+
+  const loadCategories = useCallback(async () => {
+    setCategoriesLoading(true);
+    setCategoriesError(null);
+
+    try {
+      const data = await getCategories();
+
+      setCategories(data);
+    } catch (error) {
+      setCategoriesError(
+        error instanceof Error
+          ? error.message
+          : 'Não foi possível carregar as categorias.',
+      );
+    } finally {
+      setCategoriesLoading(false);
+    }
+  }, []);
+
+  const refreshDetails = useCallback(async () => {
+    if (refreshInFlightRef.current) {
+      return;
+    }
+
+    refreshInFlightRef.current = true;
+    setRefreshing(true);
+
+    await Promise.allSettled([
+      refreshAccounts(),
+      refreshTransactions(),
+      loadCategories(),
+    ]);
+
+    refreshInFlightRef.current = false;
+    setRefreshing(false);
+    setHasLoadedOnce(true);
+  }, [loadCategories, refreshAccounts, refreshTransactions]);
+
+  useFocusEffect(
+    useCallback(() => {
+      void refreshDetails();
+    }, [refreshDetails]),
+  );
+
+  const selectedMonth = useMemo(() => {
+    const now = new Date();
+
+    return new Date(now.getFullYear(), now.getMonth() + monthOffset, 1);
+  }, [monthOffset]);
+
+  const monthKey = [
+    selectedMonth.getFullYear(),
+    String(selectedMonth.getMonth() + 1).padStart(2, '0'),
+  ].join('-');
+
+  const accountTransactions = useMemo<AccountTransaction[]>(
+    () =>
+      transactions
+        .filter(
+          (transaction) =>
+            transaction.accountId === id ||
+            transaction.destinationAccountId === id,
+        )
+        .map((transaction) => ({
+          transaction,
+          direction: getTransactionDirection(transaction, id),
+          dateKey: getLocalDateKey(transaction.timestamp),
+        }))
+        .sort((first, second) => {
+          const difference =
+            new Date(second.transaction.timestamp).getTime() -
+            new Date(first.transaction.timestamp).getTime();
+
+          if (Number.isNaN(difference) || difference === 0) {
+            return second.transaction.id.localeCompare(
+              first.transaction.id,
+            );
+          }
+
+          return difference;
+        }),
+    [id, transactions],
+  );
+
+  const monthTransactions = useMemo(
+    () =>
+      accountTransactions.filter((item) =>
+        item.dateKey.startsWith(monthKey),
+      ),
+    [accountTransactions, monthKey],
+  );
+
+  const summary = useMemo(() => {
+    let incomeCents = 0;
+    let expenseCents = 0;
+
+    for (const { transaction } of monthTransactions) {
+      if (
+        transaction.currency !== 'BRL' ||
+        transaction.accountId !== id
+      ) {
+        continue;
+      }
+
+      const cents = Math.round(transaction.amount * 100);
+
+      if (transaction.type === 'INCOME') {
+        incomeCents += cents;
+      } else if (transaction.type === 'EXPENSE') {
+        expenseCents += cents;
+      }
+    }
+
+    return {
+      income: incomeCents / 100,
+      expense: expenseCents / 100,
+    };
+  }, [id, monthTransactions]);
+
+  const filteredTransactions = useMemo(
+    () =>
+      monthTransactions.filter(({ transaction }) => {
+        if (filter === 'all') return true;
+        if (filter === 'income') return transaction.type === 'INCOME';
+        if (filter === 'expense') return transaction.type === 'EXPENSE';
+        return transaction.type === 'TRANSFER';
+      }),
+    [filter, monthTransactions],
+  );
+
+  const groupedTransactions = useMemo(() => {
+    const groups: {
+      dateKey: string;
+      items: AccountTransaction[];
+    }[] = [];
+
+    for (const item of filteredTransactions) {
+      const lastGroup = groups[groups.length - 1];
+
+      if (lastGroup?.dateKey === item.dateKey) {
+        lastGroup.items.push(item);
+      } else {
+        groups.push({
+          dateKey: item.dateKey,
+          items: [item],
+        });
+      }
+    }
+
+    return groups;
+  }, [filteredTransactions]);
+
+  const errorMessage =
+    accountsError ?? transactionsError ?? categoriesError;
+
+  const isInitialLoading =
+    !account && (accountsLoading || !hasLoadedOnce);
+
+  const isHistoryLoading =
+    (transactionsLoading || categoriesLoading) &&
+    accountTransactions.length === 0;
+
+  function changeMonth(offset: number) {
+    setMonthOffset((current) => Math.min(current + offset, 0));
+  }
 
   if (!account) {
-    return (
+    if (isInitialLoading) {
+      return (
         <SafeAreaView style={styles.safeArea} edges={['top']}>
           <Stack.Screen options={{ headerShown: false }} />
 
           <View style={styles.centeredContent}>
-            <Text style={styles.notFoundTitle}>Conta não encontrada</Text>
-            <Text style={styles.notFoundDescription}>
-              Essa conta pode ter sido removida ou não está mais disponível.
-            </Text>
-
-            <Pressable
-                accessibilityRole="button"
-                style={styles.primaryButton}
-                onPress={() => router.back()}
-            >
-              <Text style={styles.primaryButtonText}>Voltar</Text>
-            </Pressable>
+            <ActivityIndicator size="large" color={colors.primary} />
+            <Text style={styles.loadingText}>Carregando conta...</Text>
           </View>
         </SafeAreaView>
+      );
+    }
+
+    return (
+      <SafeAreaView style={styles.safeArea} edges={['top']}>
+        <Stack.Screen options={{ headerShown: false }} />
+
+        <View style={styles.centeredContent}>
+          <Text style={styles.notFoundTitle}>
+            {accountsError
+              ? 'Não foi possível carregar a conta'
+              : 'Conta não encontrada'}
+          </Text>
+          <Text style={styles.notFoundDescription}>
+            {accountsError ??
+              'Essa conta pode ter sido removida ou não está mais disponível.'}
+          </Text>
+
+          <Pressable
+            accessibilityRole="button"
+            style={styles.primaryButton}
+            onPress={() => router.back()}
+          >
+            <Text style={styles.primaryButtonText}>Voltar</Text>
+          </Pressable>
+
+          {accountsError ? (
+            <Pressable
+              accessibilityRole="button"
+              style={styles.secondaryButton}
+              onPress={() => void refreshDetails()}
+            >
+              <Text style={styles.secondaryButtonText}>
+                Tentar novamente
+              </Text>
+            </Pressable>
+          ) : null}
+        </View>
+      </SafeAreaView>
     );
   }
 
   const isActive = account.status === 'ACTIVE';
+  const statusLabel =
+    account.status === 'ACTIVE'
+      ? 'Conta ativa'
+      : account.status === 'DELETED'
+        ? 'Conta excluída'
+        : 'Conta inativa';
+  const movementCount = filteredTransactions.length;
+  const monthHasTransactions = monthTransactions.length > 0;
 
   return (
-      <SafeAreaView style={styles.safeArea} edges={['top']}>
-        <Stack.Screen options={{ headerShown: false }} />
+    <SafeAreaView style={styles.safeArea} edges={['top']}>
+      <Stack.Screen options={{ headerShown: false }} />
 
-        <ScrollView
-            contentContainerStyle={styles.content}
-            showsVerticalScrollIndicator={false}
+      <ScrollView
+        contentContainerStyle={styles.content}
+        showsVerticalScrollIndicator={false}
+      >
+        <Pressable
+          accessibilityRole="button"
+          style={styles.backButton}
+          onPress={() => router.back()}
         >
-          <Pressable
-              accessibilityRole="button"
-              style={styles.backButton}
-              onPress={() => router.back()}
+          <Text style={styles.backButtonText}>‹  Voltar para contas</Text>
+        </Pressable>
+
+        <Text style={styles.eyebrow}>finora / CONTAS</Text>
+
+        <View style={styles.heading}>
+          <View
+            style={[
+              styles.accountIcon,
+              !isActive && styles.accountIconInactive,
+            ]}
           >
-            <Text style={styles.backButtonText}>‹  Voltar para contas</Text>
+            <Text style={styles.accountIconText}>
+              {account.type === 'CHECKING' ? '▤' : '◫'}
+            </Text>
+          </View>
+
+          <View style={styles.headingText}>
+            <Text style={styles.title}>{account.name}</Text>
+            <Text style={styles.subtitle}>
+              {formatAccountType(account.type)}
+            </Text>
+          </View>
+        </View>
+
+        {errorMessage ? (
+          <View style={styles.feedbackBlock}>
+            <InlineFeedback
+              variant="error"
+              title="Não foi possível atualizar"
+              message={errorMessage}
+            />
+
+            <Pressable
+              accessibilityRole="button"
+              onPress={() => void refreshDetails()}
+              disabled={refreshing}
+              style={({ pressed }) => [
+                styles.retryButton,
+                pressed && styles.pressed,
+                refreshing && styles.disabled,
+              ]}
+            >
+              <Text style={styles.retryButtonText}>
+                {refreshing ? 'Atualizando...' : 'Tentar novamente'}
+              </Text>
+            </Pressable>
+          </View>
+        ) : null}
+
+        <View style={styles.balanceCard}>
+          <View style={styles.balanceHeader}>
+            <Text style={styles.balanceLabel}>Saldo atual</Text>
+
+            {refreshing ? (
+              <ActivityIndicator size="small" color="#D9E8E0" />
+            ) : null}
+          </View>
+
+          <Text
+            style={styles.balanceAmount}
+            numberOfLines={1}
+            adjustsFontSizeToFit
+            minimumFontScale={0.7}
+          >
+            {formatCurrency(account.balance)}
+          </Text>
+
+          <View
+            style={[
+              styles.statusBadge,
+              isActive ? styles.statusActive : styles.statusInactive,
+            ]}
+          >
+            <View
+              style={[
+                styles.statusDot,
+                !isActive && styles.statusDotInactive,
+              ]}
+            />
+            <Text
+              style={[
+                styles.statusText,
+                !isActive && styles.statusTextInactive,
+              ]}
+            >
+              {statusLabel}
+            </Text>
+          </View>
+        </View>
+
+        <View style={styles.sectionHeader}>
+          <Text style={styles.sectionTitle}>Resumo financeiro</Text>
+        </View>
+
+        <View style={styles.monthSelector}>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Mês anterior"
+            onPress={() => changeMonth(-1)}
+            style={({ pressed }) => [
+              styles.monthArrow,
+              pressed && styles.monthArrowPressed,
+            ]}
+          >
+            <Text style={styles.monthArrowText}>‹</Text>
           </Pressable>
 
-          <Text style={styles.eyebrow}>LEDGER / CONTAS</Text>
+          <Text style={styles.monthLabel}>{formatMonth(selectedMonth)}</Text>
 
-          <View style={styles.heading}>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Próximo mês"
+            accessibilityState={{ disabled: monthOffset === 0 }}
+            onPress={() => changeMonth(1)}
+            disabled={monthOffset === 0}
+            style={({ pressed }) => [
+              styles.monthArrow,
+              pressed && monthOffset !== 0 && styles.monthArrowPressed,
+              monthOffset === 0 && styles.disabled,
+            ]}
+          >
+            <Text style={styles.monthArrowText}>›</Text>
+          </Pressable>
+        </View>
+
+        <View style={styles.summaryRow}>
+          <View style={styles.summaryCard}>
             <View
-                style={[
-                  styles.accountIcon,
-                  !isActive && styles.accountIconInactive,
-                ]}
+              style={[
+                styles.summaryIcon,
+                { backgroundColor: colors.incomeBackground },
+              ]}
             >
-              <Text style={styles.accountIconText}>
-                {account.type === 'CHECKING' ? '▤' : '◫'}
-              </Text>
-            </View>
-
-            <View style={styles.headingText}>
-              <Text style={styles.title}>{account.name}</Text>
-              <Text style={styles.subtitle}>
-                {account.type === 'CHECKING' ? 'Conta corrente' : 'Poupança'}
-              </Text>
-            </View>
-          </View>
-
-          <View style={styles.balanceCard}>
-            <Text style={styles.balanceLabel}>Saldo atual</Text>
-            <Text style={styles.balanceAmount} adjustsFontSizeToFit>
-              {currencyFormatter.format(account.balance)}
-            </Text>
-
-            <View
-                style={[
-                  styles.statusBadge,
-                  isActive ? styles.statusActive : styles.statusInactive,
-                ]}
-            >
-              <View
-                  style={[
-                    styles.statusDot,
-                    !isActive && styles.statusDotInactive,
-                  ]}
-              />
               <Text
-                  style={[
-                    styles.statusText,
-                    !isActive && styles.statusTextInactive,
-                  ]}
+                style={[styles.summaryIconText, { color: colors.income }]}
               >
-                {isActive ? 'Conta ativa' : 'Conta inativa'}
-              </Text>
-            </View>
-          </View>
-
-          <Text style={styles.sectionTitle}>Informações da conta</Text>
-
-          <View style={styles.infoCard}>
-            <View style={styles.infoRow}>
-              <Text style={styles.infoLabel}>Nome</Text>
-              <Text style={styles.infoValue}>{account.name}</Text>
-            </View>
-
-            <View style={styles.divider} />
-
-            <View style={styles.infoRow}>
-              <Text style={styles.infoLabel}>Tipo</Text>
-              <Text style={styles.infoValue}>
-                {account.type === 'CHECKING' ? 'Conta corrente' : 'Poupança'}
+                ↙
               </Text>
             </View>
 
-            <View style={styles.divider} />
-
-            <View style={styles.infoRow}>
-              <Text style={styles.infoLabel}>Status</Text>
-              <Text style={styles.infoValue}>
-                {isActive ? 'Ativa' : 'Inativa'}
-              </Text>
-            </View>
-
-            <View style={styles.divider} />
-
-            <View style={styles.infoRow}>
-              <Text style={styles.infoLabel}>Identificador</Text>
-              <Text style={styles.idValue} selectable>
-                {account.id}
-              </Text>
-            </View>
-          </View>
-
-          <View style={styles.notice}>
-            <Text style={styles.noticeTitle}>Movimentações</Text>
-            <Text style={styles.noticeDescription}>
-              O histórico de receitas, despesas e transferências desta conta
-              será implementado em uma próxima etapa.
+            <Text style={styles.summaryLabel}>Receitas</Text>
+            <Text
+              style={[styles.summaryValue, { color: colors.income }]}
+              numberOfLines={1}
+              adjustsFontSizeToFit
+              minimumFontScale={0.7}
+            >
+              {formatCurrency(summary.income)}
             </Text>
           </View>
 
-          <Text style={styles.disclaimer}>
-            Os dados são mantidos em memória nesta versão de desenvolvimento.
+          <View style={styles.summaryCard}>
+            <View
+              style={[
+                styles.summaryIcon,
+                { backgroundColor: colors.expenseBackground },
+              ]}
+            >
+              <Text
+                style={[styles.summaryIconText, { color: colors.expense }]}
+              >
+                ↗
+              </Text>
+            </View>
+
+            <Text style={styles.summaryLabel}>Despesas</Text>
+            <Text
+              style={[styles.summaryValue, { color: colors.expense }]}
+              numberOfLines={1}
+              adjustsFontSizeToFit
+              minimumFontScale={0.7}
+            >
+              {formatCurrency(summary.expense)}
+            </Text>
+          </View>
+        </View>
+
+        <Text style={styles.summaryHint}>
+          Transferências não entram no resumo financeiro.
+        </Text>
+
+        <View style={styles.sectionHeader}>
+          <Text style={styles.sectionTitle}>Histórico</Text>
+          <Text style={styles.historyCount}>
+            {movementCount}{' '}
+            {movementCount === 1 ? 'movimentação' : 'movimentações'}
           </Text>
+        </View>
+
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.filters}
+        >
+          {FILTERS.map((item) => {
+            const selected = filter === item.value;
+
+            return (
+              <Pressable
+                key={item.value}
+                accessibilityRole="button"
+                accessibilityState={{ selected }}
+                onPress={() => setFilter(item.value)}
+                style={[
+                  styles.filterChip,
+                  selected && styles.filterChipSelected,
+                ]}
+              >
+                <Text
+                  style={[
+                    styles.filterText,
+                    selected && styles.filterTextSelected,
+                  ]}
+                >
+                  {item.label}
+                </Text>
+              </Pressable>
+            );
+          })}
         </ScrollView>
-      </SafeAreaView>
+
+        {isHistoryLoading ? (
+          <View style={styles.statusState}>
+            <ActivityIndicator size="large" color={colors.primary} />
+            <Text style={styles.emptyDescription}>
+              Carregando movimentações...
+            </Text>
+          </View>
+        ) : groupedTransactions.length === 0 ? (
+          <View style={styles.emptyCard}>
+            <Text style={styles.emptyTitle}>
+              {monthHasTransactions
+                ? 'Nenhuma movimentação para este filtro'
+                : 'Nenhuma movimentação neste mês'}
+            </Text>
+            <Text style={styles.emptyDescription}>
+              {monthHasTransactions
+                ? 'Tente selecionar outro tipo de movimentação.'
+                : 'Selecione outro mês ou registre uma nova transação na aba Transações.'}
+            </Text>
+          </View>
+        ) : (
+          groupedTransactions.map((group) => (
+            <View key={group.dateKey} style={styles.dateGroup}>
+              <Text style={styles.dateHeading}>
+                {formatDateHeading(group.dateKey)}
+              </Text>
+
+              <View style={styles.transactionsCard}>
+                {group.items.map((item, index) => {
+                  const { transaction, direction } = item;
+                  const palette = getTransactionPalette(
+                    transaction.type,
+                    direction,
+                  );
+                  const description =
+                    transaction.description?.trim() ||
+                    getDefaultDescription(transaction.type);
+                  const meta = getTransactionMeta(
+                    transaction,
+                    id,
+                    categoriesById,
+                    accountsById,
+                  );
+
+                  return (
+                    <View
+                      key={transaction.id}
+                      style={[
+                        styles.transactionRow,
+                        index < group.items.length - 1 &&
+                          styles.rowDivider,
+                      ]}
+                    >
+                      <View
+                        style={[
+                          styles.transactionIcon,
+                          { backgroundColor: palette.background },
+                        ]}
+                      >
+                        <Text
+                          style={[
+                            styles.transactionIconText,
+                            { color: palette.color },
+                          ]}
+                        >
+                          {palette.icon}
+                        </Text>
+                      </View>
+
+                      <View style={styles.transactionInfo}>
+                        <Text
+                          style={styles.transactionDescription}
+                          numberOfLines={1}
+                        >
+                          {description}
+                        </Text>
+                        <Text
+                          style={styles.transactionMeta}
+                          numberOfLines={1}
+                        >
+                          {meta}
+                        </Text>
+                      </View>
+
+                      <Text
+                        style={[
+                          styles.transactionAmount,
+                          { color: palette.color },
+                        ]}
+                        numberOfLines={1}
+                        adjustsFontSizeToFit
+                        minimumFontScale={0.7}
+                      >
+                        {palette.prefix}
+                        {formatCurrency(
+                          transaction.amount,
+                          transaction.currency,
+                        )}
+                      </Text>
+                    </View>
+                  );
+                })}
+              </View>
+            </View>
+          ))
+        )}
+
+        <Text style={styles.disclaimer}>
+          Dados carregados da API da Finora. Transferências são exibidas
+          conforme a conta de origem e destino.
+        </Text>
+      </ScrollView>
+    </SafeAreaView>
   );
 }
 
@@ -197,6 +840,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     padding: 28,
+    gap: 12,
+  },
+  loadingText: {
+    color: colors.secondary,
+    fontSize: 13,
   },
   backButton: {
     alignSelf: 'flex-start',
@@ -251,24 +899,46 @@ const styles = StyleSheet.create({
     fontSize: 14,
     marginTop: 5,
   },
+  feedbackBlock: {
+    marginBottom: 18,
+  },
+  retryButton: {
+    alignSelf: 'flex-start',
+    marginTop: 10,
+    borderWidth: 1,
+    borderColor: colors.primary,
+    borderRadius: 10,
+    paddingHorizontal: 14,
+    paddingVertical: 9,
+  },
+  retryButtonText: {
+    color: colors.primary,
+    fontSize: 12,
+    fontWeight: '700',
+  },
   balanceCard: {
     backgroundColor: colors.primary,
-    borderRadius: 20,
-    padding: 23,
-    marginBottom: 30,
+    borderRadius: 22,
+    padding: 22,
+  },
+  balanceHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
   },
   balanceLabel: {
-    color: '#E0EEE7',
+    color: '#D9E8E0',
     fontSize: 13,
-    fontWeight: '500',
+    fontWeight: '600',
   },
   balanceAmount: {
     color: '#FFFFFF',
-    fontSize: 32,
-    fontWeight: '700',
+    fontSize: 34,
+    fontWeight: '800',
     letterSpacing: -0.7,
-    marginTop: 12,
+    marginTop: 14,
     marginBottom: 18,
+    fontVariant: ['tabular-nums'],
   },
   statusBadge: {
     flexDirection: 'row',
@@ -283,7 +953,7 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(255,255,255,0.14)',
   },
   statusInactive: {
-    backgroundColor: '#F3E4E2',
+    backgroundColor: colors.dangerLight,
   },
   statusDot: {
     width: 7,
@@ -302,63 +972,207 @@ const styles = StyleSheet.create({
   statusTextInactive: {
     color: colors.danger,
   },
+  sectionHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginTop: 26,
+    marginBottom: 12,
+  },
   sectionTitle: {
     color: colors.text,
-    fontSize: 17,
-    fontWeight: '700',
-    marginBottom: 14,
+    fontSize: 18,
+    fontWeight: '800',
   },
-  infoCard: {
-    backgroundColor: colors.surface,
-    borderColor: colors.border,
-    borderWidth: 1,
-    borderRadius: 17,
-    paddingHorizontal: 17,
-  },
-  infoRow: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    justifyContent: 'space-between',
-    gap: 16,
-    paddingVertical: 16,
-  },
-  infoLabel: {
-    color: colors.secondary,
-    fontSize: 13,
-  },
-  infoValue: {
-    flex: 1,
-    color: colors.text,
-    fontSize: 13,
-    fontWeight: '600',
-    textAlign: 'right',
-  },
-  idValue: {
-    flex: 1,
+  historyCount: {
     color: colors.secondary,
     fontSize: 11,
-    textAlign: 'right',
+    fontWeight: '600',
   },
-  divider: {
-    height: 1,
-    backgroundColor: colors.border,
+  monthSelector: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: colors.surface,
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: colors.border,
+    paddingHorizontal: 8,
+    paddingVertical: 6,
+    marginBottom: 12,
   },
-  notice: {
+  monthArrow: {
+    width: 38,
+    height: 38,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  monthArrowPressed: {
     backgroundColor: colors.primaryLight,
-    borderRadius: 16,
-    padding: 18,
-    marginTop: 22,
   },
-  noticeTitle: {
+  monthArrowText: {
     color: colors.primary,
+    fontSize: 24,
+    lineHeight: 26,
+    fontWeight: '600',
+  },
+  monthLabel: {
+    flex: 1,
+    textAlign: 'center',
+    color: colors.text,
+    fontSize: 13,
+    fontWeight: '700',
+  },
+  summaryRow: {
+    flexDirection: 'row',
+    gap: 12,
+  },
+  summaryCard: {
+    flex: 1,
+    minWidth: 0,
+    backgroundColor: colors.surface,
+    borderRadius: 18,
+    borderWidth: 1,
+    borderColor: colors.border,
+    padding: 16,
+  },
+  summaryIcon: {
+    width: 34,
+    height: 34,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 12,
+  },
+  summaryIconText: {
+    fontSize: 18,
+    fontWeight: '700',
+  },
+  summaryLabel: {
+    color: colors.secondary,
+    fontSize: 12,
+    fontWeight: '600',
+  },
+  summaryValue: {
+    marginTop: 6,
+    fontSize: 16,
+    fontWeight: '800',
+    fontVariant: ['tabular-nums'],
+  },
+  summaryHint: {
+    color: colors.secondary,
+    fontSize: 11,
+    marginTop: 10,
+  },
+  filters: {
+    gap: 8,
+    paddingBottom: 16,
+  },
+  filterChip: {
+    borderRadius: 999,
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: colors.surface,
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+  },
+  filterChipSelected: {
+    backgroundColor: colors.primary,
+    borderColor: colors.primary,
+  },
+  filterText: {
+    color: colors.secondary,
+    fontSize: 12,
+    fontWeight: '600',
+  },
+  filterTextSelected: {
+    color: '#FFFFFF',
+  },
+  dateGroup: {
+    marginBottom: 18,
+  },
+  dateHeading: {
+    color: colors.secondary,
+    fontSize: 12,
+    fontWeight: '700',
+    marginBottom: 8,
+    marginLeft: 2,
+  },
+  transactionsCard: {
+    backgroundColor: colors.surface,
+    borderRadius: 18,
+    borderWidth: 1,
+    borderColor: colors.border,
+    paddingHorizontal: 14,
+  },
+  transactionRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 14,
+  },
+  rowDivider: {
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
+  },
+  transactionIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: 13,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 12,
+  },
+  transactionIconText: {
+    fontSize: 18,
+    fontWeight: '700',
+  },
+  transactionInfo: {
+    flex: 1,
+    minWidth: 0,
+  },
+  transactionDescription: {
+    color: colors.text,
     fontSize: 14,
     fontWeight: '700',
   },
-  noticeDescription: {
+  transactionMeta: {
+    color: colors.secondary,
+    fontSize: 11,
+    marginTop: 4,
+  },
+  transactionAmount: {
+    marginLeft: 10,
+    fontSize: 12,
+    fontWeight: '800',
+    fontVariant: ['tabular-nums'],
+  },
+  statusState: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 10,
+    paddingVertical: 32,
+  },
+  emptyCard: {
+    backgroundColor: colors.surface,
+    borderRadius: 18,
+    borderWidth: 1,
+    borderColor: colors.border,
+    padding: 20,
+    alignItems: 'center',
+  },
+  emptyTitle: {
     color: colors.text,
-    fontSize: 13,
-    lineHeight: 20,
-    marginTop: 7,
+    fontSize: 14,
+    fontWeight: '700',
+    textAlign: 'center',
+  },
+  emptyDescription: {
+    color: colors.secondary,
+    fontSize: 12,
+    lineHeight: 18,
+    textAlign: 'center',
+    marginTop: 6,
   },
   disclaimer: {
     color: colors.secondary,
@@ -378,8 +1192,7 @@ const styles = StyleSheet.create({
     fontSize: 14,
     lineHeight: 21,
     textAlign: 'center',
-    marginTop: 10,
-    marginBottom: 22,
+    marginBottom: 8,
   },
   primaryButton: {
     backgroundColor: colors.primary,
@@ -391,5 +1204,23 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     fontSize: 13,
     fontWeight: '700',
+  },
+  secondaryButton: {
+    borderWidth: 1,
+    borderColor: colors.primary,
+    borderRadius: 12,
+    paddingHorizontal: 18,
+    paddingVertical: 11,
+  },
+  secondaryButtonText: {
+    color: colors.primary,
+    fontSize: 12,
+    fontWeight: '700',
+  },
+  pressed: {
+    opacity: 0.75,
+  },
+  disabled: {
+    opacity: 0.4,
   },
 });

@@ -1,6 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
-  Alert,
   KeyboardAvoidingView,
   Modal,
   Platform,
@@ -13,6 +12,9 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { ConfirmDialog } from '@/components/feedback/confirm-dialog';
+import { InlineFeedback } from '@/components/feedback/inline-feedback';
+import { useFeedback } from '@/contexts/feedback-context';
 import {
   createCategory,
   deleteCategory,
@@ -43,6 +45,8 @@ const emptyForm: CategoryForm = {
 };
 
 export default function CategoriesScreen() {
+  const { showToast } = useFeedback();
+
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState('');
@@ -64,6 +68,7 @@ export default function CategoriesScreen() {
   const [deletingCategoryId, setDeletingCategoryId] = useState<string | null>(
       null,
   );
+  const [deleteError, setDeleteError] = useState('');
 
   const loadCategories = useCallback(async () => {
     setLoading(true);
@@ -98,17 +103,9 @@ export default function CategoriesScreen() {
     );
   }, [categories, search]);
 
-  const editingCategory = editingCategoryId
-      ? categories.find((category) => category.id === editingCategoryId)
-      : undefined;
-
   const deletingCategory = deletingCategoryId
       ? categories.find((category) => category.id === deletingCategoryId)
       : undefined;
-
-  function showError(title: string, message: string) {
-    Alert.alert(title, message);
-  }
 
   function openCreateForm() {
     if (actionsDisabled || mutationInProgressRef.current) {
@@ -165,6 +162,8 @@ export default function CategoriesScreen() {
       return;
     }
 
+    const isEditing = Boolean(editingCategoryId);
+
     mutationInProgressRef.current = true;
     setSaving(true);
     setFormError('');
@@ -182,6 +181,14 @@ export default function CategoriesScreen() {
       setSearch('');
 
       await loadCategories();
+
+      showToast({
+        variant: 'success',
+        title: isEditing ? 'Categoria atualizada' : 'Categoria criada',
+        message: isEditing
+            ? 'As alterações foram salvas.'
+            : 'A categoria já está disponível para uso.',
+      });
     } catch (error) {
       setFormError(
           error instanceof Error
@@ -194,6 +201,15 @@ export default function CategoriesScreen() {
     }
   }
 
+  function openDeletionModal(category: Category) {
+    if (actionsDisabled || mutationInProgressRef.current) {
+      return;
+    }
+
+    setDeleteError('');
+    setDeletingCategoryId(category.id);
+  }
+
   async function confirmDeletion() {
     if (!deletingCategoryId || mutationInProgressRef.current || loading) {
       return;
@@ -203,6 +219,7 @@ export default function CategoriesScreen() {
 
     mutationInProgressRef.current = true;
     setDeleting(true);
+    setDeleteError('');
 
     try {
       await deleteCategory(categoryId);
@@ -212,12 +229,17 @@ export default function CategoriesScreen() {
       );
 
       await loadCategories();
+
+      showToast({
+        variant: 'success',
+        title: 'Categoria excluída',
+        message: 'A categoria foi removida com sucesso.',
+      });
     } catch (error) {
-      showError(
-          'Não foi possível excluir a categoria',
+      setDeleteError(
           error instanceof Error
               ? error.message
-              : 'Ocorreu um erro. Tente novamente.',
+              : 'Não foi possível excluir a categoria. Tente novamente.',
       );
     } finally {
       mutationInProgressRef.current = false;
@@ -226,7 +248,12 @@ export default function CategoriesScreen() {
   }
 
   function closeDeletionModal() {
+    if (deleting) {
+      return;
+    }
+
     setDeletingCategoryId(null);
+    setDeleteError('');
   }
 
   return (
@@ -236,7 +263,7 @@ export default function CategoriesScreen() {
             showsVerticalScrollIndicator={false}
             keyboardShouldPersistTaps="handled"
         >
-          <Text style={styles.eyebrow}>LEDGER</Text>
+          <Text style={styles.eyebrow}>finora</Text>
 
           <View style={styles.titleRow}>
             <View style={styles.titleContainer}>
@@ -372,7 +399,7 @@ export default function CategoriesScreen() {
                                 styles.deleteButton,
                                 actionsDisabled && styles.disabledButton,
                               ]}
-                              onPress={() => setDeletingCategoryId(category.id)}
+                              onPress={() => openDeletionModal(category)}
                               disabled={actionsDisabled}
                           >
                             <Text style={styles.deleteButtonText}>Excluir</Text>
@@ -415,7 +442,7 @@ export default function CategoriesScreen() {
           )}
 
           <Text style={styles.disclaimer}>
-            As categorias são carregadas do backend do Ledger.
+            As categorias são carregadas do backend da Finora.
           </Text>
         </ScrollView>
 
@@ -474,9 +501,11 @@ export default function CategoriesScreen() {
               />
 
               {formError ? (
-                  <Text accessibilityRole="alert" style={styles.formError}>
-                    {formError}
-                  </Text>
+                  <InlineFeedback
+                      message={formError}
+                      variant="error"
+                      style={styles.formFeedback}
+                  />
               ) : null}
 
               <View style={styles.modalActions}>
@@ -515,56 +544,21 @@ export default function CategoriesScreen() {
           </KeyboardAvoidingView>
         </Modal>
 
-        <Modal
+        <ConfirmDialog
             visible={Boolean(deletingCategory)}
-            transparent
-            animationType="fade"
-            onRequestClose={closeDeletionModal}
-        >
-          <View style={styles.modalOverlay}>
-            <View style={styles.confirmCard}>
-              <View style={styles.confirmIcon}>
-                <Text style={styles.confirmIconText}>!</Text>
-              </View>
-
-              <Text style={styles.confirmTitle}>Excluir categoria?</Text>
-
-              <Text style={styles.confirmDescription}>
-                {deletingCategory
-                    ? `Deseja excluir a categoria "${deletingCategory.name}"? Essa ação não poderá ser desfeita.`
-                    : ''}
-              </Text>
-
-              <View style={styles.modalActions}>
-                <Pressable
-                    accessibilityRole="button"
-                    style={styles.cancelButton}
-                    onPress={closeDeletionModal}
-                >
-                  <Text style={styles.cancelButtonText}>Cancelar</Text>
-                </Pressable>
-
-                <Pressable
-                    accessibilityRole="button"
-                    accessibilityState={{
-                      disabled: deleting,
-                      busy: deleting,
-                    }}
-                    style={[
-                      styles.dangerConfirmButton,
-                      deleting && styles.disabledButton,
-                    ]}
-                    onPress={() => void confirmDeletion()}
-                    disabled={deleting}
-                >
-                  <Text style={styles.dangerConfirmButtonText}>
-                    {deleting ? 'Excluindo...' : 'Excluir'}
-                  </Text>
-                </Pressable>
-              </View>
-            </View>
-          </View>
-        </Modal>
+            title="Excluir categoria?"
+            message={
+              deletingCategory
+                  ? `Deseja excluir a categoria "${deletingCategory.name}"? Essa ação não poderá ser desfeita.`
+                  : ''
+            }
+            confirmLabel="Excluir"
+            tone="danger"
+            loading={deleting}
+            error={deleteError}
+            onConfirm={() => void confirmDeletion()}
+            onCancel={closeDeletionModal}
+        />
       </SafeAreaView>
   );
 }
@@ -910,10 +904,7 @@ const styles = StyleSheet.create({
     fontSize: 14,
     marginBottom: 18,
   },
-  formError: {
-    color: colors.danger,
-    fontSize: 12,
-    lineHeight: 17,
+  formFeedback: {
     marginBottom: 14,
   },
   modalActions: {
@@ -951,53 +942,5 @@ const styles = StyleSheet.create({
   },
   disabledButton: {
     opacity: 0.6,
-  },
-  confirmCard: {
-    width: '100%',
-    maxWidth: 400,
-    alignItems: 'center',
-    backgroundColor: colors.surface,
-    borderRadius: 22,
-    padding: 24,
-  },
-  confirmIcon: {
-    width: 48,
-    height: 48,
-    borderRadius: 16,
-    backgroundColor: colors.dangerLight,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 16,
-  },
-  confirmIconText: {
-    color: colors.danger,
-    fontSize: 24,
-    fontWeight: '700',
-  },
-  confirmTitle: {
-    color: colors.text,
-    fontSize: 19,
-    fontWeight: '700',
-    textAlign: 'center',
-  },
-  confirmDescription: {
-    color: colors.secondary,
-    fontSize: 13,
-    lineHeight: 20,
-    textAlign: 'center',
-    marginTop: 10,
-  },
-  dangerConfirmButton: {
-    backgroundColor: colors.danger,
-    borderRadius: 11,
-    paddingHorizontal: 16,
-    paddingVertical: 11,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  dangerConfirmButtonText: {
-    color: '#FFFFFF',
-    fontSize: 12,
-    fontWeight: '700',
   },
 });

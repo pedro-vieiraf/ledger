@@ -26,9 +26,11 @@ import {
   getCategories,
   type Category,
 } from '@/services/categories-api';
+import { CurrencyInput } from '@/components/currency-input';
+import { InlineFeedback } from '@/components/feedback/inline-feedback';
 import { useAccounts } from '@/contexts/accounts-context';
+import { useFeedback } from '@/contexts/feedback-context';
 import { useTransactions } from '@/contexts/transactions-context';
-import { showAlert } from '@/utils/confirm-action';
 import { createUuid } from '@/utils/uuid';
 
 type FormType = TransactionType;
@@ -46,27 +48,6 @@ const COLORS = {
   expense: '#B5473C',
 };
 
-function parseAmount(value: string): number | null {
-  const normalized = value
-    .trim()
-    .replace(/\s/g, '')
-    .replace(/R\$/gi, '')
-    .replace(/\.(?=\d{3}(?:\D|$))/g, '')
-    .replace(',', '.');
-
-  if (!normalized || !/^\d+(\.\d{1,2})?$/.test(normalized)) {
-    return null;
-  }
-
-  const amount = Number(normalized);
-
-  if (!Number.isFinite(amount) || amount <= 0) {
-    return null;
-  }
-
-  return Math.round(amount * 100) / 100;
-}
-
 function formatMoney(value: number): string {
   return value.toLocaleString('pt-BR', {
     style: 'currency',
@@ -74,8 +55,15 @@ function formatMoney(value: number): string {
   });
 }
 
+type FormFeedback = {
+  variant: 'error' | 'warning';
+  title: string;
+  message: string;
+};
+
 export default function NewTransactionScreen() {
   const router = useRouter();
+  const { showToast } = useFeedback();
   const { createTransaction, refreshTransactions } = useTransactions();
   const { refreshAccounts } = useAccounts();
 
@@ -88,7 +76,7 @@ export default function NewTransactionScreen() {
   const submissionsRef = useRef<Map<string, string>>(new Map());
 
   const [type, setType] = useState<FormType>('EXPENSE');
-  const [amount, setAmount] = useState('');
+  const [amount, setAmount] = useState(0);
   const [description, setDescription] = useState('');
   const [accountId, setAccountId] = useState('');
   const [destinationAccountId, setDestinationAccountId] = useState('');
@@ -100,6 +88,7 @@ export default function NewTransactionScreen() {
   const [loadingOptions, setLoadingOptions] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
+  const [formFeedback, setFormFeedback] = useState<FormFeedback | null>(null);
 
   const activeAccounts = useMemo(
     () => accounts.filter((account) => account.status === 'ACTIVE'),
@@ -172,6 +161,7 @@ export default function NewTransactionScreen() {
   }, []);
 
   function changeType(nextType: FormType) {
+    setFormFeedback(null);
     setType(nextType);
 
     if (nextType === 'TRANSFER') {
@@ -182,12 +172,8 @@ export default function NewTransactionScreen() {
   }
 
   function validateForm(): string | null {
-    if (!amount.trim()) {
-      return 'Informe o valor da transação.';
-    }
-
-    if (parseAmount(amount) === null) {
-      return 'Informe um valor maior que zero, com no máximo duas casas decimais.';
+    if (!Number.isFinite(amount) || amount <= 0) {
+      return 'Informe um valor maior que zero.';
     }
 
     if (!accountId || !selectedAccount) {
@@ -235,24 +221,25 @@ export default function NewTransactionScreen() {
       return;
     }
 
+    setFormFeedback(null);
+
     if (loadError) {
-      showAlert(
-        'Dados indisponíveis',
-        'Tente carregar as contas e categorias novamente.',
-      );
+      setFormFeedback({
+        variant: 'warning',
+        title: 'Dados indisponíveis',
+        message: 'Tente carregar as contas e categorias novamente.',
+      });
       return;
     }
 
     const validationError = validateForm();
 
     if (validationError) {
-      showAlert('Confira os dados', validationError);
-      return;
-    }
-
-    const parsedAmount = parseAmount(amount);
-
-    if (parsedAmount === null) {
+      setFormFeedback({
+        variant: 'error',
+        title: 'Confira os dados',
+        message: validationError,
+      });
       return;
     }
 
@@ -261,7 +248,7 @@ export default function NewTransactionScreen() {
     const input: CreateTransactionInput =
       type === 'TRANSFER'
         ? {
-            amount: parsedAmount,
+            amount,
             currency: 'BRL',
             type,
             description: normalizedDescription || null,
@@ -269,7 +256,7 @@ export default function NewTransactionScreen() {
             destinationAccountId,
           }
         : {
-            amount: parsedAmount,
+            amount,
             currency: 'BRL',
             type,
             description: normalizedDescription || null,
@@ -299,15 +286,23 @@ export default function NewTransactionScreen() {
 
       submissionsRef.current.delete(payload);
 
-      // O sucesso só é considerado após a API responder sem erro.
-      // Volta imediatamente, sem esperar pelo botão OK de um alerta.
+      showToast({
+        variant: 'success',
+        title: 'Transação salva',
+        message: 'O saldo foi atualizado pelo servidor.',
+      });
+
       router.back();
     } catch (error) {
       if (error instanceof ApiError && error.status < 500) {
         // O servidor recusou a requisição; não houve criação.
         submissionsRef.current.delete(payload);
 
-        showAlert('Não foi possível salvar', error.message);
+        setFormFeedback({
+          variant: 'error',
+          title: 'Não foi possível salvar',
+          message: error.message,
+        });
 
         return;
       }
@@ -318,32 +313,41 @@ export default function NewTransactionScreen() {
         if (created === true) {
           submissionsRef.current.delete(payload);
           await refreshAfterRecovery();
+
+          showToast({
+            variant: 'success',
+            title: 'Transação salva',
+            message: 'O saldo foi atualizado pelo servidor.',
+          });
+
           router.back();
 
           return;
         }
 
-        showAlert(
-          'Envio não confirmado',
-          created === false
+        setFormFeedback({
+          variant: 'warning',
+          title: 'Envio não confirmado',
+          message: created === false
             ? 'A transação ainda não aparece no histórico. Tente ' +
               'novamente; o reenvio é seguro e não vai duplicar o ' +
               'lançamento.'
             : 'Não foi possível confirmar se a transação foi registrada. ' +
               'Verifique o histórico antes de tentar novamente. ' +
               'Se tentar de novo, o reenvio é seguro e não vai duplicar.',
-        );
+        });
 
         return;
       }
 
       // Erros inesperados mantêm o id para que a nova tentativa seja segura.
-      showAlert(
-        'Não foi possível salvar',
-        error instanceof Error
+      setFormFeedback({
+        variant: 'error',
+        title: 'Não foi possível salvar',
+        message: error instanceof Error
           ? error.message
           : 'Ocorreu um erro ao criar a transação.',
-      );
+      });
     } finally {
       submitLock.current = false;
       setSubmitting(false);
@@ -443,22 +447,19 @@ export default function NewTransactionScreen() {
 
           <View style={styles.amountContainer}>
             <Text style={styles.currencyPrefix}>R$</Text>
-            <TextInput
+            <CurrencyInput
               accessibilityLabel="Valor da transação em reais"
               value={amount}
-              onChangeText={setAmount}
-              placeholder="0,00"
-              placeholderTextColor="#A0A8A0"
-              keyboardType="decimal-pad"
+              onChangeValue={setAmount}
+              showCurrencySymbol={false}
               style={styles.amountInput}
               editable={!submitting}
-              maxLength={15}
             />
           </View>
 
           <Text style={styles.helperText}>
-            {amount && parseAmount(amount) !== null
-              ? formatMoney(parseAmount(amount)!)
+            {amount > 0
+              ? formatMoney(amount)
               : 'Informe o valor em reais.'}
           </Text>
 
@@ -569,6 +570,15 @@ export default function NewTransactionScreen() {
               receita nem despesa no resumo financeiro.
             </Text>
           </View>
+
+          {formFeedback ? (
+            <InlineFeedback
+              variant={formFeedback.variant}
+              title={formFeedback.title}
+              message={formFeedback.message}
+              style={styles.formFeedback}
+            />
+          ) : null}
 
           <Pressable
             accessibilityRole="button"
@@ -985,8 +995,11 @@ const styles = StyleSheet.create({
     lineHeight: 19,
     color: COLORS.secondary,
   },
-  primaryButton: {
+  formFeedback: {
     marginTop: 22,
+  },
+  primaryButton: {
+    marginTop: 14,
     minHeight: 52,
     borderRadius: 14,
     backgroundColor: COLORS.primary,
