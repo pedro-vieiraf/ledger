@@ -34,6 +34,16 @@ Run lint and typecheck before declaring any task done.
 Use EAS to build, sign, and submit the app in the cloud (`eas build`, `eas submit`) and to ship over-the-air updates (`eas update`) — no local Xcode or Android Studio required. Run EAS CLI as `bunx eas-cli <command>` in Bun projects, or `npx eas-cli@latest <command>` otherwise; substitute that for bare `eas` in docs examples.
 Docs: https://docs.expo.dev/eas/index.md
 
+## Diretrizes visuais
+
+Padrão permanente para todo o frontend da Finora:
+
+- **Sem emojis na interface.** Emojis e glifos tipográficos não são elementos visuais válidos.
+- Use ícones vetoriais profissionais da biblioteca já instalada e adotada no Dashboard: `expo-symbols` (`SymbolView`), com nome por plataforma (`ios`, `android`, `web`). Não adicione outra biblioteca de ícones sem justificativa.
+- Mantenha consistência de estilo, espessura, tamanho e alinhamento entre os ícones da mesma tela.
+- Use sempre a tipografia do design system (`Fonts` em `src/constants/theme.ts`; no desktop, `desktopFont`) em todos os componentes, inclusive inputs numéricos, datas e horários.
+- Não use fontes decorativas ou estilizadas em campos de formulário. Em inputs nativos da web (`type="date"`/`type="time"`), defina a família explicitamente e use `fontVariantNumeric: 'tabular-nums'` para alinhar os números.
+
 ## Rules
 
 - If `ios/` and `android/` directories do not exist, they are generated (Continuous Native Generation). Never create or edit them by hand — configure native behavior in `app.json` and config plugins.
