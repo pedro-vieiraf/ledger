@@ -6,6 +6,7 @@ import com.pedro.ledger.domain.account.AccountInactiveException;
 import com.pedro.ledger.domain.account.AccountNotFoundException;
 import com.pedro.ledger.domain.account.AccountNotInactiveException;
 import com.pedro.ledger.domain.category.CategoryNotFoundException;
+import com.pedro.ledger.domain.recurrence.RecurrenceNotFoundException;
 import com.pedro.ledger.domain.transaction.TransactionNotFoundException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -63,6 +64,20 @@ public class GlobalExceptionHandler {
       TransactionNotFoundException exception
   ) {
     return ResponseEntity.notFound().build();
+  }
+
+  @ExceptionHandler(RecurrenceNotFoundException.class)
+  public ResponseEntity<Void> handleRecurrenceNotFound(
+      RecurrenceNotFoundException exception
+  ) {
+    return ResponseEntity.notFound().build();
+  }
+
+  @ExceptionHandler(IllegalStateException.class)
+  public ResponseEntity<Void> handleIllegalState(
+      IllegalStateException exception
+  ) {
+    return ResponseEntity.status(HttpStatus.CONFLICT).build();
   }
 
   @ExceptionHandler(MethodArgumentNotValidException.class)

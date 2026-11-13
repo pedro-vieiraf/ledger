@@ -8,3 +8,18 @@ ALTER TABLE IF EXISTS accounts
 ALTER TABLE IF EXISTS accounts
   ADD CONSTRAINT accounts_status_check
   CHECK (status IN ('ACTIVE', 'INACTIVE', 'DELETED'));
+
+-- Recurrence support. Hibernate creates the tables and columns from the
+-- entities; these idempotent statements keep existing databases in sync and
+-- add the indexes used by the scheduler and by idempotency checks.
+ALTER TABLE IF EXISTS transactions
+  ADD COLUMN IF NOT EXISTS recurrence_id UUID;
+
+ALTER TABLE IF EXISTS transactions
+  ADD COLUMN IF NOT EXISTS occurrence_date DATE;
+
+CREATE UNIQUE INDEX IF NOT EXISTS uk_transactions_recurrence_occurrence
+  ON transactions (recurrence_id, occurrence_date);
+
+CREATE INDEX IF NOT EXISTS idx_recurrences_due
+  ON recurrences (status, next_occurrence);

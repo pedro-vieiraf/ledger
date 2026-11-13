@@ -2,6 +2,7 @@ package com.pedro.ledger.domain.transaction;
 
 import com.pedro.ledger.domain.money.Money;
 import java.time.Instant;
+import java.time.LocalDate;
 import java.util.UUID;
 
 /**
@@ -19,6 +20,8 @@ public class Transaction {
   private final UUID accountId;
   private final UUID destinationAccountId;
   private UUID categoryId;
+  private final UUID recurrenceId;
+  private final LocalDate occurrenceDate;
 
   private Transaction(
       UUID id,
@@ -30,7 +33,9 @@ public class Transaction {
       TransactionSource source,
       UUID accountId,
       UUID destinationAccountId,
-      UUID categoryId
+      UUID categoryId,
+      UUID recurrenceId,
+      LocalDate occurrenceDate
   ) {
     this.id = id;
     this.amount = amount;
@@ -42,6 +47,8 @@ public class Transaction {
     this.accountId = accountId;
     this.destinationAccountId = destinationAccountId;
     this.categoryId = categoryId;
+    this.recurrenceId = recurrenceId;
+    this.occurrenceDate = occurrenceDate;
   }
 
   /**
@@ -115,6 +122,100 @@ public class Transaction {
       UUID destinationAccountId,
       UUID categoryId
   ) {
+    return createWithId(
+        id,
+        amount,
+        type,
+        description,
+        timestamp,
+        source,
+        accountId,
+        destinationAccountId,
+        categoryId,
+        null,
+        null
+    );
+  }
+
+  /**
+   * Creates a transaction linked to a recurrence occurrence.
+   *
+   * @param id transaction identifier
+   * @param amount transaction amount
+   * @param type transaction type
+   * @param description optional transaction description
+   * @param timestamp transaction timestamp
+   * @param source transaction source
+   * @param accountId identifier of the source account
+   * @param destinationAccountId destination account identifier
+   * @param categoryId category identifier
+   * @param recurrenceId recurrence that generated the transaction
+   * @param occurrenceDate recurrence occurrence date
+   * @return a new transaction linked to the recurrence occurrence
+   */
+  public static Transaction createRecurring(
+      UUID id,
+      Money amount,
+      TransactionType type,
+      String description,
+      Instant timestamp,
+      TransactionSource source,
+      UUID accountId,
+      UUID destinationAccountId,
+      UUID categoryId,
+      UUID recurrenceId,
+      LocalDate occurrenceDate
+  ) {
+    if (recurrenceId == null || occurrenceDate == null) {
+      throw new IllegalArgumentException(
+          "Recurring transaction requires a recurrence and occurrence date"
+      );
+    }
+
+    return createWithId(
+        id,
+        amount,
+        type,
+        description,
+        timestamp,
+        source,
+        accountId,
+        destinationAccountId,
+        categoryId,
+        recurrenceId,
+        occurrenceDate
+    );
+  }
+
+  /**
+   * Creates a transaction, optionally linked to a recurrence occurrence.
+   *
+   * @param id transaction identifier
+   * @param amount transaction amount
+   * @param type transaction type
+   * @param description optional transaction description
+   * @param timestamp transaction timestamp
+   * @param source transaction source
+   * @param accountId identifier of the source account
+   * @param destinationAccountId destination account identifier
+   * @param categoryId category identifier
+   * @param recurrenceId recurrence identifier, or null
+   * @param occurrenceDate occurrence date, or null
+   * @return a new transaction
+   */
+  public static Transaction createWithId(
+      UUID id,
+      Money amount,
+      TransactionType type,
+      String description,
+      Instant timestamp,
+      TransactionSource source,
+      UUID accountId,
+      UUID destinationAccountId,
+      UUID categoryId,
+      UUID recurrenceId,
+      LocalDate occurrenceDate
+  ) {
     validateId(id);
     validateAmount(amount);
     validateType(type);
@@ -124,6 +225,7 @@ public class Transaction {
     validateDestinationAccount(type, destinationAccountId);
     validateDifferentAccounts(type, accountId, destinationAccountId);
     validateCategory(type, categoryId);
+    validateRecurrenceLink(recurrenceId, occurrenceDate);
 
     return new Transaction(
         id,
@@ -135,7 +237,9 @@ public class Transaction {
         source,
         accountId,
         destinationAccountId,
-        categoryId
+        categoryId,
+        recurrenceId,
+        occurrenceDate
     );
   }
 
@@ -169,6 +273,53 @@ public class Transaction {
       UUID destinationAccountId,
       UUID categoryId
   ) {
+    return restore(
+        id,
+        amount,
+        type,
+        status,
+        description,
+        timestamp,
+        source,
+        accountId,
+        destinationAccountId,
+        categoryId,
+        null,
+        null
+    );
+  }
+
+  /**
+   * Restores an existing transaction linked to a recurrence occurrence.
+   *
+   * @param id existing transaction identifier
+   * @param amount transaction amount
+   * @param type transaction type
+   * @param status transaction status
+   * @param description optional transaction description
+   * @param timestamp transaction timestamp
+   * @param source transaction source
+   * @param accountId identifier of the source account
+   * @param destinationAccountId destination account identifier
+   * @param categoryId category identifier
+   * @param recurrenceId recurrence identifier, or null
+   * @param occurrenceDate occurrence date, or null
+   * @return a restored transaction
+   */
+  public static Transaction restore(
+      UUID id,
+      Money amount,
+      TransactionType type,
+      TransactionStatus status,
+      String description,
+      Instant timestamp,
+      TransactionSource source,
+      UUID accountId,
+      UUID destinationAccountId,
+      UUID categoryId,
+      UUID recurrenceId,
+      LocalDate occurrenceDate
+  ) {
     validateId(id);
     validateAmount(amount);
     validateType(type);
@@ -179,6 +330,7 @@ public class Transaction {
     validateDestinationAccount(type, destinationAccountId);
     validateDifferentAccounts(type, accountId, destinationAccountId);
     validateCategory(type, categoryId);
+    validateRecurrenceLink(recurrenceId, occurrenceDate);
 
     description = normalizeDescription(description);
 
@@ -192,7 +344,9 @@ public class Transaction {
         source,
         accountId,
         destinationAccountId,
-        categoryId
+        categoryId,
+        recurrenceId,
+        occurrenceDate
     );
   }
 
@@ -285,6 +439,24 @@ public class Transaction {
    */
   public UUID getCategoryId() {
     return categoryId;
+  }
+
+  /**
+   * Returns the recurrence that generated this transaction.
+   *
+   * @return recurrence identifier, or null for ordinary transactions
+   */
+  public UUID getRecurrenceId() {
+    return recurrenceId;
+  }
+
+  /**
+   * Returns the recurrence occurrence date.
+   *
+   * @return occurrence date, or null for ordinary transactions
+   */
+  public LocalDate getOccurrenceDate() {
+    return occurrenceDate;
   }
 
   /**
@@ -485,6 +657,24 @@ public class Transaction {
     if (accountId == null) {
       throw new IllegalArgumentException(
           "Transaction account ID cannot be null"
+      );
+    }
+  }
+
+  /**
+   * Validates that recurrence metadata is provided as a complete pair.
+   *
+   * @param recurrenceId recurrence identifier
+   * @param occurrenceDate occurrence date
+   * @throws IllegalArgumentException if only one of the values is present
+   */
+  private static void validateRecurrenceLink(
+      UUID recurrenceId,
+      LocalDate occurrenceDate
+  ) {
+    if ((recurrenceId == null) != (occurrenceDate == null)) {
+      throw new IllegalArgumentException(
+          "Recurrence and occurrence date must be provided together"
       );
     }
   }

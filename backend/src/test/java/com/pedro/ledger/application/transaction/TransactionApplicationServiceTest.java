@@ -972,6 +972,47 @@ class TransactionApplicationServiceTest {
     }
 
     @Test
+    void shouldUpdateTimestampForManualTransaction() {
+      UUID accountId = UUID.randomUUID();
+      Instant originalTimestamp = Instant.parse("2026-05-10T12:00:00Z");
+      Instant updatedTimestamp = Instant.parse("2026-05-10T18:30:00Z");
+
+      Transaction transaction = Transaction.create(
+          Money.of("100.00"),
+          TransactionType.EXPENSE,
+          "Groceries",
+          originalTimestamp,
+          TransactionSource.MANUAL,
+          accountId,
+          null,
+          null
+      );
+
+      when(transactionRepository.findById(transaction.getId()))
+          .thenReturn(Optional.of(transaction));
+
+      when(transactionRepository.save(any(Transaction.class)))
+          .thenAnswer(invocation -> invocation.getArgument(0));
+
+      Transaction result = transactionApplicationService.update(
+          transaction.getId(),
+          null,
+          null,
+          null,
+          updatedTimestamp
+      );
+
+      assertThat(result.getTimestamp())
+          .isEqualTo(updatedTimestamp);
+
+      assertThat(result.getTimestamp())
+          .isNotEqualTo(originalTimestamp);
+
+      verify(transactionRepository)
+          .save(transaction);
+    }
+
+    @Test
     void shouldThrowExceptionWhenTransactionDoesNotExist() {
       UUID transactionId = UUID.randomUUID();
 

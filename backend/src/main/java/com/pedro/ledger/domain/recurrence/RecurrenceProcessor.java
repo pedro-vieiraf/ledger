@@ -5,7 +5,9 @@ import com.pedro.ledger.domain.transaction.Transaction;
 import com.pedro.ledger.domain.transaction.TransactionProcessor;
 import com.pedro.ledger.domain.transaction.TransactionSource;
 import java.time.Instant;
+import java.time.LocalDate;
 import java.time.ZoneOffset;
+import java.util.UUID;
 
 /**
  * Processes recurring transactions and applies them to their accounts.
@@ -38,16 +40,100 @@ public final class RecurrenceProcessor {
     ensureActive(recurrence);
     ensureDue(recurrence, timestamp);
 
-    Transaction transaction = Transaction.create(
-        recurrence.getAmount(),
-        recurrence.getType(),
-        recurrence.getDescription(),
+    return createAndApply(
+        recurrence,
+        account,
         timestamp,
-        TransactionSource.MANUAL,
-        recurrence.getAccountId(),
-        null,
-        recurrence.getCategoryId()
+        UUID.randomUUID(),
+        null
     );
+  }
+
+  /**
+   * Processes a recurrence occurrence that is due on or before the provided
+   * date and links the generated transaction to the recurrence occurrence.
+   *
+   * <p>This overload is used by the scheduler so date comparisons are made in
+   * the application's configured time zone instead of relying on UTC.
+   *
+   * @param recurrence recurrence to process
+   * @param account account associated with the recurrence
+   * @param timestamp timestamp assigned to the generated transaction
+   * @param dueDate latest date the occurrence may represent
+   * @param transactionId deterministic transaction identifier
+   * @param recurrenceId recurrence identifier
+   * @return the transaction created from the recurrence
+   */
+  public static Transaction process(
+      Recurrence recurrence,
+      Account account,
+      Instant timestamp,
+      LocalDate dueDate,
+      UUID transactionId,
+      UUID recurrenceId
+  ) {
+    validateRecurrence(recurrence);
+    validateAccount(account);
+    validateTimestamp(timestamp);
+    validateDueDate(dueDate);
+
+    if (transactionId == null) {
+      throw new IllegalArgumentException(
+          "Transaction ID cannot be null"
+      );
+    }
+
+    if (recurrenceId == null) {
+      throw new IllegalArgumentException(
+          "Recurrence ID cannot be null"
+      );
+    }
+
+    ensureActive(recurrence);
+    ensureDueOnOrBefore(recurrence, dueDate);
+
+    return createAndApply(
+        recurrence,
+        account,
+        timestamp,
+        transactionId,
+        recurrenceId
+    );
+  }
+
+  private static Transaction createAndApply(
+      Recurrence recurrence,
+      Account account,
+      Instant timestamp,
+      UUID transactionId,
+      UUID recurrenceId
+  ) {
+    LocalDate occurrenceDate = recurrence.getNextOccurrence();
+
+    Transaction transaction = recurrenceId == null
+        ? Transaction.create(
+            recurrence.getAmount(),
+            recurrence.getType(),
+            recurrence.getDescription(),
+            timestamp,
+            TransactionSource.MANUAL,
+            recurrence.getAccountId(),
+            null,
+            recurrence.getCategoryId()
+        )
+        : Transaction.createRecurring(
+            transactionId,
+            recurrence.getAmount(),
+            recurrence.getType(),
+            recurrence.getDescription(),
+            timestamp,
+            TransactionSource.MANUAL,
+            recurrence.getAccountId(),
+            null,
+            recurrence.getCategoryId(),
+            recurrenceId,
+            occurrenceDate
+        );
 
     TransactionProcessor.process(
         transaction,
@@ -93,6 +179,38 @@ public final class RecurrenceProcessor {
 
       throw new IllegalStateException(
           "Recurrence is not due yet"
+      );
+    }
+  }
+
+  /**
+   * Ensures that the recurrence next occurrence is not after the due date.
+   *
+   * @param recurrence recurrence to validate
+   * @param dueDate latest date considered due
+   * @throws IllegalStateException if the recurrence is not due yet
+   */
+  private static void ensureDueOnOrBefore(
+      Recurrence recurrence,
+      LocalDate dueDate
+  ) {
+    if (recurrence.getNextOccurrence().isAfter(dueDate)) {
+      throw new IllegalStateException(
+          "Recurrence is not due yet"
+      );
+    }
+  }
+
+  /**
+   * Validates the due date.
+   *
+   * @param dueDate due date to validate
+   * @throws IllegalArgumentException if the due date is null
+   */
+  private static void validateDueDate(LocalDate dueDate) {
+    if (dueDate == null) {
+      throw new IllegalArgumentException(
+          "Due date cannot be null"
       );
     }
   }
