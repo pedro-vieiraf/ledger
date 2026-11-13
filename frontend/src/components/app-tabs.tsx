@@ -73,6 +73,28 @@ export default function AppTabs() {
           </TabTrigger>
 
           <TabTrigger
+              name="recurrences"
+              href="/recurrences"
+              style={({ pressed }) => ({
+                flex: 1,
+                alignItems: 'center',
+                justifyContent: 'center',
+                paddingVertical: 10,
+                opacity: pressed ? 0.7 : 1,
+              })}
+          >
+            <Text
+                style={{
+                  fontSize: 12,
+                  fontWeight: '600',
+                  color: '#1F5B45',
+                }}
+            >
+              Recorrências
+            </Text>
+          </TabTrigger>
+
+          <TabTrigger
               name="accounts"
               href="/accounts"
               style={({ pressed }) => ({

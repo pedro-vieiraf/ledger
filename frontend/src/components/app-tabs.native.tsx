@@ -25,6 +25,11 @@ export default function AppTabs() {
         <NativeTabs.Trigger.Icon md="receipt_long" />
       </NativeTabs.Trigger>
 
+      <NativeTabs.Trigger name="recurrences">
+        <NativeTabs.Trigger.Label>Recorrências</NativeTabs.Trigger.Label>
+        <NativeTabs.Trigger.Icon md="repeat" />
+      </NativeTabs.Trigger>
+
       <NativeTabs.Trigger name="accounts">
         <NativeTabs.Trigger.Label>Contas</NativeTabs.Trigger.Label>
         <NativeTabs.Trigger.Icon md="account_balance_wallet" />
