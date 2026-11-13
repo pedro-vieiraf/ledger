@@ -2,9 +2,6 @@
 import { useCallback, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
-  KeyboardAvoidingView,
-  Modal,
-  Platform,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -30,20 +27,19 @@ import type {
   Transaction as ApiTransaction,
   TransactionType as ApiTransactionType,
 } from '../../services/transactions-api';
-import DateTimePickerFields from '../../components/date-time-picker-fields';
-import { CurrencyInput } from '@/components/currency-input';
-import { ConfirmDialog } from '@/components/feedback/confirm-dialog';
-import { InlineFeedback } from '@/components/feedback/inline-feedback';
-import { useFeedback } from '@/contexts/feedback-context';
+import { DesktopTransactions } from '@/components/desktop/transactions/desktop-transactions';
 import {
-  getLocalDateTimeParts,
-  isSameLocalMinute,
-  parseLocalDateTime,
-} from '../../utils/date-time';
+  TransactionFormModal,
+  type TransactionFormMode,
+} from '@/components/transactions/transaction-form-modal';
+import { useFeedback } from '@/contexts/feedback-context';
+import { usePrivacy } from '@/contexts/privacy-context';
+import { useIsDesktopLayout } from '@/hooks/use-is-desktop-layout';
+import { maskMoney } from '@/utils/privacy';
+import { sortTransactionsByTimestampDescending } from '../../utils/transaction-sort';
 
 type TransactionType = 'income' | 'expense' | 'transfer';
 type FilterType = 'all' | TransactionType;
-type FormMode = 'create' | 'edit';
 
 type Transaction = {
   id: string;
@@ -51,21 +47,12 @@ type Transaction = {
   category: string;
   account: string;
   date: string;
+  timestamp: string;
   amount: number;
   currency: string;
   type: TransactionType;
   icon: string;
-};
-
-type TransactionForm = {
-  type: TransactionType;
-  amount: number;
-  description: string;
-  accountId: string;
-  destinationAccountId: string;
-  categoryId: string;
-  date: string;
-  time: string;
+  isRecurring: boolean;
 };
 
 const COLORS = {
@@ -90,26 +77,6 @@ const FILTERS: { label: string; value: FilterType }[] = [
   { label: 'Despesas', value: 'expense' },
   { label: 'Transferências', value: 'transfer' },
 ];
-
-const TRANSACTION_TYPES: {
-  label: string;
-  value: TransactionType;
-}[] = [
-  { label: 'Despesa', value: 'expense' },
-  { label: 'Receita', value: 'income' },
-  { label: 'Transferência', value: 'transfer' },
-];
-
-const INITIAL_FORM: TransactionForm = {
-  type: 'expense',
-  amount: 0,
-  description: '',
-  accountId: '',
-  destinationAccountId: '',
-  categoryId: '',
-  date: '',
-  time: '',
-};
 
 function formatCurrency(value: number, currency: string) {
   try {
@@ -163,17 +130,6 @@ function mapTransactionType(type: ApiTransactionType): TransactionType {
       return 'expense';
     case 'TRANSFER':
       return 'transfer';
-  }
-}
-
-function toApiTransactionType(type: TransactionType): ApiTransactionType {
-  switch (type) {
-    case 'income':
-      return 'INCOME';
-    case 'expense':
-      return 'EXPENSE';
-    case 'transfer':
-      return 'TRANSFER';
   }
 }
 
@@ -239,10 +195,12 @@ function mapApiTransaction(
             : category?.name ?? 'Sem categoria',
     account: accountLabel,
     date: getLocalDateKey(transaction.timestamp),
+    timestamp: transaction.timestamp,
     amount: transaction.amount,
     currency: transaction.currency,
     type,
     icon: getTransactionIcon(type),
+    isRecurring: Boolean(transaction.recurrenceId),
   };
 }
 
@@ -255,6 +213,7 @@ function TransactionRow({
 }) {
   const color = getTransactionColor(transaction.type);
   const backgroundColor = getTransactionBackground(transaction.type);
+  const { hidden } = usePrivacy();
 
   return (
       <Pressable
@@ -273,9 +232,16 @@ function TransactionRow({
         </View>
 
         <View style={styles.transactionDetails}>
-          <Text style={styles.transactionDescription} numberOfLines={1}>
-            {transaction.description}
-          </Text>
+          <View style={styles.transactionTitleRow}>
+            <Text style={styles.transactionDescription} numberOfLines={1}>
+              {transaction.description}
+            </Text>
+            {transaction.isRecurring ? (
+              <View style={styles.recurringBadge}>
+                <Text style={styles.recurringBadgeText}>↻ Recorrente</Text>
+              </View>
+            ) : null}
+          </View>
           <Text style={styles.transactionMeta} numberOfLines={1}>
             {transaction.category} · {transaction.account}
           </Text>
@@ -285,23 +251,26 @@ function TransactionRow({
             style={[styles.transactionAmount, { color }]}
             numberOfLines={1}
         >
-          {getAmountPrefix(transaction.type)}
-          {formatCurrency(transaction.amount, transaction.currency)}
+          {maskMoney(
+            `${getAmountPrefix(transaction.type)}${formatCurrency(
+              transaction.amount,
+              transaction.currency,
+            )}`,
+            hidden,
+          )}
         </Text>
       </Pressable>
   );
 }
 
-export default function TransactionsScreen() {
+function TransactionsMobileScreen() {
   const { showToast } = useFeedback();
+  const { hidden } = usePrivacy();
   const {
     transactions: apiTransactions,
     loading: transactionsLoading,
     error: transactionsError,
     refreshTransactions,
-    createTransaction,
-    updateTransaction,
-    deleteTransaction,
   } = useTransactions();
 
   const [monthOffset, setMonthOffset] = useState(0);
@@ -315,24 +284,10 @@ export default function TransactionsScreen() {
   const [screenError, setScreenError] = useState<string | null>(null);
 
   const [modalVisible, setModalVisible] = useState(false);
-  const [formMode, setFormMode] = useState<FormMode>('create');
+  const [formMode, setFormMode] =
+      useState<TransactionFormMode>('create');
   const [editingTransactionId, setEditingTransactionId] =
       useState<string | null>(null);
-  const [form, setForm] = useState<TransactionForm>(INITIAL_FORM);
-  const [formError, setFormError] = useState<string | null>(null);
-  const [saving, setSaving] = useState(false);
-  const [deleteConfirmVisible, setDeleteConfirmVisible] = useState(false);
-  const [deleteError, setDeleteError] = useState<string | null>(null);
-  const [deletingTransaction, setDeletingTransaction] = useState(false);
-
-  const editingTransaction = editingTransactionId
-    ? apiTransactions.find((item) => item.id === editingTransactionId)
-    : undefined;
-
-  const deletingDescription = editingTransaction
-    ? editingTransaction.description?.trim() ||
-      getDefaultDescription(mapTransactionType(editingTransaction.type))
-    : '';
 
   const loadScreenData = useCallback(async () => {
     setReferencesLoading(true);
@@ -364,7 +319,18 @@ export default function TransactionsScreen() {
   useFocusEffect(
       useCallback(() => {
         void loadScreenData();
-      }, [loadScreenData]),
+
+        // O scheduler do backend pode gerar ocorrências recorrentes enquanto
+        // esta tela permanece aberta. Atualiza silenciosamente para que elas
+        // apareçam no histórico sem exigir troca de aba ou recarga manual.
+        const intervalId = setInterval(() => {
+          void refreshTransactions({ silent: true }).catch(() => {
+            // O erro já fica disponível no estado do context.
+          });
+        }, 10_000);
+
+        return () => clearInterval(intervalId);
+      }, [loadScreenData, refreshTransactions]),
   );
 
   const activeAccounts = useMemo(
@@ -385,13 +351,14 @@ export default function TransactionsScreen() {
 
   const mappedTransactions = useMemo(
       () =>
-          apiTransactions
-          .map((transaction) =>
-              mapApiTransaction(transaction, accountsById, categoriesById),
-          )
-          .sort(
-              (a, b) =>
-                  b.date.localeCompare(a.date) || b.id.localeCompare(a.id),
+          sortTransactionsByTimestampDescending(
+              apiTransactions.map((transaction) =>
+                  mapApiTransaction(
+                      transaction,
+                      accountsById,
+                      categoriesById,
+                  ),
+              ),
           ),
       [apiTransactions, accountsById, categoriesById],
   );
@@ -413,11 +380,8 @@ export default function TransactionsScreen() {
 
   const monthTransactions = useMemo(
       () =>
-          mappedTransactions
-          .filter((transaction) => transaction.date.startsWith(monthKey))
-          .sort(
-              (a, b) =>
-                  b.date.localeCompare(a.date) || b.id.localeCompare(a.id),
+          mappedTransactions.filter((transaction) =>
+              transaction.date.startsWith(monthKey),
           ),
       [mappedTransactions, monthKey],
   );
@@ -487,13 +451,6 @@ export default function TransactionsScreen() {
     return groups;
   }, [filteredTransactions]);
 
-  const updateForm = <K extends keyof TransactionForm>(
-      key: K,
-      value: TransactionForm[K],
-  ) => {
-    setForm((current) => ({ ...current, [key]: value }));
-  };
-
   const openCreateModal = () => {
     if (activeAccounts.length === 0) {
       showToast({
@@ -506,17 +463,6 @@ export default function TransactionsScreen() {
 
     setFormMode('create');
     setEditingTransactionId(null);
-    setForm({
-      ...INITIAL_FORM,
-      accountId: activeAccounts[0]?.id ?? '',
-      destinationAccountId:
-          activeAccounts.find(
-              (account) => account.id !== activeAccounts[0]?.id,
-          )?.id ?? '',
-    });
-    setFormError(null);
-    setDeleteConfirmVisible(false);
-    setDeleteError(null);
     setModalVisible(true);
   };
 
@@ -537,220 +483,12 @@ export default function TransactionsScreen() {
 
     setFormMode('edit');
     setEditingTransactionId(transaction.id);
-    setForm({
-      type: mapTransactionType(transaction.type),
-      amount: transaction.amount,
-      description: transaction.description ?? '',
-      accountId: transaction.accountId,
-      destinationAccountId: transaction.destinationAccountId ?? '',
-      categoryId: transaction.categoryId ?? '',
-      ...getLocalDateTimeParts(transaction.timestamp),
-    });
-    setFormError(null);
-    setDeleteConfirmVisible(false);
-    setDeleteError(null);
     setModalVisible(true);
   };
 
-  const closeModal = () => {
-    if (saving || deletingTransaction) return;
-
-    if (deleteConfirmVisible) {
-      setDeleteConfirmVisible(false);
-      setDeleteError(null);
-      return;
-    }
-
+  const closeForm = () => {
     setModalVisible(false);
-    setFormError(null);
-    setDeleteConfirmVisible(false);
-    setDeleteError(null);
-  };
-
-  const handleSave = async () => {
-    setFormError(null);
-
-    const amount = form.amount;
-
-    if (!Number.isFinite(amount) || amount <= 0) {
-      setFormError('Informe um valor maior que zero.');
-      return;
-    }
-
-    // A data só pode ser editada em transações manuais; as importadas do
-    // Open Finance mantêm o horário original. Só enviamos o timestamp quando
-    // a data/hora realmente muda, para não zerar os segundos à toa.
-    let editedTimestamp: string | undefined;
-
-    if (
-      formMode === 'edit' &&
-      editingTransaction?.source === 'MANUAL'
-    ) {
-      const parsedDateTime = parseLocalDateTime(form.date, form.time);
-
-      if (!parsedDateTime) {
-        setFormError(
-            'Informe uma data válida (DD/MM/AAAA) e um horário válido (HH:mm).',
-        );
-        return;
-      }
-
-      const originalDateTime = new Date(editingTransaction.timestamp);
-
-      if (
-          Number.isNaN(originalDateTime.getTime()) ||
-          !isSameLocalMinute(originalDateTime, parsedDateTime)
-      ) {
-        editedTimestamp = parsedDateTime.toISOString();
-      }
-    }
-
-    if (formMode === 'create') {
-      const sourceAccount = activeAccounts.find(
-          (account) => account.id === form.accountId,
-      );
-
-      if (!sourceAccount) {
-        setFormError('Selecione uma conta de origem ativa.');
-        return;
-      }
-
-      if (
-          form.type === 'transfer' &&
-          (!form.destinationAccountId ||
-              form.destinationAccountId === form.accountId ||
-              !activeAccounts.some(
-                  (account) => account.id === form.destinationAccountId,
-              ))
-      ) {
-        setFormError(
-            'Selecione uma conta de destino ativa, diferente da origem.',
-        );
-        return;
-      }
-    }
-
-    setSaving(true);
-
-    try {
-      if (formMode === 'create') {
-        await createTransaction({
-          amount,
-          currency: 'BRL',
-          type: toApiTransactionType(form.type),
-          description: form.description.trim() || null,
-          accountId: form.accountId,
-          ...(form.type === 'transfer'
-              ? { destinationAccountId: form.destinationAccountId }
-              : {}),
-          ...(form.type !== 'transfer' && form.categoryId
-              ? { categoryId: form.categoryId }
-              : {}),
-        });
-      } else {
-        if (!editingTransactionId) {
-          throw new Error('Não foi possível identificar a transação.');
-        }
-
-        const originalTransaction = apiTransactions.find(
-            (transaction) => transaction.id === editingTransactionId,
-        );
-
-        if (!originalTransaction) {
-          throw new Error(
-              'A transação não está mais disponível. Atualize a lista e tente novamente.',
-          );
-        }
-
-        await updateTransaction(editingTransactionId, {
-          amount,
-          description: form.description.trim() || null,
-          ...(originalTransaction.type !== 'TRANSFER' && form.categoryId
-              ? { categoryId: form.categoryId }
-              : {}),
-          ...(editedTimestamp ? { timestamp: editedTimestamp } : {}),
-        });
-      }
-
-      setModalVisible(false);
-      setFormError(null);
-      setDeleteConfirmVisible(false);
-      setDeleteError(null);
-
-      showToast({
-        variant: 'success',
-        title: formMode === 'create'
-            ? 'Transação criada'
-            : 'Transação atualizada',
-        message: 'O saldo foi atualizado pelo servidor.',
-      });
-    } catch (cause) {
-      setFormError(
-          cause instanceof Error
-              ? cause.message
-              : 'Não foi possível salvar a transação.',
-      );
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  const handleDelete = (transactionId: string) => {
-    const transaction = apiTransactions.find(
-        (item) => item.id === transactionId,
-    );
-
-    if (!transaction) {
-      setFormError(
-          'Atualize a lista antes de tentar excluir essa transação.',
-      );
-      return;
-    }
-
-    setDeleteError(null);
-    setDeleteConfirmVisible(true);
-  };
-
-  const cancelDelete = () => {
-    if (deletingTransaction) {
-      return;
-    }
-
-    setDeleteConfirmVisible(false);
-    setDeleteError(null);
-  };
-
-  const confirmDelete = async () => {
-    if (!editingTransactionId || deletingTransaction) {
-      return;
-    }
-
-    setDeletingTransaction(true);
-    setDeleteError(null);
-
-    try {
-      await deleteTransaction(editingTransactionId);
-
-      setDeleteConfirmVisible(false);
-      setModalVisible(false);
-      setEditingTransactionId(null);
-      setFormError(null);
-      setDeleteError(null);
-
-      showToast({
-        variant: 'success',
-        title: 'Transação excluída',
-        message: 'O histórico foi atualizado.',
-      });
-    } catch (cause) {
-      setDeleteError(
-          cause instanceof Error
-              ? cause.message
-              : 'Não foi possível excluir a transação. Tente novamente.',
-      );
-    } finally {
-      setDeletingTransaction(false);
-    }
+    setEditingTransactionId(null);
   };
 
   const loading = referencesLoading || transactionsLoading;
@@ -819,7 +557,7 @@ export default function TransactionsScreen() {
                   styles.negativeBalance,
                 ]}
             >
-              {formatCurrency(summary.income - summary.expense, 'BRL')}
+              {maskMoney(formatCurrency(summary.income - summary.expense, 'BRL'), hidden)}
             </Text>
             <Text style={styles.summaryHint}>
               Receitas menos despesas, sem transferências
@@ -839,7 +577,7 @@ export default function TransactionsScreen() {
                   <Text style={styles.metricLabel}>Receitas</Text>
                 </View>
                 <Text style={[styles.metricValue, { color: COLORS.income }]}>
-                  {formatCurrency(summary.income, 'BRL')}
+                  {maskMoney(formatCurrency(summary.income, 'BRL'), hidden)}
                 </Text>
               </View>
 
@@ -856,7 +594,7 @@ export default function TransactionsScreen() {
                   <Text style={styles.metricLabel}>Despesas</Text>
                 </View>
                 <Text style={[styles.metricValue, { color: COLORS.expense }]}>
-                  {formatCurrency(summary.expense, 'BRL')}
+                  {maskMoney(formatCurrency(summary.expense, 'BRL'), hidden)}
                 </Text>
               </View>
             </View>
@@ -873,7 +611,7 @@ export default function TransactionsScreen() {
               </Text>
             </View>
             <Text style={styles.transferAmount}>
-              {formatCurrency(summary.transfer, 'BRL')}
+              {maskMoney(formatCurrency(summary.transfer, 'BRL'), hidden)}
             </Text>
           </View>
 
@@ -887,7 +625,7 @@ export default function TransactionsScreen() {
             </Text>
           </View>
 
-          <View style={styles.searchContainer}>
+          <View id="search-field-transactions-mobile" style={styles.searchContainer}>
             <Text style={styles.searchIcon}>⌕</Text>
             <TextInput
                 value={searchQuery}
@@ -1007,433 +745,27 @@ export default function TransactionsScreen() {
           </Text>
         </ScrollView>
 
-        <Modal
-            visible={modalVisible}
-            animationType="slide"
-            presentationStyle="pageSheet"
-            onRequestClose={closeModal}
-        >
-          <SafeAreaView style={styles.modalSafeArea}>
-            <KeyboardAvoidingView
-                style={styles.modalKeyboard}
-                behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-            >
-              <View style={styles.modalHeader}>
-                <View style={styles.modalHeaderText}>
-                  <Text style={styles.modalEyebrow}>
-                    {formMode === 'create'
-                        ? 'NOVA MOVIMENTAÇÃO'
-                        : 'DETALHES DA MOVIMENTAÇÃO'}
-                  </Text>
-                  <Text style={styles.modalTitle}>
-                    {formMode === 'create'
-                        ? 'Adicionar transação'
-                        : 'Editar transação'}
-                  </Text>
-                </View>
-
-                <Pressable
-                    accessibilityRole="button"
-                    accessibilityLabel="Fechar formulário"
-                    onPress={closeModal}
-                    disabled={saving}
-                    style={styles.closeButton}
-                >
-                  <Text style={styles.closeButtonText}>×</Text>
-                </Pressable>
-              </View>
-
-              <ScrollView
-                  style={styles.modalScrollView}
-                  contentContainerStyle={styles.modalContent}
-                  keyboardShouldPersistTaps="handled"
-                  showsVerticalScrollIndicator={false}
-              >
-                {formMode === 'create' ? (
-                    <>
-                      <Text style={styles.fieldLabel}>Tipo de transação</Text>
-                      <View style={styles.optionRow}>
-                        {TRANSACTION_TYPES.map((item) => {
-                          const selected = form.type === item.value;
-
-                          return (
-                              <Pressable
-                                  key={item.value}
-                                  accessibilityRole="button"
-                                  accessibilityState={{ selected }}
-                                  onPress={() => {
-                                    updateForm('type', item.value);
-
-                                    if (item.value === 'transfer') {
-                                      updateForm('categoryId', '');
-                                    }
-                                  }}
-                                  style={[
-                                    styles.typeOption,
-                                    selected && styles.typeOptionSelected,
-                                  ]}
-                              >
-                                <Text
-                                    style={[
-                                      styles.typeOptionText,
-                                      selected && styles.typeOptionTextSelected,
-                                    ]}
-                                >
-                                  {item.label}
-                                </Text>
-                              </Pressable>
-                          );
-                        })}
-                      </View>
-                    </>
-                ) : (
-                    <View style={styles.readOnlyNotice}>
-                      <Text style={styles.readOnlyNoticeText}>
-                        Tipo e contas não podem ser alterados nesta versão.
-                        Para mudar esses dados, exclua a transação e crie outra.
-                      </Text>
-                    </View>
-                )}
-
-                <Text style={styles.fieldLabel}>Valor</Text>
-                <CurrencyInput
-                    value={form.amount}
-                    onChangeValue={(value) => updateForm('amount', value)}
-                    style={styles.formInput}
-                    accessibilityLabel="Valor da transação em reais"
-                />
-
-                <Text style={styles.fieldLabel}>Descrição</Text>
-                <TextInput
-                    value={form.description}
-                    onChangeText={(value) => updateForm('description', value)}
-                    placeholder="Ex.: Mercado, salário, aluguel..."
-                    placeholderTextColor={COLORS.secondary}
-                    style={styles.formInput}
-                    maxLength={160}
-                    accessibilityLabel="Descrição da transação"
-                />
-
-                {formMode === 'edit' &&
-                    (editingTransaction?.source === 'MANUAL' ? (
-                        <>
-                          <Text style={styles.fieldLabel}>Data e hora</Text>
-                          <DateTimePickerFields
-                              date={form.date}
-                              time={form.time}
-                              onDateChange={(value) =>
-                                  updateForm('date', value)
-                              }
-                              onTimeChange={(value) =>
-                                  updateForm('time', value)
-                              }
-                          />
-                          <Text style={styles.fieldHint}>
-                            Alterar a data e o horário não muda o valor da
-                            transação, apenas quando ela aconteceu.
-                          </Text>
-                        </>
-                    ) : (
-                        <View style={styles.readOnlyNotice}>
-                          <Text style={styles.readOnlyNoticeText}>
-                            A data desta transação foi definida pelo Open
-                            Finance e não pode ser alterada.
-                          </Text>
-                        </View>
-                    ))}
-
-                {formMode === 'create' && (
-                    <>
-                      <Text style={styles.fieldLabel}>
-                        {form.type === 'transfer'
-                            ? 'Conta de origem'
-                            : 'Conta'}
-                      </Text>
-
-                      {activeAccounts.length === 0 ? (
-                          <Text style={styles.noOptionsText}>
-                            Nenhuma conta ativa disponível.
-                          </Text>
-                      ) : (
-                          <View style={styles.selectionList}>
-                            {activeAccounts.map((account) => {
-                              const selected = form.accountId === account.id;
-
-                              return (
-                                  <Pressable
-                                      key={account.id}
-                                      accessibilityRole="button"
-                                      accessibilityState={{ selected }}
-                                      onPress={() => {
-                                        updateForm('accountId', account.id);
-
-                                        if (
-                                            form.destinationAccountId === account.id
-                                        ) {
-                                          updateForm(
-                                              'destinationAccountId',
-                                              activeAccounts.find(
-                                                  (item) => item.id !== account.id,
-                                              )?.id ?? '',
-                                          );
-                                        }
-                                      }}
-                                      style={[
-                                        styles.selectionOption,
-                                        selected && styles.selectionOptionSelected,
-                                      ]}
-                                  >
-                                    <Text
-                                        style={[
-                                          styles.selectionOptionText,
-                                          selected &&
-                                          styles.selectionOptionTextSelected,
-                                        ]}
-                                    >
-                                      {account.name}
-                                    </Text>
-                                    <Text
-                                        style={[
-                                          styles.selectionCheck,
-                                          selected && styles.selectionCheckSelected,
-                                        ]}
-                                    >
-                                      {selected ? '✓' : ''}
-                                    </Text>
-                                  </Pressable>
-                              );
-                            })}
-                          </View>
-                      )}
-
-                      {form.type === 'transfer' && (
-                          <>
-                            <Text style={styles.fieldLabel}>Conta de destino</Text>
-                            <View style={styles.selectionList}>
-                              {activeAccounts
-                              .filter((account) => account.id !== form.accountId)
-                              .map((account) => {
-                                const selected =
-                                    form.destinationAccountId === account.id;
-
-                                return (
-                                    <Pressable
-                                        key={account.id}
-                                        accessibilityRole="button"
-                                        accessibilityState={{ selected }}
-                                        onPress={() =>
-                                            updateForm(
-                                                'destinationAccountId',
-                                                account.id,
-                                            )
-                                        }
-                                        style={[
-                                          styles.selectionOption,
-                                          selected &&
-                                          styles.selectionOptionSelected,
-                                        ]}
-                                    >
-                                      <Text
-                                          style={[
-                                            styles.selectionOptionText,
-                                            selected &&
-                                            styles.selectionOptionTextSelected,
-                                          ]}
-                                      >
-                                        {account.name}
-                                      </Text>
-                                      <Text
-                                          style={[
-                                            styles.selectionCheck,
-                                            selected &&
-                                            styles.selectionCheckSelected,
-                                          ]}
-                                      >
-                                        {selected ? '✓' : ''}
-                                      </Text>
-                                    </Pressable>
-                                );
-                              })}
-                              {activeAccounts.filter(
-                                  (account) => account.id !== form.accountId,
-                              ).length === 0 && (
-                                  <Text style={styles.noOptionsText}>
-                                    Você precisa de pelo menos duas contas ativas
-                                    para realizar uma transferência.
-                                  </Text>
-                              )}
-                            </View>
-                          </>
-                      )}
-                    </>
-                )}
-
-                {form.type !== 'transfer' && (
-                    <>
-                      <Text style={styles.fieldLabel}>Categoria</Text>
-
-                      <View style={styles.selectionList}>
-                        {formMode === 'create' && (
-                            <Pressable
-                                accessibilityRole="button"
-                                accessibilityState={{
-                                  selected: form.categoryId === '',
-                                }}
-                                onPress={() => updateForm('categoryId', '')}
-                                style={[
-                                  styles.selectionOption,
-                                  form.categoryId === '' &&
-                                  styles.selectionOptionSelected,
-                                ]}
-                            >
-                              <Text
-                                  style={[
-                                    styles.selectionOptionText,
-                                    form.categoryId === '' &&
-                                    styles.selectionOptionTextSelected,
-                                  ]}
-                              >
-                                Sem categoria
-                              </Text>
-                              <Text
-                                  style={[
-                                    styles.selectionCheck,
-                                    form.categoryId === '' &&
-                                    styles.selectionCheckSelected,
-                                  ]}
-                              >
-                                {form.categoryId === '' ? '✓' : ''}
-                              </Text>
-                            </Pressable>
-                        )}
-
-                        {categories.map((category) => {
-                          const selected = form.categoryId === category.id;
-
-                          return (
-                              <Pressable
-                                  key={category.id}
-                                  accessibilityRole="button"
-                                  accessibilityState={{ selected }}
-                                  onPress={() =>
-                                      updateForm('categoryId', category.id)
-                                  }
-                                  style={[
-                                    styles.selectionOption,
-                                    selected && styles.selectionOptionSelected,
-                                  ]}
-                              >
-                                <Text
-                                    style={[
-                                      styles.selectionOptionText,
-                                      selected &&
-                                      styles.selectionOptionTextSelected,
-                                    ]}
-                                >
-                                  {category.name}
-                                </Text>
-                                <Text
-                                    style={[
-                                      styles.selectionCheck,
-                                      selected && styles.selectionCheckSelected,
-                                    ]}
-                                >
-                                  {selected ? '✓' : ''}
-                                </Text>
-                              </Pressable>
-                          );
-                        })}
-
-                        {categories.length === 0 && (
-                            <Text style={styles.noOptionsText}>
-                              Nenhuma categoria cadastrada. Você pode salvar sem
-                              categoria e cadastrar uma depois.
-                            </Text>
-                        )}
-                      </View>
-
-                      {formMode === 'edit' &&
-                          !form.categoryId && (
-                              <Text style={styles.fieldHint}>
-                                A transação continuará sem categoria se você não
-                                selecionar uma.
-                              </Text>
-                          )}
-                    </>
-                )}
-
-                {formError ? (
-                    <InlineFeedback
-                      message={formError}
-                      variant="error"
-                      style={styles.formFeedback}
-                    />
-                ) : null}
-
-                <Pressable
-                    accessibilityRole="button"
-                    onPress={() => void handleSave()}
-                    disabled={saving}
-                    style={[
-                      styles.saveButton,
-                      saving && styles.disabledButton,
-                    ]}
-                >
-                  {saving ? (
-                      <ActivityIndicator color="#FFFFFF" />
-                  ) : (
-                      <Text style={styles.saveButtonText}>
-                        {formMode === 'create'
-                            ? 'Salvar transação'
-                            : 'Salvar alterações'}
-                      </Text>
-                  )}
-                </Pressable>
-
-                {formMode === 'edit' && editingTransactionId && (
-                    <Pressable
-                        accessibilityRole="button"
-                        onPress={() => handleDelete(editingTransactionId)}
-                        disabled={saving || deletingTransaction}
-                        style={[
-                          styles.deleteButton,
-                          (saving || deletingTransaction) &&
-                              styles.disabledButton,
-                        ]}
-                    >
-                      <Text style={styles.deleteButtonText}>
-                        Excluir transação
-                      </Text>
-                    </Pressable>
-                )}
-
-                <Text style={styles.modalDisclaimer}>
-                  Os saldos são atualizados pelo backend após salvar ou excluir
-                  uma transação.
-                </Text>
-              </ScrollView>
-            </KeyboardAvoidingView>
-
-            <ConfirmDialog
-                embedded
-                visible={deleteConfirmVisible}
-                title="Excluir transação?"
-                message={
-                  `Deseja excluir "${deletingDescription}"? Essa operação ` +
-                  'também reverterá o efeito da transação no saldo da conta, ' +
-                  'quando aplicável.'
-                }
-                confirmLabel="Excluir"
-                tone="danger"
-                loading={deletingTransaction}
-                error={deleteError}
-                onConfirm={() => void confirmDelete()}
-                onCancel={cancelDelete}
-            />
-          </SafeAreaView>
-        </Modal>
+        {modalVisible ? (
+          <TransactionFormModal
+              mode={formMode}
+              transactionId={editingTransactionId}
+              accounts={accounts}
+              categories={categories}
+              onClose={closeForm}
+          />
+        ) : null}
       </SafeAreaView>
   );
+}
+
+export default function TransactionsScreen() {
+  const isDesktop = useIsDesktopLayout();
+
+  if (isDesktop) {
+    return <DesktopTransactions />;
+  }
+
+  return <TransactionsMobileScreen />;
 }
 
 const styles = StyleSheet.create({
@@ -1732,7 +1064,25 @@ const styles = StyleSheet.create({
     flex: 1,
     minWidth: 0,
   },
+  transactionTitleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  recurringBadge: {
+    flexShrink: 0,
+    borderRadius: 999,
+    backgroundColor: COLORS.primaryLight,
+    paddingHorizontal: 7,
+    paddingVertical: 3,
+  },
+  recurringBadgeText: {
+    color: COLORS.primary,
+    fontSize: 9,
+    fontWeight: '700',
+  },
   transactionDescription: {
+    flexShrink: 1,
     color: COLORS.text,
     fontSize: 13,
     fontWeight: '600',
@@ -1803,209 +1153,5 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     marginTop: 10,
     lineHeight: 16,
-  },
-  modalSafeArea: {
-    flex: 1,
-    backgroundColor: COLORS.background,
-  },
-  modalKeyboard: {
-    flex: 1,
-  },
-  modalHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 20,
-    paddingTop: 14,
-    paddingBottom: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: COLORS.border,
-    backgroundColor: COLORS.surface,
-  },
-  modalHeaderText: {
-    flex: 1,
-  },
-  modalEyebrow: {
-    color: COLORS.secondary,
-    fontSize: 9,
-    fontWeight: '700',
-    letterSpacing: 1.1,
-    marginBottom: 5,
-  },
-  modalTitle: {
-    color: COLORS.text,
-    fontSize: 21,
-    fontWeight: '800',
-  },
-  closeButton: {
-    width: 38,
-    height: 38,
-    borderRadius: 13,
-    backgroundColor: COLORS.background,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginLeft: 12,
-  },
-  closeButtonText: {
-    color: COLORS.text,
-    fontSize: 26,
-    lineHeight: 29,
-  },
-  modalScrollView: {
-    flex: 1,
-  },
-  modalContent: {
-    paddingHorizontal: 20,
-    paddingTop: 20,
-    paddingBottom: 40,
-    maxWidth: 700,
-    width: '100%',
-    alignSelf: 'center',
-  },
-  fieldLabel: {
-    color: COLORS.text,
-    fontSize: 12,
-    fontWeight: '700',
-    marginTop: 18,
-    marginBottom: 9,
-  },
-  optionRow: {
-    flexDirection: 'row',
-    gap: 8,
-  },
-  typeOption: {
-    flex: 1,
-    paddingVertical: 12,
-    paddingHorizontal: 7,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderRadius: 13,
-    borderWidth: 1,
-    borderColor: COLORS.border,
-    backgroundColor: COLORS.surface,
-  },
-  typeOptionSelected: {
-    backgroundColor: COLORS.primary,
-    borderColor: COLORS.primary,
-  },
-  typeOptionText: {
-    color: COLORS.secondary,
-    fontSize: 12,
-    fontWeight: '600',
-  },
-  typeOptionTextSelected: {
-    color: '#FFFFFF',
-  },
-  formInput: {
-    backgroundColor: COLORS.surface,
-    borderWidth: 1,
-    borderColor: COLORS.border,
-    borderRadius: 13,
-    paddingHorizontal: 14,
-    paddingVertical: 13,
-    color: COLORS.text,
-    fontSize: 14,
-  },
-  readOnlyNotice: {
-    backgroundColor: COLORS.primaryLight,
-    padding: 13,
-    borderRadius: 12,
-  },
-  readOnlyNoticeText: {
-    color: COLORS.primary,
-    fontSize: 12,
-    lineHeight: 18,
-  },
-  selectionList: {
-    gap: 7,
-  },
-  selectionOption: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    minHeight: 46,
-    backgroundColor: COLORS.surface,
-    borderWidth: 1,
-    borderColor: COLORS.border,
-    borderRadius: 12,
-    paddingHorizontal: 13,
-    paddingVertical: 10,
-  },
-  selectionOptionSelected: {
-    backgroundColor: COLORS.primaryLight,
-    borderColor: COLORS.primary,
-  },
-  selectionOptionText: {
-    flex: 1,
-    color: COLORS.text,
-    fontSize: 12,
-    fontWeight: '500',
-  },
-  selectionOptionTextSelected: {
-    color: COLORS.primary,
-    fontWeight: '700',
-  },
-  selectionCheck: {
-    color: 'transparent',
-    fontSize: 15,
-    fontWeight: '800',
-    marginLeft: 10,
-  },
-  selectionCheckSelected: {
-    color: COLORS.primary,
-  },
-  noOptionsText: {
-    color: COLORS.secondary,
-    fontSize: 12,
-    lineHeight: 18,
-    paddingVertical: 5,
-  },
-  fieldHint: {
-    color: COLORS.secondary,
-    fontSize: 11,
-    lineHeight: 17,
-    marginTop: 8,
-  },
-  formFeedback: {
-    marginTop: 18,
-  },
-  saveButton: {
-    backgroundColor: COLORS.primary,
-    borderRadius: 14,
-    paddingVertical: 15,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginTop: 24,
-    minHeight: 50,
-  },
-  saveButtonText: {
-    color: '#FFFFFF',
-    fontSize: 13,
-    fontWeight: '800',
-  },
-  disabledButton: {
-    opacity: 0.6,
-  },
-  deleteButton: {
-    backgroundColor: COLORS.surface,
-    borderWidth: 1,
-    borderColor: COLORS.expense,
-    borderRadius: 14,
-    paddingVertical: 14,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginTop: 10,
-  },
-  deleteButtonText: {
-    color: COLORS.expense,
-    fontSize: 13,
-    fontWeight: '700',
-  },
-  modalDisclaimer: {
-    color: COLORS.secondary,
-    fontSize: 10,
-    lineHeight: 16,
-    textAlign: 'center',
-    marginTop: 18,
   },
 });

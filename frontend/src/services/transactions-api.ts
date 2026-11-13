@@ -15,6 +15,8 @@ export interface Transaction {
   accountId: string;
   destinationAccountId: string | null;
   categoryId: string | null;
+  recurrenceId: string | null;
+  occurrenceDate: string | null;
 }
 
 export interface CreateTransactionInput {
