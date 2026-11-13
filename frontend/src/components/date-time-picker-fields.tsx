@@ -8,12 +8,26 @@ import {
   View,
 } from 'react-native';
 import DateTimePicker from '@expo/ui/community/datetime-picker';
+import { SymbolView, type SymbolViewProps } from 'expo-symbols';
 
 import {
   formatDateParts,
   formatTimeParts,
   parseLocalDateTime,
 } from '@/utils/date-time';
+
+const FIELD_ICONS = {
+  date: {
+    ios: 'calendar',
+    android: 'calendar_month',
+    web: 'calendar_month',
+  },
+  time: {
+    ios: 'clock',
+    android: 'schedule',
+    web: 'schedule',
+  },
+} satisfies Record<PickerMode, SymbolViewProps['name']>;
 
 const COLORS = {
   surface: '#FFFFFF',
@@ -26,6 +40,8 @@ const COLORS = {
 };
 
 export interface DateTimePickerFieldsProps {
+  /** Variante visual; no desktop aplica a tipografia e as medidas do tema. */
+  variant?: 'mobile' | 'desktop';
   /** Data atual do formulário, no formato `DD/MM/AAAA`. */
   date: string;
   /** Hora atual do formulário, no formato `HH:mm`. */
@@ -103,7 +119,12 @@ export default function DateTimePickerFields(
             <Text style={styles.fieldValue}>
               {date || 'Selecione'}
             </Text>
-            <Text style={styles.fieldIcon}>📅</Text>
+            <SymbolView
+              name={FIELD_ICONS.date}
+              size={16}
+              tintColor={COLORS.secondary}
+              style={styles.fieldIcon}
+            />
           </Pressable>
 
           <Pressable
@@ -115,7 +136,12 @@ export default function DateTimePickerFields(
             <Text style={styles.fieldValue}>
               {time || 'Selecione'}
             </Text>
-            <Text style={styles.fieldIcon}>🕐</Text>
+            <SymbolView
+              name={FIELD_ICONS.time}
+              size={16}
+              tintColor={COLORS.secondary}
+              style={styles.fieldIcon}
+            />
           </Pressable>
         </View>
 
@@ -242,7 +268,6 @@ const styles = StyleSheet.create({
     fontSize: 14,
   },
   fieldIcon: {
-    fontSize: 14,
     marginLeft: 8,
   },
   iosOverlay: {

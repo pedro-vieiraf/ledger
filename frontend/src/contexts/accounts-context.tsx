@@ -24,7 +24,7 @@ type AccountsContextValue = {
   accounts: Account[];
   loading: boolean;
   error: string | null;
-  refreshAccounts: () => Promise<void>;
+  refreshAccounts: (options?: { silent?: boolean }) => Promise<void>;
   createAccount: (account: Account) => void;
   updateAccount: (
       id: string,
@@ -42,8 +42,11 @@ export function AccountsProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const refreshAccounts = useCallback(async () => {
-    setLoading(true);
+  const refreshAccounts = useCallback(async (options?: { silent?: boolean }) => {
+    if (!options?.silent) {
+      setLoading(true);
+    }
+
     setError(null);
 
     try {
@@ -58,15 +61,41 @@ export function AccountsProvider({ children }: { children: ReactNode }) {
       setError(message);
       throw err;
     } finally {
-      setLoading(false);
+      if (!options?.silent) {
+        setLoading(false);
+      }
     }
   }, []);
 
   useEffect(() => {
-    void refreshAccounts().catch(() => {
-      // O erro já foi armazenado no estado para a interface poder exibi-lo.
-    });
-  }, [refreshAccounts]);
+    let cancelled = false;
+
+    getAccounts()
+        .then((data) => {
+          if (!cancelled) {
+            setAccounts(data);
+            setError(null);
+          }
+        })
+        .catch((err) => {
+          if (!cancelled) {
+            setError(
+                err instanceof Error
+                    ? err.message
+                    : 'Não foi possível carregar as contas.',
+            );
+          }
+        })
+        .finally(() => {
+          if (!cancelled) {
+            setLoading(false);
+          }
+        });
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const value = useMemo<AccountsContextValue>(
       () => ({

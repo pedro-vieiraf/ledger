@@ -18,6 +18,7 @@ import {
   type CreateTransactionInput,
   type UpdateTransactionInput,
 } from '@/services/transactions-api';
+import { sortTransactionsByTimestampDescending } from '@/utils/transaction-sort';
 
 export type TransactionType = 'INCOME' | 'EXPENSE' | 'TRANSFER';
 
@@ -27,7 +28,7 @@ type TransactionsContextValue = {
   transactions: Transaction[];
   loading: boolean;
   error: string | null;
-  refreshTransactions: () => Promise<void>;
+  refreshTransactions: (options?: { silent?: boolean }) => Promise<void>;
   createTransaction: (
       input: CreateTransactionInput,
   ) => Promise<Transaction>;
@@ -52,20 +53,17 @@ export function TransactionsProvider({
 
   const { refreshAccounts } = useAccounts();
 
-  const refreshTransactions = useCallback(async () => {
-    setLoading(true);
+  const refreshTransactions = useCallback(async (options?: { silent?: boolean }) => {
+    if (!options?.silent) {
+      setLoading(true);
+    }
+
     setError(null);
 
     try {
       const data = await getTransactions();
 
-      const sorted = [...data].sort(
-          (a, b) =>
-              new Date(b.timestamp).getTime() -
-              new Date(a.timestamp).getTime(),
-      );
-
-      setTransactions(sorted);
+      setTransactions(sortTransactionsByTimestampDescending(data));
     } catch (err) {
       const message =
           err instanceof Error
@@ -75,15 +73,41 @@ export function TransactionsProvider({
       setError(message);
       throw err;
     } finally {
-      setLoading(false);
+      if (!options?.silent) {
+        setLoading(false);
+      }
     }
   }, []);
 
   useEffect(() => {
-    void refreshTransactions().catch(() => {
-      // O erro já está disponível no estado para a interface.
-    });
-  }, [refreshTransactions]);
+    let cancelled = false;
+
+    getTransactions()
+        .then((data) => {
+          if (!cancelled) {
+            setTransactions(sortTransactionsByTimestampDescending(data));
+            setError(null);
+          }
+        })
+        .catch((err) => {
+          if (!cancelled) {
+            setError(
+                err instanceof Error
+                    ? err.message
+                    : 'Não foi possível carregar as transações.',
+            );
+          }
+        })
+        .finally(() => {
+          if (!cancelled) {
+            setLoading(false);
+          }
+        });
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   // A mutação já foi confirmada pelo backend; uma falha ao recarregar as
   // listas não deve fazer a tela achar que a mutação falhou.

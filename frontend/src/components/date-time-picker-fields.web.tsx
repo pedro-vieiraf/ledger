@@ -2,6 +2,7 @@ import { StyleSheet, View } from 'react-native';
 import type { CSSProperties } from 'react';
 
 import type { DateTimePickerFieldsProps } from './date-time-picker-fields';
+import { Fonts } from '@/constants/theme';
 import {
   formatDateParts,
   parseLocalDateTime,
@@ -35,7 +36,8 @@ const dateInputStyle: CSSProperties = {
   padding: '12px 14px',
   color: COLORS.text,
   fontSize: 14,
-  fontFamily: 'inherit',
+  fontFamily: Fonts.sans,
+  fontVariantNumeric: 'tabular-nums',
 };
 
 const timeInputStyle: CSSProperties = {
@@ -47,7 +49,28 @@ const timeInputStyle: CSSProperties = {
   padding: '12px 14px',
   color: COLORS.text,
   fontSize: 14,
-  fontFamily: 'inherit',
+  fontFamily: Fonts.sans,
+  fontVariantNumeric: 'tabular-nums',
+};
+
+const desktopBaseStyle: CSSProperties = {
+  height: 44,
+  minHeight: 44,
+  boxSizing: 'border-box',
+  lineHeight: '20px',
+  borderRadius: 12,
+  padding: '11px 13px',
+  fontSize: 13,
+};
+
+const desktopDateInputStyle: CSSProperties = {
+  ...dateInputStyle,
+  ...desktopBaseStyle,
+};
+
+const desktopTimeInputStyle: CSSProperties = {
+  ...timeInputStyle,
+  ...desktopBaseStyle,
 };
 
 /**
@@ -61,10 +84,12 @@ export default function DateTimePickerFields(
       time,
       onDateChange,
       onTimeChange,
+      variant = 'mobile',
     }: DateTimePickerFieldsProps,
 ) {
   const currentDate = parseLocalDateTime(date, '00:00');
   const parsedTime = parseLocalDateTime(date, time || '00:00');
+  const isDesktop = variant === 'desktop';
 
   const handleDateChange = (value: string) => {
     // Input vazio = usuário limpou o campo; mantém o valor anterior.
@@ -91,7 +116,7 @@ export default function DateTimePickerFields(
             type="date"
             value={currentDate ? toIsoDateInput(currentDate) : ''}
             onChange={(event) => handleDateChange(event.target.value)}
-            style={dateInputStyle}
+            style={isDesktop ? desktopDateInputStyle : dateInputStyle}
             aria-label="Data da transação"
         />
         <input
@@ -100,7 +125,7 @@ export default function DateTimePickerFields(
                 ? `${padNumber(parsedTime.getHours())}:${padNumber(parsedTime.getMinutes())}`
                 : ''}
             onChange={(event) => handleTimeChange(event.target.value)}
-            style={timeInputStyle}
+            style={isDesktop ? desktopTimeInputStyle : timeInputStyle}
             aria-label="Horário da transação"
         />
       </View>
