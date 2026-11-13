@@ -97,3 +97,31 @@ export function isSameLocalMinute(left: Date, right: Date) {
     left.getMinutes() === right.getMinutes()
   );
 }
+
+/**
+ * Converte `DD/MM/AAAA` em uma data local. Retorna null para formatos
+ * inválidos ou datas inexistentes (ex.: 31/02).
+ */
+export function parseLocalDate(dateValue: string): Date | null {
+  return parseLocalDateTime(dateValue, '00:00');
+}
+
+/** Formata uma data local como `AAAA-MM-DD`, formato aceito pela API. */
+export function toIsoDate(date: Date): string {
+  return (
+      `${date.getFullYear()}-` +
+      `${padNumber(date.getMonth() + 1)}-` +
+      `${padNumber(date.getDate())}`
+  );
+}
+
+/** Formata uma data ISO (`AAAA-MM-DD`) como `DD/MM/AAAA`. */
+export function formatIsoDate(value: string) {
+  const [year, month, day] = value.split('-').map(Number);
+
+  if (!year || !month || !day) {
+    return value;
+  }
+
+  return formatDateParts(new Date(year, month - 1, day, 12));
+}
