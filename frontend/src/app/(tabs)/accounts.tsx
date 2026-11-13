@@ -1,5 +1,5 @@
-import { useMemo, useRef, useState } from 'react';
-import { useRouter } from 'expo-router';
+import { useCallback, useMemo, useRef, useState } from 'react';
+import { useFocusEffect, useRouter } from 'expo-router';
 import {
   KeyboardAvoidingView,
   Modal,
@@ -14,10 +14,13 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { CurrencyInput } from '@/components/currency-input';
+import { DesktopAccounts } from '@/components/desktop/accounts/desktop-accounts';
 import { ConfirmDialog } from '@/components/feedback/confirm-dialog';
 import { InlineFeedback } from '@/components/feedback/inline-feedback';
 import { useAccounts } from '@/contexts/accounts-context';
 import { useFeedback } from '@/contexts/feedback-context';
+import { usePrivacy } from '@/contexts/privacy-context';
+import { useIsDesktopLayout } from '@/hooks/use-is-desktop-layout';
 import {
   createAccount as createAccountRequest,
   deactivateAccount as deactivateAccountRequest,
@@ -25,16 +28,22 @@ import {
   reactivateAccount as reactivateAccountRequest,
   updateAccount as updateAccountRequest,
   type Account,
-  type AccountType,
 } from '@/services/accounts-api';
+import {
+  emptyAccountForm,
+  formatAccountType,
+  validateAccountForm,
+  type AccountFormValues,
+} from '@/utils/accounts';
+import {
+  getActiveAccounts,
+  sumAccountBalances,
+} from '@/utils/financial-summary';
+import { maskMoney } from '@/utils/privacy';
 
 type AccountFilter = 'ALL' | 'ACTIVE' | 'INACTIVE';
 
-type AccountForm = {
-  name: string;
-  type: AccountType;
-  openingBalance: number;
-};
+type AccountForm = AccountFormValues;
 
 const colors = {
   background: '#F7F8F5',
@@ -59,19 +68,20 @@ function formatCurrency(value: number) {
   return currencyFormatter.format(value);
 }
 
-function formatAccountType(type: AccountType) {
-  return type === 'CHECKING' ? 'Conta corrente' : 'Poupança';
+export default function AccountsScreen() {
+  const isDesktop = useIsDesktopLayout();
+
+  if (isDesktop) {
+    return <DesktopAccounts />;
+  }
+
+  return <AccountsMobileScreen />;
 }
 
-const emptyForm: AccountForm = {
-  name: '',
-  type: 'CHECKING',
-  openingBalance: 0,
-};
-
-export default function AccountsScreen() {
+function AccountsMobileScreen() {
   const router = useRouter();
   const { showToast } = useFeedback();
+  const { hidden } = usePrivacy();
   const {
     accounts,
     loading,
@@ -90,7 +100,7 @@ export default function AccountsScreen() {
   const [editingAccountId, setEditingAccountId] = useState<string | null>(
       null,
   );
-  const [form, setForm] = useState<AccountForm>(emptyForm);
+  const [form, setForm] = useState<AccountForm>(emptyAccountForm);
   const [formError, setFormError] = useState('');
 
   const [reactivatingAccountId, setReactivatingAccountId] = useState<
@@ -110,22 +120,38 @@ export default function AccountsScreen() {
   const [deleting, setDeleting] = useState(false);
   const [deletionError, setDeletionError] = useState('');
 
-  async function reloadAccounts() {
+  const reloadAccounts = useCallback(async () => {
     await refreshAccounts().catch(() => {
       // O erro já fica disponível no estado do contexto.
     });
-  }
+  }, [refreshAccounts]);
+
+  useFocusEffect(
+      useCallback(() => {
+        // Mantém os saldos atualizados quando ocorrências recorrentes são
+        // geradas pelo backend enquanto o usuário navega pelo aplicativo.
+        void reloadAccounts();
+
+        const intervalId = setInterval(() => {
+          void refreshAccounts({ silent: true }).catch(() => {
+            // O erro já fica disponível no estado do contexto.
+          });
+        }, 10_000);
+
+        return () => clearInterval(intervalId);
+      }, [reloadAccounts, refreshAccounts]),
+  );
 
   const actionsDisabled =
       loading || saving || deactivating || reactivating || deleting;
 
   const activeAccounts = useMemo(
-      () => accounts.filter((account) => account.status === 'ACTIVE'),
+      () => getActiveAccounts(accounts),
       [accounts],
   );
 
   const totalBalance = useMemo(
-      () => activeAccounts.reduce((total, account) => total + account.balance, 0),
+      () => sumAccountBalances(activeAccounts),
       [activeAccounts],
   );
 
@@ -160,7 +186,7 @@ export default function AccountsScreen() {
 
   function openCreateForm() {
     setEditingAccountId(null);
-    setForm(emptyForm);
+    setForm(emptyAccountForm);
     setFormError('');
     setFormVisible(true);
   }
@@ -199,24 +225,17 @@ export default function AccountsScreen() {
       return;
     }
 
-    const name = form.name.trim();
+    const validationError = validateAccountForm(form, {
+      isEditing: Boolean(editingAccountId),
+    });
 
-    if (!name) {
-      setFormError('Informe o nome da conta.');
+    if (validationError) {
+      setFormError(validationError);
       return;
     }
 
-    let openingBalance = 0;
-
-    if (!editingAccountId) {
-      openingBalance = form.openingBalance;
-
-      if (!Number.isFinite(openingBalance) || openingBalance < 0) {
-        setFormError('Informe um saldo inicial válido.');
-        return;
-      }
-    }
-
+    const name = form.name.trim();
+    const openingBalance = editingAccountId ? 0 : form.openingBalance;
     const isEditing = Boolean(editingAccountId);
 
     mutationInProgressRef.current = true;
@@ -239,7 +258,7 @@ export default function AccountsScreen() {
       }
 
       setFormVisible(false);
-      setForm(emptyForm);
+      setForm(emptyAccountForm);
       setEditingAccountId(null);
       setSearch('');
       setFilter('ALL');
@@ -478,7 +497,7 @@ export default function AccountsScreen() {
                 numberOfLines={1}
                 adjustsFontSizeToFit
             >
-              {formatCurrency(totalBalance)}
+              {maskMoney(formatCurrency(totalBalance), hidden)}
             </Text>
 
             <View style={styles.balanceFooter}>
@@ -645,7 +664,7 @@ export default function AccountsScreen() {
                                 numberOfLines={1}
                                 adjustsFontSizeToFit
                             >
-                              {formatCurrency(account.balance)}
+                              {maskMoney(formatCurrency(account.balance), hidden)}
                             </Text>
                           </View>
 

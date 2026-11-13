@@ -9,11 +9,23 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect, useRouter } from 'expo-router';
+import { SymbolView } from 'expo-symbols';
 
+import { DesktopDashboard } from '@/components/desktop/dashboard/desktop-dashboard';
 import { InlineFeedback } from '@/components/feedback/inline-feedback';
 import { useAccounts, type Account } from '@/contexts/accounts-context';
+import { usePrivacy } from '@/contexts/privacy-context';
+import { useIsDesktopLayout } from '@/hooks/use-is-desktop-layout';
 import { useTransactions, type Transaction } from '@/contexts/transactions-context';
 import { getCategories, type Category } from '@/services/categories-api';
+import {
+  filterTransactionsByMonth,
+  getActiveAccounts,
+  summarizeTransactions,
+  sumAccountBalances,
+} from '@/utils/financial-summary';
+import { sortTransactionsByTimestampDescending } from '@/utils/transaction-sort';
+import { maskMoney } from '@/utils/privacy';
 
 const COLORS = {
   background: '#F7F7F2',
@@ -57,12 +69,6 @@ const monthFormatter = new Intl.DateTimeFormat('pt-BR', {
 });
 
 type TransactionType = Transaction['type'];
-
-type MonthlySummary = {
-  income: number;
-  expense: number;
-  result: number;
-};
 
 function formatCurrency(value: number, currency = 'BRL') {
   try {
@@ -175,22 +181,6 @@ function getTransactionPalette(type: TransactionType) {
   };
 }
 
-function EyeIcon({ open, color }: { open: boolean; color: string }) {
-  if (!open) {
-    return (
-      <View style={styles.eyeClosed}>
-        <View style={[styles.eyeClosedLid, { borderBottomColor: color }]} />
-      </View>
-    );
-  }
-
-  return (
-    <View style={[styles.eyeOpen, { borderColor: color }]}>
-      <View style={[styles.eyePupil, { backgroundColor: color }]} />
-    </View>
-  );
-}
-
 function DashboardHeader({ refreshing }: { refreshing: boolean }) {
   return (
     <View style={styles.header}>
@@ -206,7 +196,7 @@ function DashboardHeader({ refreshing }: { refreshing: boolean }) {
   );
 }
 
-export default function HomeScreen() {
+function MobileDashboardScreen() {
   const router = useRouter();
   const {
     accounts,
@@ -228,7 +218,7 @@ export default function HomeScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const refreshInFlightRef = useRef(false);
 
-  const [balanceVisible, setBalanceVisible] = useState(true);
+  const { hidden, toggle: togglePrivacy } = usePrivacy();
   const [monthOffset, setMonthOffset] = useState(0);
 
   const loadCategories = useCallback(async () => {
@@ -282,16 +272,12 @@ export default function HomeScreen() {
   }, [monthOffset]);
 
   const activeAccounts = useMemo(
-    () => accounts.filter((account) => account.status === 'ACTIVE'),
+    () => getActiveAccounts(accounts),
     [accounts],
   );
 
   const totalBalance = useMemo(
-    () =>
-      activeAccounts.reduce(
-        (total, account) => total + Math.round(account.balance * 100),
-        0,
-      ) / 100,
+    () => sumAccountBalances(activeAccounts),
     [activeAccounts],
   );
 
@@ -301,53 +287,18 @@ export default function HomeScreen() {
   );
 
   const monthlyTransactions = useMemo(
-    () =>
-      transactions.filter((transaction) => {
-        const date = new Date(transaction.timestamp);
-
-        return (
-          !Number.isNaN(date.getTime()) &&
-          date.getFullYear() === selectedMonth.getFullYear() &&
-          date.getMonth() === selectedMonth.getMonth()
-        );
-      }),
+    () => filterTransactionsByMonth(transactions, selectedMonth),
     [selectedMonth, transactions],
   );
 
-  const summary = useMemo<MonthlySummary>(() => {
-    let incomeCents = 0;
-    let expenseCents = 0;
-
-    for (const transaction of monthlyTransactions) {
-      if (transaction.currency !== 'BRL') {
-        continue;
-      }
-
-      const cents = Math.round(transaction.amount * 100);
-
-      if (transaction.type === 'INCOME') {
-        incomeCents += cents;
-      } else if (transaction.type === 'EXPENSE') {
-        expenseCents += cents;
-      }
-    }
-
-    return {
-      income: incomeCents / 100,
-      expense: expenseCents / 100,
-      result: (incomeCents - expenseCents) / 100,
-    };
-  }, [monthlyTransactions]);
+  const summary = useMemo(
+    () => summarizeTransactions(monthlyTransactions),
+    [monthlyTransactions],
+  );
 
   const recentTransactions = useMemo(
     () =>
-      [...transactions]
-        .sort(
-          (a, b) =>
-            new Date(b.timestamp).getTime() -
-            new Date(a.timestamp).getTime(),
-        )
-        .slice(0, 5),
+      sortTransactionsByTimestampDescending(transactions).slice(0, 5),
     [transactions],
   );
 
@@ -425,18 +376,30 @@ export default function HomeScreen() {
             <Pressable
               accessibilityRole="button"
               accessibilityLabel={
-                balanceVisible
-                  ? 'Ocultar valores financeiros'
-                  : 'Mostrar valores financeiros'
+                hidden
+                  ? 'Mostrar valores financeiros'
+                  : 'Ocultar valores financeiros'
               }
-              onPress={() => setBalanceVisible((visible) => !visible)}
+              onPress={togglePrivacy}
               hitSlop={8}
               style={({ pressed }) => [
                 styles.balanceToggleButton,
                 pressed && styles.balanceTogglePressed,
               ]}
             >
-              <EyeIcon open={balanceVisible} color="#FFFFFF" />
+              <SymbolView
+                name={
+                  hidden
+                    ? {
+                        ios: 'eye.slash',
+                        android: 'visibility_off',
+                        web: 'visibility_off',
+                      }
+                    : { ios: 'eye', android: 'visibility', web: 'visibility' }
+                }
+                size={20}
+                tintColor="#FFFFFF"
+              />
             </Pressable>
           </View>
 
@@ -446,7 +409,7 @@ export default function HomeScreen() {
             adjustsFontSizeToFit
             minimumFontScale={0.7}
           >
-            {balanceVisible ? formatCurrency(totalBalance) : '••••••'}
+            {maskMoney(formatCurrency(totalBalance), hidden)}
           </Text>
 
           <View style={styles.balanceFooter}>
@@ -517,7 +480,7 @@ export default function HomeScreen() {
               adjustsFontSizeToFit
               minimumFontScale={0.7}
             >
-              {balanceVisible ? formatCurrency(summary.income) : '••••••'}
+              {maskMoney(formatCurrency(summary.income), hidden)}
             </Text>
           </View>
 
@@ -540,7 +503,7 @@ export default function HomeScreen() {
               adjustsFontSizeToFit
               minimumFontScale={0.7}
             >
-              {balanceVisible ? formatCurrency(summary.expense) : '••••••'}
+              {maskMoney(formatCurrency(summary.expense), hidden)}
             </Text>
           </View>
         </View>
@@ -559,7 +522,7 @@ export default function HomeScreen() {
             adjustsFontSizeToFit
             minimumFontScale={0.7}
           >
-            {balanceVisible ? formatCurrency(summary.result) : '••••••'}
+            {maskMoney(formatCurrency(summary.result), hidden)}
           </Text>
         </View>
 
@@ -605,9 +568,7 @@ export default function HomeScreen() {
                   adjustsFontSizeToFit
                   minimumFontScale={0.75}
                 >
-                  {balanceVisible
-                    ? formatCurrency(account.balance)
-                    : '••••••'}
+                  {maskMoney(formatCurrency(account.balance), hidden)}
                 </Text>
               </View>
             ))}
@@ -701,7 +662,9 @@ export default function HomeScreen() {
                     ]}
                     numberOfLines={1}
                   >
-                    {balanceVisible ? (
+                    {hidden ? (
+                      '••••••'
+                    ) : (
                       <>
                         {palette.prefix}
                         {formatCurrency(
@@ -709,8 +672,6 @@ export default function HomeScreen() {
                           transaction.currency,
                         )}
                       </>
-                    ) : (
-                      '••••••'
                     )}
                   </Text>
                 </View>
@@ -832,32 +793,6 @@ const styles = StyleSheet.create({
   },
   balanceTogglePressed: {
     backgroundColor: 'rgba(255, 255, 255, 0.12)',
-  },
-  eyeOpen: {
-    width: 24,
-    height: 14,
-    borderRadius: 12,
-    borderWidth: 2,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  eyePupil: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
-  },
-  eyeClosed: {
-    width: 24,
-    height: 14,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  eyeClosedLid: {
-    width: 22,
-    height: 9,
-    borderBottomWidth: 2,
-    borderBottomLeftRadius: 11,
-    borderBottomRightRadius: 11,
   },
   balanceValue: {
     marginTop: 14,
@@ -1144,3 +1079,13 @@ const styles = StyleSheet.create({
     opacity: 0.4,
   },
 });
+
+export default function HomeScreen() {
+  const isDesktop = useIsDesktopLayout();
+
+  if (isDesktop) {
+    return <DesktopDashboard />;
+  }
+
+  return <MobileDashboardScreen />;
+}

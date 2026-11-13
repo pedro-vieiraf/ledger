@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useMemo, useRef, useState } from 'react';
 import {
   KeyboardAvoidingView,
   Modal,
@@ -11,10 +11,13 @@ import {
   View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useFocusEffect } from 'expo-router';
 
+import { DesktopCategories } from '@/components/desktop/categories/desktop-categories';
 import { ConfirmDialog } from '@/components/feedback/confirm-dialog';
 import { InlineFeedback } from '@/components/feedback/inline-feedback';
 import { useFeedback } from '@/contexts/feedback-context';
+import { useIsDesktopLayout } from '@/hooks/use-is-desktop-layout';
 import {
   createCategory,
   deleteCategory,
@@ -22,6 +25,11 @@ import {
   updateCategory,
   type Category,
 } from '@/services/categories-api';
+import {
+  emptyCategoryForm,
+  validateCategoryForm,
+  type CategoryFormValues,
+} from '@/utils/categories';
 
 const colors = {
   background: '#F7F8F5',
@@ -36,15 +44,17 @@ const colors = {
   input: '#FAFBF9',
 };
 
-type CategoryForm = {
-  name: string;
-};
-
-const emptyForm: CategoryForm = {
-  name: '',
-};
-
 export default function CategoriesScreen() {
+  const isDesktop = useIsDesktopLayout();
+
+  if (isDesktop) {
+    return <DesktopCategories />;
+  }
+
+  return <CategoriesMobileScreen />;
+}
+
+function CategoriesMobileScreen() {
   const { showToast } = useFeedback();
 
   const [categories, setCategories] = useState<Category[]>([]);
@@ -55,6 +65,7 @@ export default function CategoriesScreen() {
   const [deleting, setDeleting] = useState(false);
 
   const mutationInProgressRef = useRef(false);
+  const hasLoadedRef = useRef(false);
 
   const [search, setSearch] = useState('');
 
@@ -62,7 +73,7 @@ export default function CategoriesScreen() {
   const [editingCategoryId, setEditingCategoryId] = useState<string | null>(
       null,
   );
-  const [form, setForm] = useState<CategoryForm>(emptyForm);
+  const [form, setForm] = useState<CategoryFormValues>(emptyCategoryForm);
   const [formError, setFormError] = useState('');
 
   const [deletingCategoryId, setDeletingCategoryId] = useState<string | null>(
@@ -70,8 +81,11 @@ export default function CategoriesScreen() {
   );
   const [deleteError, setDeleteError] = useState('');
 
-  const loadCategories = useCallback(async () => {
-    setLoading(true);
+  const loadCategories = useCallback(async (options?: { silent?: boolean }) => {
+    if (!options?.silent) {
+      setLoading(true);
+    }
+
     setLoadError('');
 
     try {
@@ -85,13 +99,23 @@ export default function CategoriesScreen() {
               : 'Não foi possível carregar as categorias.',
       );
     } finally {
-      setLoading(false);
+      hasLoadedRef.current = true;
+
+      if (!options?.silent) {
+        setLoading(false);
+      }
     }
   }, []);
 
-  useEffect(() => {
+  const reloadCategories = useCallback(() => {
     void loadCategories();
   }, [loadCategories]);
+
+  useFocusEffect(
+    useCallback(() => {
+      void loadCategories({ silent: hasLoadedRef.current });
+    }, [loadCategories]),
+  );
 
   const actionsDisabled = loading || saving || deleting;
 
@@ -113,7 +137,7 @@ export default function CategoriesScreen() {
     }
 
     setEditingCategoryId(null);
-    setForm(emptyForm);
+    setForm(emptyCategoryForm);
     setFormError('');
     setFormVisible(true);
   }
@@ -143,25 +167,17 @@ export default function CategoriesScreen() {
       return;
     }
 
+    const validationError = validateCategoryForm(form, {
+      categories,
+      editingCategoryId,
+    });
+
+    if (validationError) {
+      setFormError(validationError);
+      return;
+    }
+
     const name = form.name.trim();
-
-    if (!name) {
-      setFormError('Informe o nome da categoria.');
-      return;
-    }
-
-    const duplicate = categories.some(
-        (category) =>
-            category.name.toLocaleLowerCase('pt-BR') ===
-            name.toLocaleLowerCase('pt-BR') &&
-            category.id !== editingCategoryId,
-    );
-
-    if (duplicate) {
-      setFormError('Já existe uma categoria com esse nome.');
-      return;
-    }
-
     const isEditing = Boolean(editingCategoryId);
 
     mutationInProgressRef.current = true;
@@ -176,7 +192,7 @@ export default function CategoriesScreen() {
       }
 
       setFormVisible(false);
-      setForm(emptyForm);
+      setForm(emptyCategoryForm);
       setEditingCategoryId(null);
       setSearch('');
 
@@ -339,7 +355,7 @@ export default function CategoriesScreen() {
                       styles.emptyAction,
                       loading && styles.disabledButton,
                     ]}
-                    onPress={() => void loadCategories()}
+                    onPress={reloadCategories}
                     disabled={loading}
                 >
                   <Text style={styles.emptyActionText}>Tentar novamente</Text>

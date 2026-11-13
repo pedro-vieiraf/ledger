@@ -16,12 +16,17 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { InlineFeedback } from '@/components/feedback/inline-feedback';
+import { DesktopAccountDetails } from '@/components/desktop/accounts/desktop-account-details';
 import { useAccounts, type Account } from '@/contexts/accounts-context';
+import { usePrivacy } from '@/contexts/privacy-context';
 import {
   useTransactions,
   type Transaction,
 } from '@/contexts/transactions-context';
+import { useIsDesktopLayout } from '@/hooks/use-is-desktop-layout';
 import { getCategories, type Category } from '@/services/categories-api';
+import { maskMoney } from '@/utils/privacy';
+import { compareTransactionsByTimestampDescending } from '@/utils/transaction-sort';
 
 const colors = {
   background: '#F7F7F2',
@@ -201,7 +206,18 @@ function getTransactionPalette(
 }
 
 export default function AccountDetailsScreen() {
+  const isDesktop = useIsDesktopLayout();
+
+  if (isDesktop) {
+    return <DesktopAccountDetails />;
+  }
+
+  return <AccountDetailsMobileScreen />;
+}
+
+function AccountDetailsMobileScreen() {
   const router = useRouter();
+  const { hidden } = usePrivacy();
   const { id } = useLocalSearchParams<{ id: string }>();
   const {
     accounts,
@@ -309,19 +325,12 @@ export default function AccountDetailsScreen() {
           direction: getTransactionDirection(transaction, id),
           dateKey: getLocalDateKey(transaction.timestamp),
         }))
-        .sort((first, second) => {
-          const difference =
-            new Date(second.transaction.timestamp).getTime() -
-            new Date(first.transaction.timestamp).getTime();
-
-          if (Number.isNaN(difference) || difference === 0) {
-            return second.transaction.id.localeCompare(
-              first.transaction.id,
-            );
-          }
-
-          return difference;
-        }),
+        .sort((first, second) =>
+          compareTransactionsByTimestampDescending(
+            first.transaction,
+            second.transaction,
+          ),
+        ),
     [id, transactions],
   );
 
@@ -548,7 +557,7 @@ export default function AccountDetailsScreen() {
             adjustsFontSizeToFit
             minimumFontScale={0.7}
           >
-            {formatCurrency(account.balance)}
+            {maskMoney(formatCurrency(account.balance), hidden)}
           </Text>
 
           <View
@@ -631,7 +640,7 @@ export default function AccountDetailsScreen() {
               adjustsFontSizeToFit
               minimumFontScale={0.7}
             >
-              {formatCurrency(summary.income)}
+              {maskMoney(formatCurrency(summary.income), hidden)}
             </Text>
           </View>
 
@@ -656,7 +665,7 @@ export default function AccountDetailsScreen() {
               adjustsFontSizeToFit
               minimumFontScale={0.7}
             >
-              {formatCurrency(summary.expense)}
+              {maskMoney(formatCurrency(summary.expense), hidden)}
             </Text>
           </View>
         </View>
@@ -798,10 +807,12 @@ export default function AccountDetailsScreen() {
                         adjustsFontSizeToFit
                         minimumFontScale={0.7}
                       >
-                        {palette.prefix}
-                        {formatCurrency(
-                          transaction.amount,
-                          transaction.currency,
+                        {maskMoney(
+                          `${palette.prefix}${formatCurrency(
+                            transaction.amount,
+                            transaction.currency,
+                          )}`,
+                          hidden,
                         )}
                       </Text>
                     </View>
