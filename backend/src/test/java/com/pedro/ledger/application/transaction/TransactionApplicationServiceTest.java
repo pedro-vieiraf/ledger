@@ -310,6 +310,86 @@ class TransactionApplicationServiceTest {
       verify(transactionRepository, never())
           .save(any(Transaction.class));
     }
+
+    @Test
+    void shouldReturnExistingTransactionWhenRetriedWithSameId() {
+      UUID transactionId = UUID.randomUUID();
+
+      Transaction existing = Transaction.createWithId(
+          transactionId,
+          Money.of("50.00"),
+          TransactionType.INCOME,
+          "Pix da Ana",
+          Instant.now(),
+          TransactionSource.MANUAL,
+          UUID.randomUUID(),
+          null,
+          null
+      );
+
+      when(transactionRepository.findById(transactionId))
+          .thenReturn(Optional.of(existing));
+
+      Transaction result = transactionApplicationService.create(
+          transactionId,
+          Money.of("50.00"),
+          TransactionType.INCOME,
+          "Pix da Ana",
+          existing.getAccountId(),
+          null,
+          null
+      );
+
+      assertThat(result).isSameAs(existing);
+
+      verify(accountRepository, never())
+          .findById(any(UUID.class));
+
+      verify(accountRepository, never())
+          .save(any(Account.class));
+
+      verify(transactionRepository, never())
+          .save(any(Transaction.class));
+    }
+
+    @Test
+    void shouldCreateWithProvidedIdAndDebitAccount() {
+      Account account = Account.open(
+          "Checking Account",
+          AccountType.CHECKING,
+          Money.of("1000.00")
+      );
+
+      UUID accountId = account.getId();
+      UUID transactionId = UUID.randomUUID();
+
+      when(transactionRepository.findById(transactionId))
+          .thenReturn(Optional.empty());
+
+      when(accountRepository.findById(accountId))
+          .thenReturn(Optional.of(account));
+
+      when(transactionRepository.save(any(Transaction.class)))
+          .thenAnswer(invocation -> invocation.getArgument(0));
+
+      Transaction result = transactionApplicationService.create(
+          transactionId,
+          Money.of("100.00"),
+          TransactionType.EXPENSE,
+          "Groceries",
+          accountId,
+          null,
+          null
+      );
+
+      assertThat(result.getId()).isEqualTo(transactionId);
+
+      assertThat(account.getBalance())
+          .isEqualTo(Money.of("900.00"));
+
+      verify(transactionRepository)
+          .save(result);
+    }
   }
 
   @Nested
@@ -469,6 +549,7 @@ class TransactionApplicationServiceTest {
           transactionId,
           new java.math.BigDecimal("150.00"),
           null,
+          null,
           null
       );
 
@@ -532,6 +613,7 @@ class TransactionApplicationServiceTest {
           transactionId,
           new java.math.BigDecimal("100.00"),
           null,
+          null,
           null
       );
 
@@ -586,6 +668,7 @@ class TransactionApplicationServiceTest {
           transactionId,
           new java.math.BigDecimal("700.00"),
           null,
+          null,
           null
       );
 
@@ -638,6 +721,7 @@ class TransactionApplicationServiceTest {
           transactionId,
           null,
           "Household groceries",
+          null,
           null
       );
 
@@ -692,7 +776,8 @@ class TransactionApplicationServiceTest {
           transaction.getId(),
           null,
           null,
-          newCategoryId
+          newCategoryId,
+          null
       );
 
       assertThat(result.getAmount())
@@ -760,7 +845,8 @@ class TransactionApplicationServiceTest {
           transaction.getId(),
           new java.math.BigDecimal("150.00"),
           "Household groceries",
-          newCategoryId
+          newCategoryId,
+          null
       );
 
       assertThat(result.getAmount())
@@ -811,6 +897,7 @@ class TransactionApplicationServiceTest {
 
       Transaction result = transactionApplicationService.update(
           transaction.getId(),
+          null,
           null,
           null,
           null
@@ -865,7 +952,8 @@ class TransactionApplicationServiceTest {
               transaction.getId(),
               null,
               null,
-              categoryId
+              categoryId,
+              null
           )
       )
           .isInstanceOf(CategoryNotFoundException.class);
@@ -884,6 +972,47 @@ class TransactionApplicationServiceTest {
     }
 
     @Test
+    void shouldUpdateTimestampForManualTransaction() {
+      UUID accountId = UUID.randomUUID();
+      Instant originalTimestamp = Instant.parse("2026-05-10T12:00:00Z");
+      Instant updatedTimestamp = Instant.parse("2026-05-10T18:30:00Z");
+
+      Transaction transaction = Transaction.create(
+          Money.of("100.00"),
+          TransactionType.EXPENSE,
+          "Groceries",
+          originalTimestamp,
+          TransactionSource.MANUAL,
+          accountId,
+          null,
+          null
+      );
+
+      when(transactionRepository.findById(transaction.getId()))
+          .thenReturn(Optional.of(transaction));
+
+      when(transactionRepository.save(any(Transaction.class)))
+          .thenAnswer(invocation -> invocation.getArgument(0));
+
+      Transaction result = transactionApplicationService.update(
+          transaction.getId(),
+          null,
+          null,
+          null,
+          updatedTimestamp
+      );
+
+      assertThat(result.getTimestamp())
+          .isEqualTo(updatedTimestamp);
+
+      assertThat(result.getTimestamp())
+          .isNotEqualTo(originalTimestamp);
+
+      verify(transactionRepository)
+          .save(transaction);
+    }
+
+    @Test
     void shouldThrowExceptionWhenTransactionDoesNotExist() {
       UUID transactionId = UUID.randomUUID();
 
@@ -895,7 +1024,8 @@ class TransactionApplicationServiceTest {
               transactionId,
               new java.math.BigDecimal("150.00"),
               "Updated description",
-              UUID.randomUUID()
+              UUID.randomUUID(),
+              null
           )
       )
           .isInstanceOf(TransactionNotFoundException.class);
@@ -943,6 +1073,7 @@ class TransactionApplicationServiceTest {
           transactionApplicationService.update(
               transactionId,
               new java.math.BigDecimal("150.00"),
+              null,
               null,
               null
           )
@@ -1128,6 +1259,105 @@ class TransactionApplicationServiceTest {
 
       verify(accountRepository)
           .save(destinationAccount);
+
+      verify(transactionRepository)
+          .delete(transactionId);
+    }
+
+    @Test
+    void shouldDeleteExpenseFromDeletedAccountWithoutRestoringBalance() {
+      Account account = Account.open(
+          "Checking Account",
+          AccountType.CHECKING,
+          Money.of("1000.00")
+      );
+
+      UUID accountId = account.getId();
+
+      Transaction transaction = Transaction.create(
+          Money.of("100.00"),
+          TransactionType.EXPENSE,
+          "Groceries",
+          Instant.now(),
+          TransactionSource.MANUAL,
+          accountId,
+          null,
+          null
+      );
+
+      account.debit(transaction.getAmount());
+      account.deactivate();
+      account.delete();
+
+      UUID transactionId = transaction.getId();
+
+      when(transactionRepository.findById(transactionId))
+          .thenReturn(Optional.of(transaction));
+
+      when(accountRepository.findById(accountId))
+          .thenReturn(Optional.of(account));
+
+      transactionApplicationService.delete(transactionId);
+
+      assertThat(account.getBalance())
+          .isEqualTo(Money.of("900.00"));
+
+      verify(transactionRepository)
+          .delete(transactionId);
+    }
+
+    @Test
+    void shouldDeleteTransferWhenDestinationAccountIsDeleted() {
+      Account sourceAccount = Account.open(
+          "Checking Account",
+          AccountType.CHECKING,
+          Money.of("1000.00")
+      );
+
+      Account destinationAccount = Account.open(
+          "Savings Account",
+          AccountType.SAVINGS,
+          Money.of("500.00")
+      );
+
+      UUID sourceAccountId = sourceAccount.getId();
+      UUID destinationAccountId = destinationAccount.getId();
+
+      Transaction transaction = Transaction.create(
+          Money.of("200.00"),
+          TransactionType.TRANSFER,
+          "Transfer to savings",
+          Instant.now(),
+          TransactionSource.MANUAL,
+          sourceAccountId,
+          destinationAccountId,
+          null
+      );
+
+      sourceAccount.debit(transaction.getAmount());
+      destinationAccount.credit(transaction.getAmount());
+
+      destinationAccount.deactivate();
+      destinationAccount.delete();
+
+      UUID transactionId = transaction.getId();
+
+      when(transactionRepository.findById(transactionId))
+          .thenReturn(Optional.of(transaction));
+
+      when(accountRepository.findById(sourceAccountId))
+          .thenReturn(Optional.of(sourceAccount));
+
+      when(accountRepository.findById(destinationAccountId))
+          .thenReturn(Optional.of(destinationAccount));
+
+      transactionApplicationService.delete(transactionId);
+
+      assertThat(sourceAccount.getBalance())
+          .isEqualTo(Money.of("1000.00"));
+
+      assertThat(destinationAccount.getBalance())
+          .isEqualTo(Money.of("700.00"));
 
       verify(transactionRepository)
           .delete(transactionId);

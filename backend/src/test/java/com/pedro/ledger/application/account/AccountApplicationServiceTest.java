@@ -10,7 +10,10 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.pedro.ledger.domain.account.Account;
+import com.pedro.ledger.domain.account.AccountAlreadyActiveException;
+import com.pedro.ledger.domain.account.AccountAlreadyInactiveException;
 import com.pedro.ledger.domain.account.AccountNotFoundException;
+import com.pedro.ledger.domain.account.AccountNotInactiveException;
 import com.pedro.ledger.domain.account.AccountRepository;
 import com.pedro.ledger.domain.account.AccountStatus;
 import com.pedro.ledger.domain.account.AccountType;
@@ -430,6 +433,166 @@ class AccountApplicationServiceTest {
       assertThrows(
           AccountNotFoundException.class,
           () -> accountApplicationService.deactivate(id)
+      );
+
+      verify(accountRepository).findById(id);
+      verify(accountRepository, never()).save(any());
+    }
+
+    @Test
+    void shouldThrowExceptionWhenAccountIsAlreadyInactive() {
+      UUID id = UUID.randomUUID();
+
+      Account account = Account.restore(
+          id,
+          "Nubank",
+          AccountType.CHECKING,
+          AccountStatus.INACTIVE,
+          Money.of("1000.00")
+      );
+
+      when(accountRepository.findById(id))
+          .thenReturn(Optional.of(account));
+
+      assertThrows(
+          AccountAlreadyInactiveException.class,
+          () -> accountApplicationService.deactivate(id)
+      );
+
+      verify(accountRepository).findById(id);
+      verify(accountRepository, never()).save(any());
+    }
+  }
+
+  @Nested
+  class Delete {
+
+    @Test
+    void shouldDeleteInactiveAccount() {
+      UUID id = UUID.randomUUID();
+
+      Account account = Account.restore(
+          id,
+          "Nubank",
+          AccountType.CHECKING,
+          AccountStatus.INACTIVE,
+          Money.of("1000.00")
+      );
+
+      when(accountRepository.findById(id))
+          .thenReturn(Optional.of(account));
+
+      when(accountRepository.save(account))
+          .thenReturn(account);
+
+      accountApplicationService.delete(id);
+
+      assertThat(account.getStatus())
+          .isEqualTo(AccountStatus.DELETED);
+      verify(accountRepository).findById(id);
+      verify(accountRepository).save(account);
+    }
+
+    @Test
+    void shouldThrowExceptionWhenAccountDoesNotExist() {
+      UUID id = UUID.randomUUID();
+
+      when(accountRepository.findById(id))
+          .thenReturn(Optional.empty());
+
+      assertThrows(
+          AccountNotFoundException.class,
+          () -> accountApplicationService.delete(id)
+      );
+
+      verify(accountRepository).findById(id);
+      verify(accountRepository, never()).save(any());
+    }
+
+    @Test
+    void shouldThrowExceptionWhenAccountIsActive() {
+      UUID id = UUID.randomUUID();
+
+      Account account = Account.open(
+          "Nubank",
+          AccountType.CHECKING,
+          Money.of("1000.00")
+      );
+
+      when(accountRepository.findById(id))
+          .thenReturn(Optional.of(account));
+
+      assertThrows(
+          AccountNotInactiveException.class,
+          () -> accountApplicationService.delete(id)
+      );
+
+      verify(accountRepository).findById(id);
+      verify(accountRepository, never()).save(any());
+    }
+  }
+
+  @Nested
+  class Activate {
+
+    @Test
+    void shouldActivateInactiveAccount() {
+      UUID id = UUID.randomUUID();
+
+      Account account = Account.restore(
+          id,
+          "Nubank",
+          AccountType.CHECKING,
+          AccountStatus.INACTIVE,
+          Money.of("1000.00")
+      );
+
+      when(accountRepository.findById(id))
+          .thenReturn(Optional.of(account));
+
+      when(accountRepository.save(account))
+          .thenReturn(account);
+
+      Account activatedAccount = accountApplicationService.activate(id);
+
+      assertThat(activatedAccount.getStatus())
+          .isEqualTo(AccountStatus.ACTIVE);
+      verify(accountRepository).findById(id);
+      verify(accountRepository).save(account);
+    }
+
+    @Test
+    void shouldThrowExceptionWhenAccountDoesNotExist() {
+      UUID id = UUID.randomUUID();
+
+      when(accountRepository.findById(id))
+          .thenReturn(Optional.empty());
+
+      assertThrows(
+          AccountNotFoundException.class,
+          () -> accountApplicationService.activate(id)
+      );
+
+      verify(accountRepository).findById(id);
+      verify(accountRepository, never()).save(any());
+    }
+
+    @Test
+    void shouldThrowExceptionWhenAccountIsAlreadyActive() {
+      UUID id = UUID.randomUUID();
+
+      Account account = Account.open(
+          "Nubank",
+          AccountType.CHECKING,
+          Money.of("1000.00")
+      );
+
+      when(accountRepository.findById(id))
+          .thenReturn(Optional.of(account));
+
+      assertThrows(
+          AccountAlreadyActiveException.class,
+          () -> accountApplicationService.activate(id)
       );
 
       verify(accountRepository).findById(id);

@@ -5,6 +5,7 @@ import com.pedro.ledger.domain.transaction.TransactionSource;
 import com.pedro.ledger.domain.transaction.TransactionType;
 import java.math.BigDecimal;
 import java.time.Instant;
+import java.time.LocalDate;
 import java.util.UUID;
 
 /**
@@ -31,7 +32,9 @@ public record TransactionResponse(
     TransactionSource source,
     UUID accountId,
     UUID destinationAccountId,
-    UUID categoryId
+    UUID categoryId,
+    UUID recurrenceId,
+    LocalDate occurrenceDate
 ) {
 
   public static TransactionResponse from(Transaction transaction) {
@@ -45,7 +48,9 @@ public record TransactionResponse(
         transaction.getSource(),
         transaction.getAccountId(),
         transaction.getDestinationAccountId(),
-        transaction.getCategoryId()
+        transaction.getCategoryId(),
+        transaction.getRecurrenceId(),
+        transaction.getOccurrenceDate()
     );
   }
 }

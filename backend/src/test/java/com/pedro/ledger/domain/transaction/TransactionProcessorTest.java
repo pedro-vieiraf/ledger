@@ -912,6 +912,78 @@ class TransactionProcessorTest {
       assertThat(account.getBalance())
           .isEqualTo(Money.of("900.00"));
     }
+
+    @Test
+    void shouldChangeExpenseAmountWithoutAdjustingDeletedAccount() {
+      Account account = Account.open(
+          "Checking Account",
+          AccountType.CHECKING,
+          Money.of("1000.00")
+      );
+
+      Transaction transaction = Transaction.create(
+          Money.of("100.00"),
+          TransactionType.EXPENSE,
+          "Groceries",
+          Instant.now(),
+          TransactionSource.MANUAL,
+          account.getId(),
+          null,
+          null
+      );
+
+      account.debit(transaction.getAmount());
+      account.deactivate();
+      account.delete();
+
+      TransactionProcessor.changeAmount(
+          transaction,
+          Money.of("150.00"),
+          account
+      );
+
+      assertThat(transaction.getAmount())
+          .isEqualTo(Money.of("150.00"));
+
+      assertThat(account.getBalance())
+          .isEqualTo(Money.of("900.00"));
+    }
+
+    @Test
+    void shouldChangeIncomeAmountWithoutAdjustingDeletedAccount() {
+      Account account = Account.open(
+          "Checking Account",
+          AccountType.CHECKING,
+          Money.of("1000.00")
+      );
+
+      Transaction transaction = Transaction.create(
+          Money.of("500.00"),
+          TransactionType.INCOME,
+          "Salary",
+          Instant.now(),
+          TransactionSource.MANUAL,
+          account.getId(),
+          null,
+          null
+      );
+
+      account.credit(transaction.getAmount());
+      account.deactivate();
+      account.delete();
+
+      TransactionProcessor.changeAmount(
+          transaction,
+          Money.of("700.00"),
+          account
+      );
+
+      assertThat(transaction.getAmount())
+          .isEqualTo(Money.of("700.00"));
+
+      assertThat(account.getBalance())
+          .isEqualTo(Money.of("1500.00"));
+    }
   }
 
   @Nested
@@ -969,6 +1041,70 @@ class TransactionProcessorTest {
 
       assertThat(account.getBalance())
           .isEqualTo(Money.of("1000.00"));
+    }
+
+    @Test
+    void shouldReverseExpenseWithoutChangingDeletedAccountBalance() {
+      Account account = Account.open(
+          "Checking Account",
+          AccountType.CHECKING,
+          Money.of("1000.00")
+      );
+
+      Transaction transaction = Transaction.create(
+          Money.of("100.00"),
+          TransactionType.EXPENSE,
+          "Groceries",
+          Instant.now(),
+          TransactionSource.MANUAL,
+          account.getId(),
+          null,
+          null
+      );
+
+      account.debit(transaction.getAmount());
+      account.deactivate();
+      account.delete();
+
+      TransactionProcessor.reverse(transaction, account);
+
+      assertThat(account.getBalance())
+          .isEqualTo(Money.of("900.00"));
+
+      assertThat(transaction.getStatus())
+          .isEqualTo(TransactionStatus.REVERSED);
+    }
+
+    @Test
+    void shouldReverseIncomeWithoutChangingDeletedAccountBalance() {
+      Account account = Account.open(
+          "Checking Account",
+          AccountType.CHECKING,
+          Money.of("1000.00")
+      );
+
+      Transaction transaction = Transaction.create(
+          Money.of("500.00"),
+          TransactionType.INCOME,
+          "Salary",
+          Instant.now(),
+          TransactionSource.MANUAL,
+          account.getId(),
+          null,
+          null
+      );
+
+      account.credit(transaction.getAmount());
+      account.deactivate();
+      account.delete();
+
+      TransactionProcessor.reverse(transaction, account);
+
+      assertThat(account.getBalance())
+          .isEqualTo(Money.of("1500.00"));
+
+      assertThat(transaction.getStatus())
+          .isEqualTo(TransactionStatus.REVERSED);
     }
 
     @Test
@@ -1115,6 +1251,149 @@ class TransactionProcessorTest {
 
       assertThat(destination.getBalance())
           .isEqualTo(Money.of("500.00"));
+    }
+
+    @Test
+    void shouldReverseTransferRestoringOnlyActiveDestinationBalance() {
+      Account source = Account.open(
+          "Checking Account",
+          AccountType.CHECKING,
+          Money.of("1000.00")
+      );
+
+      Account destination = Account.open(
+          "Savings Account",
+          AccountType.SAVINGS,
+          Money.of("500.00")
+      );
+
+      Transaction transaction = Transaction.create(
+          Money.of("200.00"),
+          TransactionType.TRANSFER,
+          "Transfer",
+          Instant.now(),
+          TransactionSource.MANUAL,
+          source.getId(),
+          destination.getId(),
+          null
+      );
+
+      source.debit(transaction.getAmount());
+      destination.credit(transaction.getAmount());
+
+      source.deactivate();
+      source.delete();
+
+      TransactionProcessor.reverse(
+          transaction,
+          source,
+          destination
+      );
+
+      assertThat(source.getBalance())
+          .isEqualTo(Money.of("800.00"));
+
+      assertThat(destination.getBalance())
+          .isEqualTo(Money.of("500.00"));
+
+      assertThat(transaction.getStatus())
+          .isEqualTo(TransactionStatus.REVERSED);
+    }
+
+    @Test
+    void shouldReverseTransferRestoringOnlyActiveSourceBalance() {
+      Account source = Account.open(
+          "Checking Account",
+          AccountType.CHECKING,
+          Money.of("1000.00")
+      );
+
+      Account destination = Account.open(
+          "Savings Account",
+          AccountType.SAVINGS,
+          Money.of("500.00")
+      );
+
+      Transaction transaction = Transaction.create(
+          Money.of("200.00"),
+          TransactionType.TRANSFER,
+          "Transfer",
+          Instant.now(),
+          TransactionSource.MANUAL,
+          source.getId(),
+          destination.getId(),
+          null
+      );
+
+      source.debit(transaction.getAmount());
+      destination.credit(transaction.getAmount());
+
+      destination.deactivate();
+      destination.delete();
+
+      TransactionProcessor.reverse(
+          transaction,
+          source,
+          destination
+      );
+
+      assertThat(source.getBalance())
+          .isEqualTo(Money.of("1000.00"));
+
+      assertThat(destination.getBalance())
+          .isEqualTo(Money.of("700.00"));
+
+      assertThat(transaction.getStatus())
+          .isEqualTo(TransactionStatus.REVERSED);
+    }
+
+    @Test
+    void shouldReverseTransferWhenBothAccountsAreDeleted() {
+      Account source = Account.open(
+          "Checking Account",
+          AccountType.CHECKING,
+          Money.of("1000.00")
+      );
+
+      Account destination = Account.open(
+          "Savings Account",
+          AccountType.SAVINGS,
+          Money.of("500.00")
+      );
+
+      Transaction transaction = Transaction.create(
+          Money.of("200.00"),
+          TransactionType.TRANSFER,
+          "Transfer",
+          Instant.now(),
+          TransactionSource.MANUAL,
+          source.getId(),
+          destination.getId(),
+          null
+      );
+
+      source.debit(transaction.getAmount());
+      destination.credit(transaction.getAmount());
+
+      source.deactivate();
+      source.delete();
+      destination.deactivate();
+      destination.delete();
+
+      TransactionProcessor.reverse(
+          transaction,
+          source,
+          destination
+      );
+
+      assertThat(source.getBalance())
+          .isEqualTo(Money.of("800.00"));
+
+      assertThat(destination.getBalance())
+          .isEqualTo(Money.of("700.00"));
+
+      assertThat(transaction.getStatus())
+          .isEqualTo(TransactionStatus.REVERSED);
     }
 
     @Test

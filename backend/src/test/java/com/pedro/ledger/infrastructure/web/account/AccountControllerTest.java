@@ -3,6 +3,7 @@ package com.pedro.ledger.infrastructure.web.account;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doNothing;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
@@ -15,7 +16,10 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import com.pedro.ledger.application.account.AccountApplicationService;
 import com.pedro.ledger.domain.account.Account;
+import com.pedro.ledger.domain.account.AccountAlreadyActiveException;
+import com.pedro.ledger.domain.account.AccountAlreadyInactiveException;
 import com.pedro.ledger.domain.account.AccountNotFoundException;
+import com.pedro.ledger.domain.account.AccountNotInactiveException;
 import com.pedro.ledger.domain.account.AccountStatus;
 import com.pedro.ledger.domain.account.AccountType;
 import com.pedro.ledger.domain.money.Money;
@@ -561,6 +565,135 @@ class AccountControllerTest {
           .andExpect(status().isNoContent());
 
       verify(accountApplicationService).deactivate(id);
+    }
+
+    @Test
+    void shouldReturnConflictWhenAccountIsAlreadyInactive()
+        throws Exception {
+
+      UUID id = UUID.randomUUID();
+
+      doThrow(new AccountAlreadyInactiveException(
+          "Account is already inactive"
+      ))
+          .when(accountApplicationService)
+          .deactivate(id);
+
+      mockMvc.perform(delete("/accounts/{id}", id))
+          .andExpect(status().isConflict());
+
+      verify(accountApplicationService).deactivate(id);
+    }
+  }
+
+  @Nested
+  class DeletePermanently {
+
+    @Test
+    void shouldDeleteAccount() throws Exception {
+      UUID id = UUID.randomUUID();
+
+      doNothing()
+          .when(accountApplicationService)
+          .delete(id);
+
+      mockMvc.perform(delete("/accounts/{id}/permanent", id))
+          .andExpect(status().isNoContent());
+
+      verify(accountApplicationService).delete(id);
+    }
+
+    @Test
+    void shouldReturnNotFoundWhenAccountDoesNotExist()
+        throws Exception {
+
+      UUID id = UUID.randomUUID();
+
+      doThrow(new AccountNotFoundException("Account not found"))
+          .when(accountApplicationService)
+          .delete(id);
+
+      mockMvc.perform(delete("/accounts/{id}/permanent", id))
+          .andExpect(status().isNotFound());
+
+      verify(accountApplicationService).delete(id);
+    }
+
+    @Test
+    void shouldReturnConflictWhenAccountIsNotInactive()
+        throws Exception {
+
+      UUID id = UUID.randomUUID();
+
+      doThrow(new AccountNotInactiveException(
+          "Only inactive accounts can be deleted"
+      ))
+          .when(accountApplicationService)
+          .delete(id);
+
+      mockMvc.perform(delete("/accounts/{id}/permanent", id))
+          .andExpect(status().isConflict());
+
+      verify(accountApplicationService).delete(id);
+    }
+  }
+
+  @Nested
+  class Activate {
+
+    @Test
+    void shouldActivateAccount() throws Exception {
+      UUID id = UUID.randomUUID();
+
+      Account account = Account.restore(
+          id,
+          "Checking Account",
+          AccountType.CHECKING,
+          AccountStatus.ACTIVE,
+          Money.of("1000.00")
+      );
+
+      when(accountApplicationService.activate(id))
+          .thenReturn(account);
+
+      mockMvc.perform(post("/accounts/{id}/activation", id))
+          .andExpect(status().isOk())
+          .andExpect(jsonPath("$.id").value(id.toString()))
+          .andExpect(jsonPath("$.status").value("ACTIVE"));
+
+      verify(accountApplicationService).activate(id);
+    }
+
+    @Test
+    void shouldReturnNotFoundWhenAccountDoesNotExist()
+        throws Exception {
+
+      UUID id = UUID.randomUUID();
+
+      when(accountApplicationService.activate(id))
+          .thenThrow(new AccountNotFoundException("Account not found"));
+
+      mockMvc.perform(post("/accounts/{id}/activation", id))
+          .andExpect(status().isNotFound());
+
+      verify(accountApplicationService).activate(id);
+    }
+
+    @Test
+    void shouldReturnConflictWhenAccountIsAlreadyActive()
+        throws Exception {
+
+      UUID id = UUID.randomUUID();
+
+      when(accountApplicationService.activate(id))
+          .thenThrow(new AccountAlreadyActiveException(
+              "Account is already active"
+          ));
+
+      mockMvc.perform(post("/accounts/{id}/activation", id))
+          .andExpect(status().isConflict());
+
+      verify(accountApplicationService).activate(id);
     }
   }
 }

@@ -13,8 +13,10 @@ import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
+import jakarta.persistence.UniqueConstraint;
 import java.math.BigDecimal;
 import java.time.Instant;
+import java.time.LocalDate;
 import java.util.Currency;
 import java.util.UUID;
 
@@ -22,7 +24,13 @@ import java.util.UUID;
  * JPA entity representing a transaction in the persistence layer.
  */
 @Entity
-@Table(name = "transactions")
+@Table(
+    name = "transactions",
+    uniqueConstraints = @UniqueConstraint(
+        name = "uk_transactions_recurrence_occurrence",
+        columnNames = {"recurrence_id", "occurrence_date"}
+    )
+)
 public class TransactionEntity {
 
   @Id
@@ -63,6 +71,12 @@ public class TransactionEntity {
   @Column
   private UUID categoryId;
 
+  @Column(name = "recurrence_id")
+  private UUID recurrenceId;
+
+  @Column(name = "occurrence_date")
+  private LocalDate occurrenceDate;
+
   /**
    * Protected constructor required by JPA.
    */
@@ -97,6 +111,56 @@ public class TransactionEntity {
       AccountEntity destinationAccount,
       UUID categoryId
   ) {
+    this(
+        id,
+        amount,
+        currency,
+        status,
+        type,
+        description,
+        timestamp,
+        source,
+        account,
+        destinationAccount,
+        categoryId,
+        null,
+        null
+    );
+  }
+
+  /**
+   * Creates a transaction persistence entity, optionally linked to a
+   * recurrence occurrence.
+   *
+   * @param id transaction identifier
+   * @param amount transaction amount
+   * @param currency transaction currency
+   * @param status transaction status
+   * @param type transaction type
+   * @param description transaction description
+   * @param timestamp transaction timestamp
+   * @param source transaction source
+   * @param account source account
+   * @param destinationAccount destination account
+   * @param categoryId category identifier
+   * @param recurrenceId recurrence identifier, or null
+   * @param occurrenceDate occurrence date, or null
+   */
+  public TransactionEntity(
+      UUID id,
+      BigDecimal amount,
+      Currency currency,
+      TransactionStatus status,
+      TransactionType type,
+      String description,
+      Instant timestamp,
+      TransactionSource source,
+      AccountEntity account,
+      AccountEntity destinationAccount,
+      UUID categoryId,
+      UUID recurrenceId,
+      LocalDate occurrenceDate
+  ) {
     this.id = id;
     this.amount = amount;
     this.currency = currency.getCurrencyCode();
@@ -108,6 +172,8 @@ public class TransactionEntity {
     this.account = account;
     this.destinationAccount = destinationAccount;
     this.categoryId = categoryId;
+    this.recurrenceId = recurrenceId;
+    this.occurrenceDate = occurrenceDate;
   }
 
   /**
@@ -210,5 +276,23 @@ public class TransactionEntity {
    */
   public UUID getCategoryId() {
     return categoryId;
+  }
+
+  /**
+   * Returns the recurrence identifier.
+   *
+   * @return recurrence identifier, or null for ordinary transactions
+   */
+  public UUID getRecurrenceId() {
+    return recurrenceId;
+  }
+
+  /**
+   * Returns the recurrence occurrence date.
+   *
+   * @return occurrence date, or null for ordinary transactions
+   */
+  public LocalDate getOccurrenceDate() {
+    return occurrenceDate;
   }
 }

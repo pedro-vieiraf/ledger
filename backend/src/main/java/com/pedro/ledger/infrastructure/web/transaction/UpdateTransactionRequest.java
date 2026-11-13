@@ -1,7 +1,9 @@
+
 package com.pedro.ledger.infrastructure.web.transaction;
 
 import jakarta.validation.constraints.DecimalMin;
 import java.math.BigDecimal;
+import java.time.Instant;
 import java.util.UUID;
 
 /**
@@ -10,6 +12,7 @@ import java.util.UUID;
  * @param amount new transaction amount
  * @param description new transaction description
  * @param categoryId new category identifier
+ * @param timestamp new transaction timestamp
  */
 public record UpdateTransactionRequest(
 
@@ -18,6 +21,8 @@ public record UpdateTransactionRequest(
 
     String description,
 
-    UUID categoryId
+    UUID categoryId,
+
+    Instant timestamp
 ) {
 }

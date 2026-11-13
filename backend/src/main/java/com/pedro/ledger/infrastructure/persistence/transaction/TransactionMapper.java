@@ -56,7 +56,9 @@ public class TransactionMapper {
         transaction.getSource(),
         account,
         destinationAccount,
-        transaction.getCategoryId()
+        transaction.getCategoryId(),
+        transaction.getRecurrenceId(),
+        transaction.getOccurrenceDate()
     );
   }
 
@@ -77,7 +79,9 @@ public class TransactionMapper {
         entity.getSource(),
         entity.getAccountId(),
         entity.getDestinationAccountId(),
-        entity.getCategoryId()
+        entity.getCategoryId(),
+        entity.getRecurrenceId(),
+        entity.getOccurrenceDate()
     );
   }
 }

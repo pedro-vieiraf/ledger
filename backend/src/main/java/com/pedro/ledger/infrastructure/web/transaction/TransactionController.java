@@ -1,3 +1,4 @@
+
 package com.pedro.ledger.infrastructure.web.transaction;
 
 import com.pedro.ledger.application.transaction.TransactionApplicationService;
@@ -34,6 +35,7 @@ public class TransactionController {
       @RequestBody CreateTransactionRequest request
   ) {
     Transaction transaction = service.create(
+        request.id(),
         Money.of(
             request.amount(),
             Currency.getInstance(request.currency())
@@ -80,7 +82,8 @@ public class TransactionController {
         id,
         request.amount(),
         request.description(),
-        request.categoryId()
+        request.categoryId(),
+        request.timestamp()
     );
 
     TransactionResponse response =

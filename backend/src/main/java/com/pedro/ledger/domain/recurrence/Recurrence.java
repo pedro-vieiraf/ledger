@@ -15,11 +15,11 @@ import java.util.UUID;
 public class Recurrence {
 
   private final UUID id;
-  private final Money amount;
+  private Money amount;
   private final TransactionType type;
-  private final String description;
+  private String description;
   private final UUID accountId;
-  private final UUID categoryId;
+  private UUID categoryId;
   private final RecurrenceFrequency frequency;
   private final LocalDate startDate;
   private final int dayOfMonth;
@@ -105,6 +105,124 @@ public class Recurrence {
         RecurrenceStatus.ACTIVE,
         startDate
     );
+  }
+
+  /**
+   * Restores an existing recurrence from persistence.
+   *
+   * @param id recurrence identifier
+   * @param amount recurrence amount
+   * @param type transaction type
+   * @param description optional recurrence description
+   * @param accountId identifier of the associated account
+   * @param categoryId identifier of the associated category
+   * @param frequency recurrence frequency
+   * @param startDate recurrence start date
+   * @param dayOfMonth configured day of the month
+   * @param monthOfYear configured month of the year
+   * @param status current recurrence status
+   * @param nextOccurrence date of the next occurrence
+   * @return a restored recurrence
+   * @throws IllegalArgumentException if any required value is invalid
+   */
+  public static Recurrence restore(
+      UUID id,
+      Money amount,
+      TransactionType type,
+      String description,
+      UUID accountId,
+      UUID categoryId,
+      RecurrenceFrequency frequency,
+      LocalDate startDate,
+      int dayOfMonth,
+      int monthOfYear,
+      RecurrenceStatus status,
+      LocalDate nextOccurrence
+  ) {
+    if (id == null) {
+      throw new IllegalArgumentException(
+          "Recurrence ID cannot be null"
+      );
+    }
+
+    validateAmount(amount);
+    validateType(type);
+    validateAccountId(accountId);
+    validateFrequency(frequency);
+    validateStartDate(startDate);
+
+    if (type == TransactionType.TRANSFER) {
+      throw new IllegalArgumentException(
+          "Recurrence cannot have transfer type"
+      );
+    }
+
+    if (status == null) {
+      throw new IllegalArgumentException(
+          "Recurrence status cannot be null"
+      );
+    }
+
+    if (nextOccurrence == null) {
+      throw new IllegalArgumentException(
+          "Recurrence next occurrence cannot be null"
+      );
+    }
+
+    return new Recurrence(
+        id,
+        amount,
+        type,
+        normalizeDescription(description),
+        accountId,
+        categoryId,
+        frequency,
+        startDate,
+        dayOfMonth,
+        monthOfYear,
+        status,
+        nextOccurrence
+    );
+  }
+
+  /**
+   * Changes the recurrence amount. Future occurrences use the new amount;
+   * transactions already generated are not affected.
+   *
+   * @param newAmount new recurrence amount
+   * @throws IllegalArgumentException if the amount is invalid or uses a
+   *     different currency
+   */
+  public void changeAmount(Money newAmount) {
+    validateAmount(newAmount);
+
+    if (!newAmount.currency().equals(amount.currency())) {
+      throw new IllegalArgumentException(
+          "Recurrence amount currency cannot change"
+      );
+    }
+
+    amount = newAmount;
+  }
+
+  /**
+   * Changes the recurrence description. Future occurrences use the new
+   * description; transactions already generated are not affected.
+   *
+   * @param newDescription new recurrence description
+   */
+  public void changeDescription(String newDescription) {
+    description = normalizeDescription(newDescription);
+  }
+
+  /**
+   * Changes the recurrence category. Future occurrences use the new category;
+   * transactions already generated are not affected.
+   *
+   * @param newCategoryId new category identifier
+   */
+  public void changeCategory(UUID newCategoryId) {
+    categoryId = newCategoryId;
   }
 
   /**
@@ -226,6 +344,24 @@ public class Recurrence {
    */
   public LocalDate getStartDate() {
     return startDate;
+  }
+
+  /**
+   * Returns the configured day of the month.
+   *
+   * @return configured day of the month
+   */
+  public int getDayOfMonth() {
+    return dayOfMonth;
+  }
+
+  /**
+   * Returns the configured month of the year.
+   *
+   * @return configured month of the year
+   */
+  public int getMonthOfYear() {
+    return monthOfYear;
   }
 
   /**
