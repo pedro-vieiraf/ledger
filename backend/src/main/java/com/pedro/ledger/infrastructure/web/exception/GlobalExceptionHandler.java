@@ -1,0 +1,96 @@
+package com.pedro.ledger.infrastructure.web.exception;
+
+import com.pedro.ledger.domain.account.AccountAlreadyActiveException;
+import com.pedro.ledger.domain.account.AccountAlreadyInactiveException;
+import com.pedro.ledger.domain.account.AccountInactiveException;
+import com.pedro.ledger.domain.account.AccountNotFoundException;
+import com.pedro.ledger.domain.account.AccountNotInactiveException;
+import com.pedro.ledger.domain.category.CategoryNotFoundException;
+import com.pedro.ledger.domain.recurrence.RecurrenceNotFoundException;
+import com.pedro.ledger.domain.transaction.TransactionNotFoundException;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.MethodArgumentNotValidException;
+import org.springframework.web.bind.annotation.ExceptionHandler;
+import org.springframework.web.bind.annotation.RestControllerAdvice;
+
+@RestControllerAdvice
+public class GlobalExceptionHandler {
+
+  @ExceptionHandler(AccountNotFoundException.class)
+  public ResponseEntity<Void> handleAccountNotFound(
+      AccountNotFoundException exception
+  ) {
+    return ResponseEntity.notFound().build();
+  }
+
+  @ExceptionHandler(AccountAlreadyActiveException.class)
+  public ResponseEntity<Void> handleAccountAlreadyActive(
+      AccountAlreadyActiveException exception
+  ) {
+    return ResponseEntity.status(HttpStatus.CONFLICT).build();
+  }
+
+  @ExceptionHandler(AccountAlreadyInactiveException.class)
+  public ResponseEntity<Void> handleAccountAlreadyInactive(
+      AccountAlreadyInactiveException exception
+  ) {
+    return ResponseEntity.status(HttpStatus.CONFLICT).build();
+  }
+
+  @ExceptionHandler(AccountInactiveException.class)
+  public ResponseEntity<Void> handleAccountInactive(
+      AccountInactiveException exception
+  ) {
+    return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+  }
+
+  @ExceptionHandler(AccountNotInactiveException.class)
+  public ResponseEntity<Void> handleAccountNotInactive(
+      AccountNotInactiveException exception
+  ) {
+    return ResponseEntity.status(HttpStatus.CONFLICT).build();
+  }
+
+  @ExceptionHandler(CategoryNotFoundException.class)
+  public ResponseEntity<Void> handleCategoryNotFound(
+      CategoryNotFoundException exception
+  ) {
+    return ResponseEntity.notFound().build();
+  }
+
+  @ExceptionHandler(TransactionNotFoundException.class)
+  public ResponseEntity<Void> handleTransactionNotFound(
+      TransactionNotFoundException exception
+  ) {
+    return ResponseEntity.notFound().build();
+  }
+
+  @ExceptionHandler(RecurrenceNotFoundException.class)
+  public ResponseEntity<Void> handleRecurrenceNotFound(
+      RecurrenceNotFoundException exception
+  ) {
+    return ResponseEntity.notFound().build();
+  }
+
+  @ExceptionHandler(IllegalStateException.class)
+  public ResponseEntity<Void> handleIllegalState(
+      IllegalStateException exception
+  ) {
+    return ResponseEntity.status(HttpStatus.CONFLICT).build();
+  }
+
+  @ExceptionHandler(MethodArgumentNotValidException.class)
+  public ResponseEntity<Void> handleValidation(
+      MethodArgumentNotValidException exception
+  ) {
+    return ResponseEntity.badRequest().build();
+  }
+
+  @ExceptionHandler(IllegalArgumentException.class)
+  public ResponseEntity<Void> handleIllegalArgument(
+      IllegalArgumentException exception
+  ) {
+    return ResponseEntity.badRequest().build();
+  }
+}

@@ -1,0 +1,46 @@
+:root {
+  --font-display: Spline Sans, Inter, ui-sans-serif, system-ui, sans-serif, Apple Color Emoji, Segoe UI Emoji,
+    Segoe UI Symbol, Noto Color Emoji;
+  --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, Liberation Mono, Courier New, monospace;
+  --font-rounded: "SF Pro Rounded", "Hiragino Maru Gothic ProN", Meiryo, "MS PGothic", sans-serif;
+  --font-serif: Georgia, "Times New Roman", serif;
+}
+
+/*
+ * O navegador aplica um contorno preto padrão ao focar campos de texto.
+ * Substituímos por um anel suave na cor primária do aplicativo.
+ */
+input:focus,
+input:focus-within,
+textarea:focus,
+textarea:focus-within,
+select:focus,
+select:focus-within,
+[contenteditable='true']:focus,
+[contenteditable='true']:focus-within {
+  outline: none;
+  border-color: #1f5b45;
+  box-shadow: 0 0 0 3px rgba(31, 91, 69, 0.14);
+}
+
+/*
+ * Barras de busca já possuem um contêiner com borda. O destaque de foco fica
+ * no contêiner para não desenhar um anel ao redor apenas do texto interno.
+ */
+[id^='search-field']:focus-within {
+  border-color: #1f5b45;
+  box-shadow: 0 0 0 3px rgba(31, 91, 69, 0.14);
+}
+
+[id^='search-field'] input:focus,
+[id^='search-field'] input:focus-within {
+  box-shadow: none;
+}
+
+/* Foco dos controles de configurações no header desktop. */
+#settings-menu-button:focus-visible,
+#privacy-toggle-button:focus-visible,
+[id^='settings-menu-item-']:focus-visible {
+  outline: 2px solid rgba(31, 91, 69, 0.45);
+  outline-offset: 2px;
+}
