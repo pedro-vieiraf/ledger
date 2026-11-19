@@ -10,6 +10,9 @@ import {
 import { useRouter } from 'expo-router';
 import { SymbolView, type SymbolViewProps } from 'expo-symbols';
 
+import { DesktopDashboardInvoiceEvolution } from '@/components/desktop/dashboard/desktop-dashboard-invoice-evolution';
+import { DesktopDashboardInvoices } from '@/components/desktop/dashboard/desktop-dashboard-invoices';
+import { DesktopDashboardUpcomingCommitments } from '@/components/desktop/dashboard/desktop-dashboard-upcoming-commitments';
 import { InlineFeedback } from '@/components/feedback/inline-feedback';
 import {
   buildCurrencyAxis,
@@ -547,6 +550,13 @@ export function DesktopDashboard() {
             />
           </View>
 
+          <View style={styles.widgetsRow}>
+            <DesktopDashboardInvoices />
+            <DesktopDashboardUpcomingCommitments />
+          </View>
+
+          <DesktopDashboardInvoiceEvolution />
+
           <View style={styles.analyticsRow}>
             <View style={styles.chartCard}>
               <View style={styles.cardHeader}>
@@ -928,6 +938,12 @@ const styles = StyleSheet.create({
     color: desktopColors.textMuted,
     fontSize: 11,
     fontFamily: desktopFont,
+  },
+  widgetsRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    alignItems: 'flex-start',
+    gap: 16,
   },
   analyticsRow: {
     flexDirection: 'row',

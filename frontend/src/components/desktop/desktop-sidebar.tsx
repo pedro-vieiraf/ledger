@@ -8,6 +8,7 @@ import {
   View,
 } from 'react-native';
 import { usePathname, useRouter } from 'expo-router';
+import { SymbolView, type SymbolViewProps } from 'expo-symbols';
 
 import {
   desktopColors,
@@ -19,21 +20,59 @@ type DesktopNavHref =
   | '/'
   | '/transactions'
   | '/accounts'
+  | '/credit-cards'
   | '/categories'
   | '/recurrences';
 
 type DesktopNavItem = {
   href: DesktopNavHref;
   label: string;
-  icon: string;
+  icon: SymbolViewProps['name'];
 };
 
 const NAV_ITEMS: DesktopNavItem[] = [
-  { href: '/', label: 'Dashboard', icon: '▦' },
-  { href: '/transactions', label: 'Transações', icon: '⇄' },
-  { href: '/accounts', label: 'Contas', icon: '▤' },
-  { href: '/categories', label: 'Categorias', icon: '◈' },
-  { href: '/recurrences', label: 'Assinaturas', icon: '↻' },
+  {
+    href: '/',
+    label: 'Dashboard',
+    icon: { ios: 'square.grid.2x2', android: 'dashboard', web: 'dashboard' },
+  },
+  {
+    href: '/transactions',
+    label: 'Transações',
+    icon: {
+      ios: 'arrow.left.arrow.right',
+      android: 'swap_horiz',
+      web: 'swap_horiz',
+    },
+  },
+  {
+    href: '/accounts',
+    label: 'Contas',
+    icon: {
+      ios: 'building.columns',
+      android: 'account_balance',
+      web: 'account_balance',
+    },
+  },
+  {
+    href: '/credit-cards',
+    label: 'Cartões',
+    icon: { ios: 'creditcard', android: 'credit_card', web: 'credit_card' },
+  },
+  {
+    href: '/categories',
+    label: 'Categorias',
+    icon: { ios: 'tag', android: 'label', web: 'label' },
+  },
+  {
+    href: '/recurrences',
+    label: 'Assinaturas',
+    icon: {
+      ios: 'arrow.triangle.2.circlepath',
+      android: 'autorenew',
+      web: 'autorenew',
+    },
+  },
 ];
 
 type DesktopSidebarProps = {
@@ -142,14 +181,15 @@ export function DesktopSidebar({
                   active && styles.navIconActive,
                 ]}
               >
-                <Text
-                  style={[
-                    styles.navIconText,
-                    active && styles.navIconTextActive,
-                  ]}
-                >
-                  {item.icon}
-                </Text>
+                <SymbolView
+                  name={item.icon}
+                  size={17}
+                  tintColor={
+                    active
+                      ? desktopColors.primary
+                      : desktopColors.textSecondary
+                  }
+                />
               </View>
 
               {!collapsed ? (
@@ -284,15 +324,6 @@ const styles = StyleSheet.create({
   },
   navIconActive: {
     backgroundColor: desktopColors.surface,
-  },
-  navIconText: {
-    color: desktopColors.textSecondary,
-    fontSize: 16,
-    fontWeight: '700',
-    fontFamily: desktopFont,
-  },
-  navIconTextActive: {
-    color: desktopColors.primary,
   },
   navLabel: {
     flex: 1,

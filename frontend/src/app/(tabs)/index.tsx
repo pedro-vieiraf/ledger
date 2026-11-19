@@ -11,11 +11,16 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { SymbolView } from 'expo-symbols';
 
+import { MobileDashboardInvoiceEvolution } from '@/components/dashboard/mobile-dashboard-invoice-evolution';
+import { MobileDashboardInvoices } from '@/components/dashboard/mobile-dashboard-invoices';
+import { MobileDashboardUpcomingCommitments } from '@/components/dashboard/mobile-dashboard-upcoming-commitments';
 import { DesktopDashboard } from '@/components/desktop/dashboard/desktop-dashboard';
 import { InlineFeedback } from '@/components/feedback/inline-feedback';
 import { MobileScreenHeader } from '@/components/mobile/mobile-screen-header';
 import { useAccounts, type Account } from '@/contexts/accounts-context';
+import { useCreditCards } from '@/contexts/credit-cards-context';
 import { usePrivacy } from '@/contexts/privacy-context';
+import { useRecurrences } from '@/contexts/recurrences-context';
 import { useIsDesktopLayout } from '@/hooks/use-is-desktop-layout';
 import { useTransactions, type Transaction } from '@/contexts/transactions-context';
 import { getCategories, type Category } from '@/services/categories-api';
@@ -197,6 +202,8 @@ function MobileDashboardScreen() {
     error: transactionsError,
     refreshTransactions,
   } = useTransactions();
+  const { refreshCreditCards } = useCreditCards();
+  const { refreshRecurrences } = useRecurrences();
 
   const [categories, setCategories] = useState<Category[]>([]);
   const [categoriesLoading, setCategoriesLoading] = useState(true);
@@ -238,13 +245,21 @@ function MobileDashboardScreen() {
     await Promise.allSettled([
       refreshAccounts(),
       refreshTransactions(),
+      refreshCreditCards({ silent: true }),
+      refreshRecurrences(),
       loadCategories(),
     ]);
 
     refreshInFlightRef.current = false;
     setRefreshing(false);
     setHasLoadedOnce(true);
-  }, [loadCategories, refreshAccounts, refreshTransactions]);
+  }, [
+    loadCategories,
+    refreshAccounts,
+    refreshCreditCards,
+    refreshRecurrences,
+    refreshTransactions,
+  ]);
 
   useFocusEffect(
     useCallback(() => {
@@ -521,6 +536,12 @@ function MobileDashboardScreen() {
             {maskMoney(formatCurrency(summary.result), hidden)}
           </Text>
         </View>
+
+        <MobileDashboardInvoices />
+
+        <MobileDashboardUpcomingCommitments />
+
+        <MobileDashboardInvoiceEvolution />
 
         <View style={styles.sectionHeader}>
           <Text style={styles.sectionTitle}>Minhas contas</Text>

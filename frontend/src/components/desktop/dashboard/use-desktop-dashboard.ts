@@ -8,6 +8,8 @@ import {
   getDefaultTransactionDescription,
 } from '@/components/desktop/desktop-format';
 import { useAccounts } from '@/contexts/accounts-context';
+import { useCreditCards } from '@/contexts/credit-cards-context';
+import { useRecurrences } from '@/contexts/recurrences-context';
 import { useTransactions } from '@/contexts/transactions-context';
 import { getCategories, type Category } from '@/services/categories-api';
 import type { TransactionType } from '@/services/transactions-api';
@@ -85,6 +87,8 @@ export function useDesktopDashboard() {
     error: transactionsError,
     refreshTransactions,
   } = useTransactions();
+  const { refreshCreditCards } = useCreditCards();
+  const { refreshRecurrences } = useRecurrences();
 
   const [categories, setCategories] = useState<Category[]>([]);
   const [categoriesLoading, setCategoriesLoading] = useState(true);
@@ -125,13 +129,21 @@ export function useDesktopDashboard() {
     await Promise.allSettled([
       refreshAccounts(),
       refreshTransactions(),
+      refreshCreditCards({ silent: true }),
+      refreshRecurrences(),
       loadCategories(),
     ]);
 
     refreshInFlightRef.current = false;
     setRefreshing(false);
     setHasLoadedOnce(true);
-  }, [loadCategories, refreshAccounts, refreshTransactions]);
+  }, [
+    loadCategories,
+    refreshAccounts,
+    refreshCreditCards,
+    refreshRecurrences,
+    refreshTransactions,
+  ]);
 
   useFocusEffect(
     useCallback(() => {

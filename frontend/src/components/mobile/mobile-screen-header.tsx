@@ -57,12 +57,24 @@ const CHEVRON_ICON = {
   web: 'chevron_right',
 } satisfies SymbolViewProps['name'];
 
+const CARD_ICON = {
+  ios: 'creditcard',
+  android: 'credit_card',
+  web: 'credit_card',
+} satisfies SymbolViewProps['name'];
+
 const MENU_ITEMS: {
   key: string;
   label: string;
   href: Href;
   icon: SymbolViewProps['name'];
 }[] = [
+  {
+    key: 'credit-cards',
+    label: 'Cartões',
+    href: '/credit-cards',
+    icon: CARD_ICON,
+  },
   {
     key: 'about',
     label: 'Sobre a Finora',

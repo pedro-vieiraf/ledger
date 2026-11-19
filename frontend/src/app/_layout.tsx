@@ -9,6 +9,7 @@ import * as SplashScreen from 'expo-splash-screen';
 import { AnimatedSplashOverlay } from '@/components/animated-icon';
 import { DesktopShell } from '@/components/desktop/desktop-shell';
 import { AccountsProvider } from '@/contexts/accounts-context';
+import { CreditCardsProvider } from '@/contexts/credit-cards-context';
 import { FeedbackProvider } from '@/contexts/feedback-context';
 import { PrivacyProvider } from '@/contexts/privacy-context';
 import { RecurrencesProvider } from '@/contexts/recurrences-context';
@@ -36,17 +37,19 @@ export default function RootLayout() {
       <PrivacyProvider>
         <FeedbackProvider>
           <AccountsProvider>
-            <TransactionsProvider>
-              <RecurrencesProvider>
-                <AnimatedSplashOverlay />
+            <CreditCardsProvider>
+              <TransactionsProvider>
+                <RecurrencesProvider>
+                  <AnimatedSplashOverlay />
 
-                {isDesktop ? (
-                  <DesktopShell>{stack}</DesktopShell>
-                ) : (
-                  stack
-                )}
-              </RecurrencesProvider>
-            </TransactionsProvider>
+                  {isDesktop ? (
+                    <DesktopShell>{stack}</DesktopShell>
+                  ) : (
+                    stack
+                  )}
+                </RecurrencesProvider>
+              </TransactionsProvider>
+            </CreditCardsProvider>
           </AccountsProvider>
         </FeedbackProvider>
       </PrivacyProvider>

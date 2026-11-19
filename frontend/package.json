@@ -40,7 +40,7 @@
     "ios": "expo start --ios",
     "web": "expo start --web",
     "lint": "expo lint",
-    "test": "node --experimental-strip-types --test src/utils/transaction-sort.test.ts"
+    "test": "node --experimental-strip-types --test src/utils/transaction-sort.test.ts src/utils/credit-cards.test.ts src/utils/credit-card-form.test.ts src/utils/credit-card-purchase-form.test.ts src/utils/credit-card-payment-form.test.ts src/utils/upcoming-commitments.test.ts"
   },
   "private": true
 }
